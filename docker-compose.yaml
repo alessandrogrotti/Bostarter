@@ -1,0 +1,79 @@
+version: '3.8'
+
+services:
+  mysql:
+    image: mariadb:latest
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: root_password
+      MYSQL_USER: username
+      MYSQL_PASSWORD: password
+      MYSQL_DATABASE: bostarter_db
+    ports:
+      - "3306:3306"
+    networks:
+      - bostarter_network
+    volumes:
+      - ./db/mysql:/var/lib/mysql
+
+  phpmyadmin:
+    image: phpmyadmin:latest
+    restart: always
+    depends_on:
+      - mysql
+    environment:
+      PMA_HOST: mysql
+      PMA_PORT: 3306
+      PMA_USER: username
+      PMA_PASSWORD: password
+    ports:
+      - "8080:80"
+    networks:
+      - bostarter_network
+
+  mongodb:
+    image: mongo:latest
+    restart: always
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: admin_username
+      MONGO_INITDB_ROOT_PASSWORD: admin_password
+    ports:
+      - "27017:27017"
+    networks:
+      - bostarter_network
+    volumes:
+      - ./db/mongo:/data/db
+
+  mongo-express:
+    image: mongo-express:latest
+    restart: always
+    depends_on:
+      - mongodb
+    environment:
+      ME_CONFIG_MONGODB_SERVER: mongodb
+      ME_CONFIG_MONGODB_ADMINUSERNAME: admin_username
+      ME_CONFIG_MONGODB_ADMINPASSWORD: admin_password
+      ME_CONFIG_BASICAUTH: "false"
+    ports:
+      - "8081:8081"
+    networks:
+      - bostarter_network
+
+  apache-php:
+    build: .
+    restart: always
+    ports:
+      - "80:80"
+    volumes:
+      - ./frontend:/var/www/html/
+      - ./backend:/var/www/html/backend/
+    networks:
+      - bostarter_network
+    environment:
+      MYSQL_HOST: mysql
+      MONGO_HOST: mongodb
+    command: apache2-foreground
+
+networks:
+  bostarter_network:
+    driver: bridge

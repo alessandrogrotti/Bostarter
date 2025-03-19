@@ -18,3 +18,14 @@ config.local.php
 
 # Escludi cartelle di cache
 /cache
+
+# Escludi le cartelle dei database
+db/mongo/
+db/mysql/
+
+# Escludi i file temporanei di query o dati non necessari
+db/query_db.js
+
+# Escludi le dipendenze di composer
+backend/vendor/
+backend/composer.lock

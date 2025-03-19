@@ -1,0 +1,16 @@
+{
+    "name": "bostarter/backend",
+    "description": "Backend for the Bostarter project",
+    "type": "project",
+    "require": {
+        "php": "^8.1",
+        "ext-mysqli": "*",
+        "mongodb/mongodb": "^1.21",
+        "phpmailer/phpmailer": "^6.5"
+    },
+    "scripts": {
+        "post-install-cmd": [
+            "echo 'Installation complete!'"
+        ]
+    }
+}
