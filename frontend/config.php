@@ -17,20 +17,15 @@ define('MONGO_SERVER', 'mongodb');  // Nome del servizio MongoDB nel file docker
 define('MONGO_USERNAME', 'admin_username');  // Username definito nel file docker-compose.yml
 define('MONGO_PASSWORD', 'admin_password');  // Password definita nel file docker-compose.yml
 
-// Connessione MySQL con PDO
+// Connessione MySQL
 function connectMySQL() {
-    try {
-        $dsn = "mysql:host=" . MYSQL_SERVER . ";dbname=" . MYSQL_NAME;
-        $options = [
-            PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
-            PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
-            PDO::ATTR_EMULATE_PREPARES => false,
-        ];
-        $pdo = new PDO($dsn, MYSQL_USERNAME, MYSQL_PASSWORD, $options);
-        return $pdo;
-    } catch (PDOException $e) {
-        die(json_encode(['status' => 'error', 'message' => 'Connessione fallita a MySQL: ' . $e->getMessage()]));
+    $conn = new mysqli(MYSQL_SERVER, MYSQL_USERNAME, MYSQL_PASSWORD, MYSQL_NAME);
+    
+    // Controllo se c'è stato un errore nella connessione
+    if ($conn->connect_error) {
+        die(json_encode(['status' => 'error', 'message' => 'Connessione fallita a MySQL: ' . $conn->connect_error]));
     }
+    return $conn;
 }
 
 // Connessione MongoDB

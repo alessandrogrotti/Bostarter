@@ -20,8 +20,8 @@ config.local.php
 /cache
 
 # Escludi le cartelle dei database
-db/mongo/
-db/mysql/
+mongo/
+mysql/
 
 # Escludi i file temporanei di query o dati non necessari
 db/query_db.js
