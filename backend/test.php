@@ -3,48 +3,36 @@
 // Include la configurazione
 include('config.php');
 
-// Connessione a MySQL utilizzando la funzione dal file config.php
-$conn = connectMySQL(); // Usa la funzione connectMySQL() per la connessione
+// Connessione a MySQL con PDO
+$conn = connectMySQL(); 
 
-// Connessione a MongoDB utilizzando la funzione dal file config.php
-$mongoClient = connectMongoDB(); // Usa la funzione connectMongoDB() per la connessione
-$mongoDb = $mongoClient->Bostarter;  // Nome del database MongoDB
-$logsCollection = $mongoDb->logs;  // Collezione logs
+// Connessione a MongoDB
+$mongoClient = connectMongoDB();
+$mongoDb = $mongoClient->Bostarter;
+$logsCollection = $mongoDb->logs;
 
 // Recupero dei dati (con supporto al filtro per nome)
 if (isset($_GET['name'])) {
-    $name = $_GET['name'];
-    // Usa query preparata per evitare SQL injection
+    $name = "%" . $_GET['name'] . "%";
     $stmt = $conn->prepare("SELECT * FROM users WHERE name LIKE ?");
-    $likeName = "%" . $name . "%";
-    $stmt->bind_param("s", $likeName);
+    $stmt->execute([$name]); // Passaggio di parametri per PDO
 } else {
     $stmt = $conn->prepare("SELECT * FROM users");
+    $stmt->execute();
 }
 
-$stmt->execute();
-$result = $stmt->get_result();
-$users = [];
+$users = $stmt->fetchAll(PDO::FETCH_ASSOC); // Con PDO si usa fetchAll()
 
-// Aggiungi il log di ogni operazione a MongoDB
+// Log dell'operazione in MongoDB
 $logEntry = [
     'action' => 'retrieve_users',
     'timestamp' => new MongoDB\BSON\UTCDateTime(),
-    'details' => isset($_GET['name']) ? "Filtered by name: $name" : "No filter applied"
+    'details' => isset($_GET['name']) ? "Filtered by name: {$_GET['name']}" : "No filter applied"
 ];
-$logsCollection->insertOne($logEntry);  // Aggiungi il log a MongoDB
 
-// Recupera i dati da MySQL
-while ($row = $result->fetch_assoc()) {
-    $users[] = $row;
-}
+$logsCollection->insertOne($logEntry);  // Aggiungi il log a MongoDB
 
 // Restituisci i dati come JSON
 header('Content-Type: application/json');
 echo json_encode($users);
-
-// Chiudi la connessione a MySQL
-$stmt->close();
-$conn->close();
-
 ?>

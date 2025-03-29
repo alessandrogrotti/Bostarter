@@ -3,10 +3,10 @@
 // Include la configurazione
 include('config.php');
 
-// Connessione a MySQL utilizzando la funzione dal file config.php
+// Connessione a MySQL con PDO
 $conn = connectMySQL();
 
-// Connessione a MongoDB utilizzando la funzione dal file config.php
+// Connessione a MongoDB
 $mongoClient = connectMongoDB();
 $mongoDb = $mongoClient->Bostarter;
 $logsCollection = $mongoDb->logs;
@@ -18,13 +18,13 @@ $inputData = json_decode(file_get_contents('php://input'), true);
 if (isset($inputData['name'])) {
     $name = $inputData['name'];
 
-    // Usa query preparata per evitare SQL injection
-    $stmt = $conn->prepare("INSERT INTO users (name) VALUES (?)");
-    $stmt->bind_param("s", $name);
-
-    if ($stmt->execute()) {
+    // Query preparata per evitare SQL injection
+    $stmt = $conn->prepare("INSERT INTO users (name) VALUES (:name)");
+    
+    try {
+        $stmt->execute(['name' => $name]);
         $response = ['status' => 'success', 'message' => 'User added successfully'];
-        
+
         // Log dell'operazione in MongoDB
         $logEntry = [
             'action' => 'add_user',
@@ -32,11 +32,9 @@ if (isset($inputData['name'])) {
             'details' => "User added: $name"
         ];
         $logsCollection->insertOne($logEntry);
-    } else {
-        $response = ['status' => 'error', 'message' => 'Error adding user'];
+    } catch (PDOException $e) {
+        $response = ['status' => 'error', 'message' => 'Error adding user: ' . $e->getMessage()];
     }
-
-    $stmt->close();
 } else {
     $response = ['status' => 'error', 'message' => 'Name parameter is missing'];
 }
@@ -44,8 +42,4 @@ if (isset($inputData['name'])) {
 // Restituisce la risposta come JSON
 header('Content-Type: application/json');
 echo json_encode($response);
-
-// Chiude la connessione a MySQL
-$conn->close();
-
 ?>
