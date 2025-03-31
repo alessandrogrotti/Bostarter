@@ -1,5 +1,4 @@
 services:
-
   mysql:
     image: mariadb:latest
     restart: always
@@ -16,19 +15,19 @@ services:
       - ./mysql:/var/lib/mysql
 
   phpmyadmin:
-     image: phpmyadmin:latest
-     restart: always
-     depends_on:
-       - mysql
-     environment:
-       PMA_HOST: mysql
-       PMA_PORT: 3306
-       PMA_USER: username
-       PMA_PASSWORD: password
-     ports:
-       - "8080:80"
-     networks:
-       - databases
+    image: phpmyadmin:latest
+    restart: always
+    depends_on:
+      - mysql
+    environment:
+      PMA_HOST: mysql
+      PMA_PORT: 3306
+      PMA_USER: username
+      PMA_PASSWORD: password
+    ports:
+      - "8080:80"
+    networks:
+      - databases
 
   mongodb:
     image: mongo:latest
@@ -57,6 +56,19 @@ services:
       - "8081:8081"
     networks:
       - databases
+
+  apache-php:
+    image: php:8.1-apache
+    restart: always
+    volumes:
+      - ./src:/var/www/html
+    ports:
+      - "80:80"  
+    networks:
+      - databases
+    depends_on:
+      - mysql
+      - mongodb
 
 networks:
   databases:
