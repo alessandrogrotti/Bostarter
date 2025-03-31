@@ -23,6 +23,3 @@ config.local.php
 mongo/
 mysql/
 
-# Escludi le dipendenze di composer
-backend/vendor/
-backend/composer.lock
