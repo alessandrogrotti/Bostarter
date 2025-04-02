@@ -58,7 +58,7 @@ services:
       - databases
 
   apache-php:
-    image: php:8.1-apache
+    build: .
     restart: always
     volumes:
       - ./src:/var/www/html
@@ -69,6 +69,7 @@ services:
     depends_on:
       - mysql
       - mongodb
+
 
 networks:
   databases:
