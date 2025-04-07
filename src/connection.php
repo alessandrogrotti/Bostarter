@@ -18,21 +18,14 @@ function getMySQLConnection() {
     }
 }
 
-// Connessione a MongoDB usando MongoDB\Driver\Manager
+// Connessione a MongoDB senza librerie esterne (usando MongoDB\Driver\Manager)
 function getMongoDBConnection() {
     try {
-        // Crea una connessione a MongoDB
-        $manager = new MongoDB\Driver\Manager("mongodb://admin_username:admin_password@mongo:27017");
+        // Creazione della connessione al server MongoDB
+        $manager = new MongoDB\Driver\Manager("mongodb://admin_username:admin_password@mongodb:27017");
         return $manager;
     } catch (MongoDB\Driver\Exception\Exception $e) {
         die("Connessione fallita a MongoDB: " . $e->getMessage());
     }
 }
-
-// Test di connessione (opzionale)
-$mysqlConn = getMySQLConnection();
-$mongoConn = getMongoDBConnection();
-
-// Puoi anche eseguire altre azioni di test, ad esempio:
-// echo "Connessione a MySQL e MongoDB avvenuta con successo!";
 ?>

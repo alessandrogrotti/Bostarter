@@ -2,12 +2,38 @@
 // Includi il file di connessione
 include 'connection.php';
 
-// Ottenere la connessione MySQL
+// Connessione MySQL
 $mysqlConn = getMySQLConnection();
 
-$message = ""; // Messaggio per l'utente
+// Connessione MongoDB
+$logCollection = getMongoDBConnection();
 
-// Gestione dell'invio del form
+// Messaggio per l'utente
+$message = ""; 
+
+// Funzione per scrivere un log su MongoDB
+function writeLog($action, $details) {
+    global $logCollection;
+    
+    $logEntry = [
+        'action' => $action,
+        'details' => $details,
+        'timestamp' => new MongoDB\BSON\UTCDateTime(),  // Data e ora attuali
+    ];
+
+    // Creazione di un comando BulkWrite per inserire il log
+    $bulkWrite = new MongoDB\Driver\BulkWrite;
+    $bulkWrite->insert($logEntry);
+
+    // Esecuzione del comando di inserimento nella collection 'logs' del database 'Bostarter'
+    try {
+        $logCollection->executeBulkWrite('Bostarter.logs', $bulkWrite);
+    } catch (MongoDB\Driver\Exception\Exception $e) {
+        die("Errore durante la scrittura del log: " . $e->getMessage());
+    }
+}
+
+// Gestione dell'invio del form per aggiungere un utente
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['name'])) {
     $name = $_POST['name'];
     
@@ -15,6 +41,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['name'])) {
         $stmt = $mysqlConn->prepare("INSERT INTO users (name) VALUES (:name)");
         $stmt->bindParam(':name', $name, PDO::PARAM_STR);
         $stmt->execute();
+        
+        // Scrivi un log su MongoDB
+        writeLog('Aggiunta utente', "Nome: $name");
+
         header("Location: " . $_SERVER['PHP_SELF']); // Evita il reinvio del form al refresh
         exit();
     } catch (PDOException $e) {
@@ -30,6 +60,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_id'])) {
         $stmt = $mysqlConn->prepare("DELETE FROM users WHERE id = :id");
         $stmt->bindParam(':id', $id, PDO::PARAM_INT);
         $stmt->execute();
+        
+        // Scrivi un log su MongoDB
+        writeLog('Rimozione utente', "ID: $id");
+
         header("Location: " . $_SERVER['PHP_SELF']);
         exit();
     } catch (PDOException $e) {
