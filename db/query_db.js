@@ -15,3 +15,4 @@ db.logs.insertOne({
 });
 
 db.logs.deleteMany({});
+
