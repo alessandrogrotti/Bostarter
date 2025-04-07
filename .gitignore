@@ -20,9 +20,5 @@ config.local.php
 /cache
 
 # Escludi le cartelle dei database
-db/mongo/
-db/mysql/
-
-# Escludi le dipendenze di composer
-backend/vendor/
-backend/composer.lock
+mongo/
+mysql/
