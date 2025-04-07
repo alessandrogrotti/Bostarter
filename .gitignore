@@ -22,4 +22,3 @@ config.local.php
 # Escludi le cartelle dei database
 mongo/
 mysql/
-
