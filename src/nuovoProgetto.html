@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="../css/style.css"> 
+  <title>New Project</title>
+</head>
+<body>
+
+  <header>
+    <a href="index.html">Bostarter</a>
+    <button onclick="window.location.href='login.html';"> Login </button>
+    <button onclick="window.location.href='signIn.html';"> Sign In </button>
+    <button onclick="window.location.href='indexCreatore.html';"> For creators </button>
+    <button onclick="window.location.href='amministratore.html';"> For administrators </button>
+  </header>
+
+  <main>
+
+    <p> Nome: </p>
+    <input type="text" id="nome" required> </input>
+
+    <p> Descrizione: </p>
+    <input type="text" id="descrizione" required> </input> 
+
+    <p> Budget: </p>
+    <input type="text" id="budget" required> </input>
+    
+    <p> Data Limite: </p>
+    <input type="date" id="dataLimite" required> </input>  
+
+    <label><input type="checkbox" value="software"> Software </label>
+    <label><input type="checkbox" value="hardware"> Hardware </label>
+
+    <button> Inserisci </button>
+
+  </main>
+
+  <footer>
+    <p>Progetto Bostarter &copy; 2025</p>
+  </footer>
+
+</body>
+</html>
