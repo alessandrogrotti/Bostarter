@@ -5,7 +5,7 @@ USE bostarter_db;
 CREATE TABLE UTENTE (
     Email VARCHAR(255) PRIMARY KEY,
     Nickname VARCHAR(100) UNIQUE NOT NULL,
-    Password VARCHAR(30) NOT NULL,
+    Password VARCHAR(255) NOT NULL,
     Luogo VARCHAR(100),
     Anno YEAR,
     Nome VARCHAR(100),
@@ -32,7 +32,7 @@ CREATE TABLE PROGETTO (
     Data_Inserimento DATE,
     Data_Limite DATE,
     Budget DECIMAL(10, 2),
-    Stato VARCHAR(50),
+    Stato VARCHAR(50) DEFAULT 'Aperto',
     Tipo ENUM ('Hardware', 'Software'),
     FOREIGN KEY (Email_Creatore) REFERENCES CREATORE(Email_Utente)
 ) ENGINE = "INNODB";

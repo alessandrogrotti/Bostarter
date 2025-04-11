@@ -1,89 +1,82 @@
 <?php
+
+ob_start();
+
+
 include 'connection.php';
 include 'navbar.php';
 
 $mysqlConn = getMySQLConnection();
-$logCollection = getMongoDBConnection();
+
 $message = "";
 
-function writeLog($action, $details) {
-    global $logCollection;
 
-    $logEntry = [
-        'action' => $action,
-        'details' => $details,
-        'timestamp' => new MongoDB\BSON\UTCDateTime(),
-    ];
-
-    $bulkWrite = new MongoDB\Driver\BulkWrite;
-    $bulkWrite->insert($logEntry);
-
-    try {
-        $logCollection->executeBulkWrite('Bostarter.logs', $bulkWrite);
-    } catch (MongoDB\Driver\Exception\Exception $e) {
-        die("Errore durante la scrittura del log: " . $e->getMessage());
+// Controlla se il form è stato inviato
+if ($_SERVER["REQUEST_METHOD"] === "POST") {
+    // Recupera e sanitizza i dati dal form
+    $email        = trim($_POST['email']);
+    $nickname     = trim($_POST['nickname']);
+    $password     = trim($_POST['password']);
+    $nome         = trim($_POST['nome']);
+    $cognome      = trim($_POST['cognome']);
+    $luogoNascita = trim($_POST['luogoNascita']);
+    $annoNascita  = trim($_POST['annoNascita']);
+    
+    // Controlla se sono stati selezionati i ruoli
+    $isAdministrator = isset($_POST['administrator']) && $_POST['administrator'] == 1;
+    $isCreator       = isset($_POST['creator'])       && $_POST['creator'] == 1;
+    
+    // Genera l'hash della password
+    $passwordHash = password_hash($password, PASSWORD_DEFAULT);
+    
+    
+    // Controlla se esiste già un utente con la stessa email o lo stesso nickname
+    $stmtCheck = $mysqlConn->prepare("SELECT * FROM UTENTE WHERE Email = :email OR Nickname = :nickname");
+    $stmtCheck->execute([
+        ':email'    => $email,
+        ':nickname' => $nickname
+    ]);
+    
+    if ($stmtCheck->rowCount() > 0) {
+        $message = "Email o Nickname già esistente. Utilizza altri dati.";
+    } else {
+        try {
+            // Richiama la stored procedure per la registrazione dell'utente
+            $stmtRegister = $mysqlConn->prepare("CALL RegisterUser(:email, :nickname, :password, :luogo, :anno, :nome, :cognome)");
+            $stmtRegister->execute([
+                ':email'    => $email,
+                ':nickname' => $nickname,
+                ':password' => $passwordHash,
+                ':luogo'    => $luogoNascita,
+                ':anno'     => $annoNascita,
+                ':nome'     => $nome,
+                ':cognome'  => $cognome
+            ]);
+            
+            // Se l'utente si registra come Creatore, inserisci anche nella tabella CREATORE
+            if ($isCreator) {
+                $stmtCreator = $mysqlConn->prepare("INSERT INTO CREATORE (Email_Utente, Nr_progetti, Affidabilità) VALUES (:email, 0, 0.00)");
+                $stmtCreator->execute([':email' => $email]);
+            }
+            
+            // Se l'utente si registra come Amministratore, inserisci anche nella tabella AMMINISTRATORE
+            if ($isAdministrator) {
+                // Genera un codice di sicurezza (esempio: "SEC" seguito da un numero casuale)
+                $codiceSicurezza = "SEC" . rand(1000, 9999);
+                $stmtAdmin = $mysqlConn->prepare("INSERT INTO AMMINISTRATORE (Email_Utente, Codice_Sicurezza) VALUES (:email, :codice)");
+                $stmtAdmin->execute([
+                    ':email'  => $email,
+                    ':codice' => $codiceSicurezza
+                ]);
+            }
+            
+            // Registrazione avvenuta con successo: esegui il redirect
+            header("Location: index.php");
+            exit();
+        } catch (PDOException $e) {
+            $message = "Errore nella registrazione: " . $e->getMessage();
+        }
     }
-}
-
-// Codice per la registrazione
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-  $email = $_POST['email'];
-  $nickname = $_POST['nickname'];
-  $password = $_POST['password']; // Password in chiaro
-  $nome = $_POST['nome'];
-  $cognome = $_POST['cognome'];
-  $luogo = $_POST['luogoNascita'];
-  $anno = $_POST['annoNascita'];
-
-  // Crea l'hash della password
-  $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
-
-  $isAdmin = isset($_POST['administrator']);
-  $isCreator = isset($_POST['creator']);
-
-  try {
-      // 🔎 Controllo se email o nickname esistono già
-      $checkStmt = $mysqlConn->prepare("SELECT COUNT(*) FROM UTENTE WHERE Email = :email OR Nickname = :nickname");
-      $checkStmt->execute([':email' => $email, ':nickname' => $nickname]);
-      $exists = $checkStmt->fetchColumn();
-
-      if ($exists > 0) {
-          $message = "Errore: esiste già un utente con questa email o nickname.";
-      } else {
-          // 1. Inserimento nella tabella UTENTE con la password hashata
-          $stmt = $mysqlConn->prepare("INSERT INTO UTENTE (Email, Nickname, Password, Nome, Cognome, Luogo, Anno) 
-                                      VALUES (:email, :nickname, :password, :nome, :cognome, :luogo, :anno)");
-          $stmt->execute([
-              ':email' => $email,
-              ':nickname' => $nickname,
-              ':password' => $hashedPassword, // Usa la password hashata
-              ':nome' => $nome,
-              ':cognome' => $cognome,
-              ':luogo' => $luogo,
-              ':anno' => $anno
-          ]);
-
-          // 2. Inserimento nella tabella CREATORE se selezionato
-          if ($isCreator) {
-              $stmtCreator = $mysqlConn->prepare("INSERT INTO CREATORE (Email_Utente) VALUES (:email)");
-              $stmtCreator->execute([':email' => $email]);
-          }
-
-          // 3. Inserimento nella tabella AMMINISTRATORE se selezionato
-          if ($isAdmin) {
-              $codiceSicurezza = bin2hex(random_bytes(8));
-              $stmtAdmin = $mysqlConn->prepare("INSERT INTO AMMINISTRATORE (Email_Utente, Codice_Sicurezza) VALUES (:email, :codice)");
-              $stmtAdmin->execute([':email' => $email, ':codice' => $codiceSicurezza]);
-          }
-
-          writeLog('Registrazione', "Nuovo utente: $nickname ($email)");
-          header("Location: login.html");
-          exit();
-      }
-
-  } catch (PDOException $e) {
-      $message = "Errore nella registrazione: " . $e->getMessage();
-  }
 }
 ?>
 
