@@ -14,7 +14,7 @@
     <a class="navbar-brand" href="index.php">Bostarter</a>
     <div class="ms-auto">
       <a href="login.php" class="btn btn-outline-light me-2">Login</a>
-      <a href="signIn.php" class="btn btn-primary me-2">Sign In</a>
+      <a href="register.php" class="btn btn-primary me-2">Sign In</a>
       <a href="indexCreatore.php" class="btn btn-outline-info me-2">For creators</a>
       <a href="amministratore.php" class="btn btn-outline-warning">For administrators</a>
     </div>
