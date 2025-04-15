@@ -120,6 +120,33 @@ CREATE TABLE CANDIDATURA (
     FOREIGN KEY (Id_Profilo) REFERENCES PROFILO(Id)
 ) ENGINE = "INNODB";
 
+# Stored procedures per AMMINISTRATORE
 
+DELIMITER //
+
+CREATE PROCEDURE InserisciCompetenza(IN nomeCompetenza VARCHAR(100))
+BEGIN
+    INSERT INTO SKILL (Competenza) VALUES (nomeCompetenza);
+END //
+
+DELIMITER ;
+
+DELIMITER //
+
+CREATE PROCEDURE EliminaCompetenza(IN nomeCompetenza VARCHAR(100))
+BEGIN
+    DELETE FROM SKILL WHERE Competenza = nomeCompetenza;
+END //
+
+DELIMITER ;
+
+DELIMITER //
+
+CREATE PROCEDURE OttieniCompetenze()
+BEGIN
+    SELECT * FROM SKILL;
+END //
+
+DELIMITER ;
 
 
