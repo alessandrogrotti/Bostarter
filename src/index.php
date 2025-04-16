@@ -57,36 +57,36 @@ try {
         <h2 class="text-green">Progetti Attivi</h2>
         
         <?php
-        if (count($progetti) > 0) {
-            echo '<div class="row">';
-            foreach ($progetti as $row) {
-                // Utilizziamo urlencode() per passare il nome del progetto via URL in sicurezza
-                $nomeProgettoUrl = urlencode($row["Nome"]);
-                echo '<div class="col-md-4 mb-3">';
-                echo '  <div class="card h-100 shadow-sm">';
-                echo '    <div class="card-body">';
-                echo '      <h5 class="card-title">' . htmlspecialchars($row["Nome"]) . '</h5>';
-                echo '      <p class="card-text">' . htmlspecialchars($row["Descrizione"]) . '</p>';
-                echo '    </div>';
-                echo '    <ul class="list-group list-group-flush">';
-                echo '      <li class="list-group-item"><strong>Inizio:</strong> ' . htmlspecialchars($row["Data_Inserimento"]) . '</li>';
-                echo '      <li class="list-group-item"><strong>Scadenza:</strong> ' . htmlspecialchars($row["Data_Limite"]) . '</li>';
-                echo '      <li class="list-group-item"><strong>Budget:</strong> €' . htmlspecialchars($row["Budget"]) . '</li>';
-                echo '      <li class="list-group-item"><strong>Stato:</strong> ' . htmlspecialchars($row["Stato"]) . '</li>';
-                echo '      <li class="list-group-item"><strong>Tipo:</strong> ' . htmlspecialchars($row["Tipo"]) . '</li>';
-                echo '    </ul>';
-                // Bottone per finanziare il progetto, punta a finanziamento.php
-                echo '    <div class="card-body text-center">';
-                echo '      <a href="finanziamento.php?nome=' . $nomeProgettoUrl . '" class="btn btn-primary">Finanzia Progetto</a>';
-                echo '    </div>';
-                echo '  </div>';
-                echo '</div>';
-            }
-            echo '</div>';
-        } else {
-            echo '<div class="alert alert-warning">Non sono presenti progetti attivi al momento.</div>';
-        }
-        ?>
+          echo '<div class="row">';
+
+          // Imposta il numero massimo di progetti da visualizzare
+          $maxDisplay = 3;
+          $totalProgetti = count($progetti);
+
+          // Mostra solo i primi 3 progetti (o meno se totali < 3)
+          for ($i = 0; $i < min($maxDisplay, $totalProgetti); $i++) {
+              $row = $progetti[$i];
+              // Utilizziamo urlencode() per passare il nome del progetto via URL in sicurezza
+              $nomeProgettoUrl = urlencode($row["Nome"]);
+
+              echo '<div class="col-md-4 mb-3">';
+              echo '  <div class="card h-100 shadow-sm">';
+              echo '    <div class="card-body">';
+              echo '      <h5 class="card-title"><a href="progetto.php?nome=' . $nomeProgettoUrl . '">' . htmlspecialchars($row["Nome"]) . '</a></h5>';
+              echo '      <p class="card-text">' . htmlspecialchars($row["Descrizione"]) . '</p>';
+              echo '    </div>';
+              echo '  </div>';
+              echo '</div>';
+          }
+          echo '</div>';
+
+          // Se sono presenti più di 3 progetti, visualizza il bottone "Visualizza altri"
+          if ($totalProgetti > 3) {
+              echo '<div class="text-center mt-3">';
+              echo '  <a href="visualizzaProgetti.php" class="btn btn-secondary">Visualizza altri</a>';
+              echo '</div>';
+          }
+          ?>
       </section>
 
       <!-- Altre sezioni della homepage -->
