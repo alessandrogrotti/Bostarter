@@ -1,3 +1,8 @@
+<?php
+include_once 'auth.php';
+requireCreator();
+?>
+
 <!DOCTYPE html>
 <html lang="it">
 <head>

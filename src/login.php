@@ -1,64 +1,24 @@
 <?php
-include 'connection.php';
-include 'navbar.php';
+session_start(); 
 
-$mysqlConn = getMySQLConnection();
-$logCollection = getMongoDBConnection();
+include_once 'auth.php';
+
 $message = "";
-
-function writeLog($action, $details) {
-    global $logCollection;
-
-    $logEntry = [
-        'action' => $action,
-        'details' => $details,
-        'timestamp' => new MongoDB\BSON\UTCDateTime(),
-    ];
-
-    $bulkWrite = new MongoDB\Driver\BulkWrite;
-    $bulkWrite->insert($logEntry);
-
-    try {
-        $logCollection->executeBulkWrite('Bostarter.logs', $bulkWrite);
-    } catch (MongoDB\Driver\Exception\Exception $e) {
-        die("Errore durante la scrittura del log: " . $e->getMessage());
-    }
-}
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $email = $_POST['email'];
     $password = $_POST['password'];
 
-    try {
-        // 🔎 Recupera l'utente dal database
-        $stmt = $mysqlConn->prepare("SELECT * FROM UTENTE WHERE Email = :email");
-        $stmt->execute([':email' => $email]);
-        $user = $stmt->fetch(PDO::FETCH_ASSOC);
-
-        // Verifica se l'utente esiste e la password è corretta
-        if ($user) {
-            if (password_verify($password, $user['Password'])) {
-                session_start();
-                $_SESSION['user_id'] = $user['id'];
-                $_SESSION['nickname'] = $user['Nickname'];
-                $_SESSION['is_admin'] = $user['is_admin'];
-                $_SESSION['is_creator'] = $user['is_creator'];
-
-                writeLog('Login', "Utente {$user['Nickname']} ($email) ha effettuato l'accesso");
-                header("Location: index.php");
-                exit();
-            } else {
-                writeLog('Login fallito', "Tentativo di login fallito con email: $email");
-                $message = "Email o password errati.";
-            }
-        } else {
-            $message = "Email o password errati.";
-        }
-    } catch (PDOException $e) {
-        $message = "Errore durante il login: " . $e->getMessage();
+    if (login($email, $password)) {
+        header("Location: index.php");
+        exit();
+    } else {
+        $message = "Email o password errati.";
     }
 }
 ?>
+
+<?php include 'navbar.php'; ?>
 
 <!DOCTYPE html>
 <html lang="it">
@@ -73,7 +33,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   <main>
     <h2>Login</h2>
     <?php if (!empty($message)): ?>
-      <p style="color:red;"><?php echo $message; ?></p>
+      <p style="color:red;"><?php echo htmlspecialchars($message); ?></p>
     <?php endif; ?>
 
     <form method="POST" action="">
