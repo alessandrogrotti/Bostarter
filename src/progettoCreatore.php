@@ -1,6 +1,13 @@
 <?php
 include_once 'auth.php';
+
+session_start();
 requireCreator();
+?>
+
+<?php
+include_once 'navbar.php';
+
 ?>
 
 <!DOCTYPE html>
@@ -12,14 +19,6 @@ requireCreator();
   <title>Project - creator</title>
 </head>
 <body>
-
-  <header>
-    <a href="index.html">Bostarter</a>
-    <button onclick="window.location.href='login.html';"> Login </button>
-    <button onclick="window.location.href='signIn.html';"> Sign In </button>
-    <button onclick="window.location.href='indexCreatore.html';"> For creators </button>
-    <button onclick="window.location.href='amministratore.html';"> For administrators </button>
-  </header>
 
   <main>
     <!--Generale-->

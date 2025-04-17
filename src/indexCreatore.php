@@ -1,6 +1,13 @@
 <?php
 include_once 'auth.php';
+
+session_start();
 requireCreator();
+?>
+
+<?php
+include_once 'navbar.php';
+
 ?>
 
 <!DOCTYPE html>
@@ -8,19 +15,10 @@ requireCreator();
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="../css/style.css"> 
   <title>Homepage - Creator</title>
-  <link rel="stylesheet" href="../css/style.css">
-  <script src="app.js"></script>
 </head>
 <body>
-
-  <header>
-    <a href="index.html">Bostarter</a>
-    <button onclick="window.location.href='login.html';"> Login </button>
-    <button onclick="window.location.href='signIn.html';"> Sign In </button>
-    <button onclick="window.location.href='indexCreatore.html';"> For creators </button>
-    <button onclick="window.location.href='amministratore.html';"> For administrators </button>
-  </header>
 
   <main>
     <section>
