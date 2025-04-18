@@ -2,7 +2,6 @@
 session_start();
 include_once 'auth.php';
 requireLogin();
-requireCreator();
 
 include_once 'connection.php';
 include_once 'navbar.php';

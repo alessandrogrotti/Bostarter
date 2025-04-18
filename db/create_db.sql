@@ -285,14 +285,84 @@ BEGIN
 END;
 $ DELIMITER ;
 
+-- Trigger per l'aggiornamento automatico del numero dei progetti di un creatore --
+DELIMITER $$
+CREATE TRIGGER aggiorna_nr_progetti
+AFTER INSERT ON PROGETTO
+FOR EACH ROW
+BEGIN
+    UPDATE CREATORE
+    SET Nr_progetti = Nr_progetti + 1
+    WHERE Email_Utente = NEW.Email_Creatore;
+END $$
+DELIMITER ;
 
+DELIMITER $
+CREATE TRIGGER aggiorna_affidabilita_creazione
+AFTER INSERT ON PROGETTO
+FOR EACH ROW
+BEGIN
+    UPDATE CREATORE
+    SET Affidabilità = IF(Nr_progetti + 1 = 0, 0, Affidabilità),  -- sicurezza divisione per zero
+        Nr_progetti = Nr_progetti + 1
+    WHERE Email_Utente = NEW.Email_Creatore;
+END;
+$
+DELIMITER ;
 
+DELIMITER $
+CREATE TRIGGER aggiorna_affidabilita_finanziamento
+AFTER INSERT ON FINANZIAMENTO
+FOR EACH ROW
+BEGIN
+    DECLARE totaleFinanziamenti INT;
+    DECLARE totaleProgetti INT;
 
+    SELECT COUNT(*) INTO totaleFinanziamenti
+    FROM FINANZIAMENTO F
+    JOIN PROGETTO P ON F.Nome_Progetto = P.Nome
+    WHERE P.Email_Creatore = (SELECT Email_Creatore FROM PROGETTO WHERE Nome = NEW.Nome_Progetto LIMIT 1);
 
+    SELECT Nr_progetti INTO totaleProgetti
+    FROM CREATORE
+    WHERE Email_Utente = (SELECT Email_Creatore FROM PROGETTO WHERE Nome = NEW.Nome_Progetto LIMIT 1);
 
+    UPDATE CREATORE
+    SET Affidabilità = IF(totaleProgetti = 0, 0, ROUND(totaleFinanziamenti / totaleProgetti, 2))
+    WHERE Email_Utente = (SELECT Email_Creatore FROM PROGETTO WHERE Nome = NEW.Nome_Progetto LIMIT 1);
+END;
+$
+DELIMITER ;
 
+DELIMITER $
+CREATE TRIGGER chiudi_progetto_per_budget
+AFTER INSERT ON FINANZIAMENTO
+FOR EACH ROW
+BEGIN
+    DECLARE totale DECIMAL(10,2);
 
+    SELECT SUM(Importo) INTO totale
+    FROM FINANZIAMENTO
+    WHERE Nome_Progetto = NEW.Nome_Progetto;
 
+    UPDATE PROGETTO
+    SET Stato = 'CHIUSO'
+    WHERE Nome = NEW.Nome_Progetto
+    AND totale >= Budget;
+END;
+$
+DELIMITER ;
 
+SET GLOBAL event_scheduler = ON;
 
-
+DELIMITER $
+CREATE EVENT chiusura_progetti_scaduti
+ON SCHEDULE EVERY 1 DAY
+DO
+BEGIN
+    UPDATE PROGETTO
+    SET Stato = 'CHIUSO'
+    WHERE Data_Limite < CURDATE() AND Stato != 'CHIUSO';
+END;
+$
+DELIMITER ;
