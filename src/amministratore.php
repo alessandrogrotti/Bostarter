@@ -1,7 +1,15 @@
 <?php
-include 'navbar.php';
-include 'mongodb.php';
-include 'mysql.php';
+include_once 'auth.php';
+
+session_start();
+requireAdmin();
+?>
+
+<?php
+include_once 'navbar.php';
+include_once 'mongodb.php';
+include_once 'mysql.php';
+
 
 writeLog('Visita pagina competenza', 'Accesso alla pagina per aggiunta competenza da parte dell’amministratore');
 

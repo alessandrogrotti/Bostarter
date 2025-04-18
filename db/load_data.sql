@@ -43,6 +43,16 @@ INSERT INTO PROGETTO (
     7500.00,
     'Aperto',
     'Software'
+),
+(
+	'GreenCity Tracker',
+    'giorgio.verdi@example.com',
+    'Applicazione che monitora l’impatto ambientale in città, raccogliendo dati da fonti pubbliche e utenti per promuovere pratiche sostenibili.',
+    '2025-04-12',
+    '2025-07-30',
+    3000.00,
+    'Aperto',
+    'Software'
 );
 
 -- Trigger per l'aggiornamento automatico del numero dei progetti di un creatore --

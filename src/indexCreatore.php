@@ -1,34 +1,20 @@
 <?php
+session_start();
+include_once 'auth.php';
+requireLogin();
+requireCreator();
+//require 'mongodb.php';
+ 
 // Includi il file di connessione e navbar
-include 'connection.php';
-include 'navbar.php';
+include_once 'connection.php';
+include_once 'navbar.php';
 
 // Connessioni ai database
 $mysqlConn = getMySQLConnection();
 $logCollection = getMongoDBConnection();
 
-// Funzione per scrivere un log su MongoDB
-function writeLog($action, $details) {
-    global $logCollection;
-    
-    $logEntry = [
-        'action' => $action,
-        'details' => $details,
-        'timestamp' => new MongoDB\BSON\UTCDateTime(),
-    ];
-
-    $bulkWrite = new MongoDB\Driver\BulkWrite;
-    $bulkWrite->insert($logEntry);
-
-    try {
-        $logCollection->executeBulkWrite('Bostarter.logs', $bulkWrite);
-    } catch (MongoDB\Driver\Exception\Exception $e) {
-        die("Errore durante la scrittura del log: " . $e->getMessage());
-    }
-}
-
 // Scrivi un log per la visita alla homepage
-writeLog('Visita homepage', 'Accesso alla homepage da parte di un utente');
+//writeLog('Visita homepage', 'Accesso alla homepage da parte di un utente');
 
 // Esegui la stored procedure per ottenere i progetti con Stato = 'Aperto'
 try {
@@ -51,6 +37,11 @@ try {
 
   <main>
     <div class="container">
+
+      <section>
+        <button onclick="window.location.href='nuovoProgetto.php';"> Inserisci nuovo progetto </button>
+        <h2> Progetti: </h2>
+      </section>
 
       <!-- Sezione Progetti -->
       <section class="mt-5">
