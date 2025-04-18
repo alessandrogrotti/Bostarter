@@ -112,6 +112,8 @@ try {
 
   <div class="container mt-4">
     <div class="bg-white p-4 shadow-sm rounded">
+      <a href="amministratore.php" class="btn btn-primary me-2">Area amministratore</a>
+      <a href="indexCreatore.php" class="btn btn-primary me-2">Area creatore</a>
       <h2>Dati Utente</h2>
       
       <?php if ($message): ?>

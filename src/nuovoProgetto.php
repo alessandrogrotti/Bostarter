@@ -38,7 +38,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $dataLimite  = $_POST['dataLimite'];
     $software    = isset($_POST['software']) ? 1 : 0;
     $hardware    = isset($_POST['hardware']) ? 1 : 0;
-
+    
     try {
         // Inserimento del progetto nel database MySQL
         $stmt = $mysqlConn->prepare(
