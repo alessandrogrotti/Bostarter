@@ -120,115 +120,92 @@ CREATE TABLE CANDIDATURA (
     FOREIGN KEY (Id_Profilo) REFERENCES PROFILO(Id)
 ) ENGINE = "INNODB";
 
-# Stored procedures per AMMINISTRATORE
 
-DELIMITER //
-
+DELIMITER $
 CREATE PROCEDURE InserisciCompetenza(IN nomeCompetenza VARCHAR(100))
 BEGIN
     INSERT INTO SKILL (Competenza) VALUES (nomeCompetenza);
-END //
+END;
+$ DELIMITER ;
 
-DELIMITER ;
-
-DELIMITER //
-
+DELIMITER $
 CREATE PROCEDURE EliminaCompetenza(IN nomeCompetenza VARCHAR(100))
 BEGIN
     DELETE FROM SKILL WHERE Competenza = nomeCompetenza;
-END //
+END;
+$ DELIMITER ;
 
-DELIMITER ;
-
-DELIMITER //
-
+DELIMITER $
 CREATE PROCEDURE OttieniCompetenze()
 BEGIN
     SELECT * FROM SKILL;
-END //
+END;
+$ DELIMITER ;
 
-DELIMITER ;
-
--- 1.1 -- 
-DELIMITER $$
+DELIMITER $
 CREATE PROCEDURE RegisterUser (IN p_Email VARCHAR(255), IN p_Nickname VARCHAR(100), IN p_Password VARCHAR(255), 
 							   IN p_Luogo VARCHAR(100), IN p_Anno YEAR, IN p_Nome VARCHAR(100), IN p_Cognome VARCHAR(100))
 BEGIN
     INSERT INTO UTENTE (Email, Nickname, Password, Luogo, Anno, Nome, Cognome)
     VALUES (p_Email, p_Nickname, p_Password, p_Luogo, p_Anno, p_Nome, p_Cognome);
-END $$
-DELIMITER ;
+END;
+$ DELIMITER ;
 
-
--- 1.2 -- 
-DELIMITER $$
+DELIMITER $
 CREATE PROCEDURE AuthenticateUser (IN p_Email VARCHAR(255), IN p_Password VARCHAR(255))
 BEGIN
 	SELECT *
     FROM UTENTE
     WHERE Email = p_Email AND Password = p_Password;
-END $$
-DELIMITER ;
+END;
+$ DELIMITER ;
 
-
--- 2 --
-DELIMITER $$
+DELIMITER $
 CREATE PROCEDURE InsertUserSkill (IN p_Email_Utente VARCHAR(255), IN p_Competenza_Skill VARCHAR(100), IN p_Livello INT)
 BEGIN
     INSERT INTO POSSIEDE (Email_Utente, Competenza_Skill, Livello)
     VALUES (p_Email_Utente, p_Competenza_Skill, p_Livello);
-END $$
-DELIMITER ;
+END;
+$ DELIMITER ;
 
-
--- 3 --
-DELIMITER $$
+DELIMITER $
 CREATE PROCEDURE GetAvailableProjects ()
 BEGIN
     SELECT *
     FROM PROGETTO
     WHERE Stato = 'Aperto'
     ORDER BY Data_Inserimento DESC;
-END $$
-DELIMITER ;
+END;
+$ DELIMITER ;
 
-
--- 4 & 5 --
-DELIMITER $$
+DELIMITER $
 CREATE PROCEDURE FinanceProject (IN p_Email_Utente VARCHAR(255), IN p_Importo DECIMAL(10,2), IN p_Nome_Progetto VARCHAR(100), 
 								 IN p_Codice_Reward VARCHAR(50))
 BEGIN
     INSERT INTO FINANZIAMENTO (Data, Importo, Email_Utente, Nome_Progetto, Codice_Reward)
     VALUES (CURDATE(), p_Importo, p_Email_Utente, p_Nome_Progetto, p_Codice_Reward);
-END $$
-DELIMITER ; 
+END;
+$ DELIMITER ; 
 -- La pagina web/PHP esegue una query per recuperare le reward disponibili e l'utente sceglie quella che desidera. -- 
 -- Il form include il codice della reward e viene passato come parametro alla stored procedure "FinanceProject". -- 
 -- In questo scenario, la stored procedure non ha bisogno di eseguire un SELECT perché riceve già il valore. -- 
 
-
--- 6 --
-DELIMITER $$
+DELIMITER $
 CREATE PROCEDURE InsertComment (IN p_Testo TEXT, IN p_Email_Utente VARCHAR(255), IN p_Email_Creatore VARCHAR(255), 
 								IN p_Nome_Progetto VARCHAR(100))
 BEGIN
     INSERT INTO COMMENTO (Data, Testo, Email_Utente, Email_Creatore, Nome_Progetto)
     VALUES (CURDATE(), p_Testo, p_Email_Utente, p_Email_Creatore, p_Nome_Progetto);
-END $$
-DELIMITER ;
+END;
+$ DELIMITER ;
 
-
--- 7 -- 
-DELIMITER $$
+DELIMITER $
 CREATE PROCEDURE InsertCandidature (IN p_Stato VARCHAR(50), IN p_Email_Utente VARCHAR(255), IN p_Id_Profilo INT)
 BEGIN
     INSERT INTO CANDIDATURA (Stato, Email_Utente, Id_Profilo)
     VALUES (p_Stato, p_Email_Utente, p_Id_Profilo);
-END $$
-DELIMITER ;
-
-
-USE bostarter_db;
+END;
+$ DELIMITER ;
 
 DELIMITER $
 CREATE PROCEDURE InserisciProgetto(IN Nome VARCHAR(100), IN Email_Creatore VARCHAR(255), IN Descrizione TEXT, IN Data_Inserimento DATE, IN Data_Limite DATE, IN Budget DECIMAL(10,2), IN Stato VARCHAR(50), IN Tipo VARCHAR(20))
@@ -247,20 +224,6 @@ BEGIN
     END IF;
 END;
 $ DELIMITER ;
-
-/*DELIMITER $
-CREATE PROCEDURE InserisciReward(IN Codice VARCHAR(50), Descrizione TEXT, Foto VARCHAR(255), Nome_Progetto VARCHAR(100), Email_Creatore VARCHAR(255))
-BEGIN
-    DECLARE CreatorePresente INT DEFAULT 0;
-
-    SET CreatorePresente = (SELECT COUNT(*) FROM CREATORE WHERE (Email_Utente = Email_Creatore));
-
-    IF (CreatorePresente > 0) THEN
-        INSERT INTO REWARD (Codice, Descrizione, Foto, Nome_Progetto)
-        VALUES (Codice, Descrizione, Foto, Nome_Progetto);
-    END IF;
-END;
-$ DELIMITER ;*/
 
 DELIMITER $
 CREATE PROCEDURE InserisciReward(IN Codice VARCHAR(50), IN Descrizione TEXT, IN Foto VARCHAR(255), IN Nome_Progetto VARCHAR(100), IN Email_UtenteCreatore VARCHAR(255)
@@ -322,14 +285,84 @@ BEGIN
 END;
 $ DELIMITER ;
 
+-- Trigger per l'aggiornamento automatico del numero dei progetti di un creatore --
+DELIMITER $$
+CREATE TRIGGER aggiorna_nr_progetti
+AFTER INSERT ON PROGETTO
+FOR EACH ROW
+BEGIN
+    UPDATE CREATORE
+    SET Nr_progetti = Nr_progetti + 1
+    WHERE Email_Utente = NEW.Email_Creatore;
+END $$
+DELIMITER ;
 
+DELIMITER $
+CREATE TRIGGER aggiorna_affidabilita_creazione
+AFTER INSERT ON PROGETTO
+FOR EACH ROW
+BEGIN
+    UPDATE CREATORE
+    SET Affidabilità = IF(Nr_progetti + 1 = 0, 0, Affidabilità),  -- sicurezza divisione per zero
+        Nr_progetti = Nr_progetti + 1
+    WHERE Email_Utente = NEW.Email_Creatore;
+END;
+$
+DELIMITER ;
 
+DELIMITER $
+CREATE TRIGGER aggiorna_affidabilita_finanziamento
+AFTER INSERT ON FINANZIAMENTO
+FOR EACH ROW
+BEGIN
+    DECLARE totaleFinanziamenti INT;
+    DECLARE totaleProgetti INT;
 
+    SELECT COUNT(*) INTO totaleFinanziamenti
+    FROM FINANZIAMENTO F
+    JOIN PROGETTO P ON F.Nome_Progetto = P.Nome
+    WHERE P.Email_Creatore = (SELECT Email_Creatore FROM PROGETTO WHERE Nome = NEW.Nome_Progetto LIMIT 1);
 
+    SELECT Nr_progetti INTO totaleProgetti
+    FROM CREATORE
+    WHERE Email_Utente = (SELECT Email_Creatore FROM PROGETTO WHERE Nome = NEW.Nome_Progetto LIMIT 1);
 
+    UPDATE CREATORE
+    SET Affidabilità = IF(totaleProgetti = 0, 0, ROUND(totaleFinanziamenti / totaleProgetti, 2))
+    WHERE Email_Utente = (SELECT Email_Creatore FROM PROGETTO WHERE Nome = NEW.Nome_Progetto LIMIT 1);
+END;
+$
+DELIMITER ;
 
+DELIMITER $
+CREATE TRIGGER chiudi_progetto_per_budget
+AFTER INSERT ON FINANZIAMENTO
+FOR EACH ROW
+BEGIN
+    DECLARE totale DECIMAL(10,2);
 
+    SELECT SUM(Importo) INTO totale
+    FROM FINANZIAMENTO
+    WHERE Nome_Progetto = NEW.Nome_Progetto;
 
+    UPDATE PROGETTO
+    SET Stato = 'CHIUSO'
+    WHERE Nome = NEW.Nome_Progetto
+    AND totale >= Budget;
+END;
+$
+DELIMITER ;
 
+SET GLOBAL event_scheduler = ON;
 
-
+DELIMITER $
+CREATE EVENT chiusura_progetti_scaduti
+ON SCHEDULE EVERY 1 DAY
+DO
+BEGIN
+    UPDATE PROGETTO
+    SET Stato = 'CHIUSO'
+    WHERE Data_Limite < CURDATE() AND Stato != 'CHIUSO';
+END;
+$
+DELIMITER ;

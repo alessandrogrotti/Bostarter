@@ -55,18 +55,6 @@ INSERT INTO PROGETTO (
     'Software'
 );
 
--- Trigger per l'aggiornamento automatico del numero dei progetti di un creatore --
-DELIMITER $$
-CREATE TRIGGER aggiorna_nr_progetti
-AFTER INSERT ON PROGETTO
-FOR EACH ROW
-BEGIN
-    UPDATE CREATORE
-    SET Nr_progetti = Nr_progetti + 1
-    WHERE Email_Utente = NEW.Email_Creatore;
-END $$
-DELIMITER ;
-
 -- Reward relative a un progetto -- 
 INSERT INTO REWARD (Codice, Descrizione, Foto, Nome_Progetto) VALUES
 ('RWD-SDS-1', 'Ringraziamento speciale sul sito web e menzione tra i supporter', 'img/rewards/rwd-sds-1.jpg', 'Sistema Domotico Smart'),
@@ -128,3 +116,8 @@ CALL InserisciProfilo(
     'Nuovo Progetto',
     'creatore@esempio.com'
 );
+
+CALL InserisciCompetenza('Java');
+CALL InserisciCompetenza('SQL');
+CALL InserisciCompetenza('Teamwork');
+

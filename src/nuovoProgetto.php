@@ -20,19 +20,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $dataLimite  = $_POST['dataLimite'];
     $software    = isset($_POST['software']) ? 1 : 0;
     $hardware    = isset($_POST['hardware']) ? 1 : 0;
-
-    // 2) Variabili mancanti
-    $emailCreatore   = $_SESSION['id'];
-    $dataInserimento = date('Y-m-d');
-    $stato           = 'In attesa';
-    if ($software && ! $hardware) {
-        $tipo = 'Software';
-    } elseif ($hardware && ! $software) {
-        $tipo = 'Hardware';
-    } else {
-        $tipo = 'Software';
-    }
-
     try {
         // 3) Stored procedure
         $stmt = $mysqlConn->prepare("
@@ -73,7 +60,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   <title>Inserisci Progetto | Bostarter</title>
   <!-- Bootstrap CSS -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
-  <link rel="stylesheet" href="css/style.css" />
+  <link rel="stylesheet" href="style.css" />
 </head>
 <body>
   <main class="container py-5">
