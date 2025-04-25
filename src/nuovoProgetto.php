@@ -21,8 +21,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $software    = isset($_POST['software']) ? 1 : 0;
     $hardware    = isset($_POST['hardware']) ? 1 : 0;
 
-<<<<<<< Updated upstream
-=======
     // 2) Variabili mancanti
     $emailCreatore   = $_SESSION['id'];
     $dataInserimento = date('Y-m-d');
@@ -35,7 +33,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $tipo = 'Software';
     }
 
->>>>>>> Stashed changes
     try {
         // 3) Stored procedure
         $stmt = $mysqlConn->prepare("
