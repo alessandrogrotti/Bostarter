@@ -1,114 +1,54 @@
-/* ===== Font e reset base ===== */
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap');
-
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
+/* Stili generali */
+:root {
+  --primary-color: #2a4365;
+  --secondary-color: #3182ce;
+  --accent-color: #38b2ac;
+  --light-color: #f7fafc;
+  --dark-color: #1a202c;
+  --text-color: #2d3748;
+  --text-light: #718096;
 }
 
 body {
-  font-family: 'Inter', sans-serif;
-  background-color: #f0f2f5;
-  color: #2e2e2e;
-  line-height: 1.6;
+  font-family: 'Manrope', sans-serif;
+  color: var(--text-color);
+  background-color: var(--light-color);
+  padding-top: 80px;
 }
 
-/* ===== Header elegante ===== */
-header {
-  background: linear-gradient(135deg, #43a047, #2e7d32);
-  color: #fff;
-  padding: 30px 20px;
-  text-align: center;
-  font-size: 2rem;
-  font-weight: 600;
-  border-radius: 0 0 20px 20px;
-  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.1);
-}
-
-/* ===== Pulsanti stilosi ===== */
-.btn-green {
-  background: #43a047;
-  color: #fff;
+/* Stile per il dropdown */
+.dropdown-menu {
+  min-width: 200px;
   border: none;
-  font-weight: 600;
-  border-radius: 10px;
-  padding: 10px 18px;
-  font-size: 15px;
-  cursor: pointer;
-  transition: all 0.3s ease;
+  box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+  border-radius: 0.5rem;
+  padding: 0.5rem 0;
 }
 
-.btn-green:hover {
-  background: #2e7d32;
-  transform: translateY(-2px);
-  box-shadow: 0 6px 14px rgba(67, 160, 71, 0.4);
+.dropdown-item {
+  padding: 0.5rem 1.5rem;
+  font-weight: 500;
+  color: var(--text-color);
+  transition: all 0.2s ease;
 }
 
-/* ===== Container principale ===== */
-main {
-  padding: 50px 25px;
-  max-width: 850px;
-  margin: 70px auto;
-  background: #ffffff;
-  border-radius: 16px;
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.06);
+.dropdown-item:hover {
+  background-color: rgba(56, 178, 172, 0.1);
+  color: var(--accent-color);
 }
 
-/* ===== Titoli moderni ===== */
-h1, h2, h3 {
-  font-weight: 600;
-  margin-bottom: 20px;
-  color: #263238;
+/* Stile per il pulsante dropdown */
+.dropdown-toggle::after {
+  vertical-align: middle;
+  margin-left: 0.5rem;
 }
 
-h2 {
-  font-size: 1.9rem;
-  color: #1b5e20;
+/* Altri stili della navbar */
+.navbar {
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
 }
 
-/* ===== Form e input puliti ===== */
-input[type="text"],
-input[type="email"],
-input[type="password"],
-textarea {
-  width: 100%;
-  padding: 14px 16px;
-  font-size: 16px;
-  border: 1px solid #d1d9e6;
-  border-radius: 10px;
-  background-color: #f9fbfd;
-  margin-bottom: 20px;
-  transition: border-color 0.3s ease, box-shadow 0.3s ease;
-}
-
-input:focus,
-textarea:focus {
-  border-color: #43a047;
-  outline: none;
-  box-shadow: 0 0 0 3px rgba(67, 160, 71, 0.15);
-}
-
-/* ===== Footer raffinato ===== */
-footer {
-  text-align: center;
-  padding: 20px;
-  background: #1b5e20;
-  color: #ffffff;
-  font-size: 15px;
-  margin-top: 60px;
-  border-radius: 16px 16px 0 0;
-}
-
-/* ===== Utility extra ===== */
-.shadow-sm {
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
-}
-
-.rounded-lg {
-  border-radius: 16px !important;
-}
-
-.text-green {
-  color: #43a047;
+.navbar-brand {
+  font-size: 1.8rem;
+  color: var(--primary-color) !important;
 }

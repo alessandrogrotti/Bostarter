@@ -2,8 +2,8 @@
 session_start();
 
 // Includi il file di connessione e navbar
-include 'connection.php';
-include 'navbar.php';
+include_once 'connection.php';
+include_once 'navbar.php';
 
 // Connessioni ai database
 $mysqlConn = getMySQLConnection();

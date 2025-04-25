@@ -1,36 +1,13 @@
 <?php
-// Includi il file di connessione e navbar
-include 'connection.php';
-include 'navbar.php';
+include_once 'connection.php';
+include_once 'mongodb.php';
 
-// Connessioni ai database
 $mysqlConn = getMySQLConnection();
 $logCollection = getMongoDBConnection();
 
-// Funzione per scrivere un log su MongoDB
-function writeLog($action, $details) {
-    global $logCollection;
-    
-    $logEntry = [
-        'action' => $action,
-        'details' => $details,
-        'timestamp' => new MongoDB\BSON\UTCDateTime(),
-    ];
-
-    $bulkWrite = new MongoDB\Driver\BulkWrite;
-    $bulkWrite->insert($logEntry);
-
-    try {
-        $logCollection->executeBulkWrite('Bostarter.logs', $bulkWrite);
-    } catch (MongoDB\Driver\Exception\Exception $e) {
-        die("Errore durante la scrittura del log: " . $e->getMessage());
-    }
-}
-
-// Scrivi un log per la visita alla homepage
+// Log visita homepage
 writeLog('Visita homepage', 'Accesso alla homepage da parte di un utente');
 
-// Esegui la stored procedure per ottenere i progetti con Stato = 'Aperto'
 try {
     $stmt = $mysqlConn->query("CALL GetAvailableProjects()");
     $progetti = $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -38,88 +15,183 @@ try {
     die("Errore durante l'esecuzione della stored procedure: " . $e->getMessage());
 }
 ?>
+<?php include_once 'navbar.php'; ?>
 <!DOCTYPE html>
 <html lang="it">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Homepage | Bostarter</title>
+  <!-- Bootstrap CSS -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <!-- Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;500;600;700&family=Libre+Baskerville:wght@400;700&display=swap" rel="stylesheet">
+  <!-- Custom CSS -->
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
 
-  <main>
-    <div class="container">
+  <!-- Hero Section -->
+  <header class="hero">
+    <div class="container text-center py-5">
+      <h1 class="display-4 text-white mb-4 animate-fadein">Benvenuto su Bostarter</h1>
+      <p class="lead text-white-50 animate-fadein" style="animation-delay: 0.2s">Scopri i progetti più innovativi e sostieni le idee che ti appassionano</p>
+    </div>
+  </header>
 
-      <!-- Sezione Progetti -->
-      <section class="mt-5">
-        <h2 class="text-green">Progetti Attivi</h2>
-        
+  <main class="container my-5">
+    <!-- Sezione Progetti Attivi -->
+    <section class="mb-5 animate-fadein" style="animation-delay: 0.4s">
+      <h2 class="section-title">Progetti Attivi</h2>
+      <div class="row g-4">
         <?php
-          echo '<div class="row">';
+        $maxDisplay = 3;
+        $totalProgetti = count($progetti);
 
-          // Imposta il numero massimo di progetti da visualizzare
-          $maxDisplay = 3;
-          $totalProgetti = count($progetti);
+        for ($i = 0; $i < min($maxDisplay, $totalProgetti); $i++) {
+            $row = $progetti[$i];
+            $nomeProgettoUrl = urlencode($row["Nome"]);
+            ?>
+            <div class="col-lg-4 col-md-6">
+              <div class="card shadow-hover h-100">
+                <div class="card-body">
+                  <div class="d-flex justify-content-between align-items-start mb-3">
+                    <h5 class="card-title mb-0">
+                      <a href="progetto.php?nome=<?= $nomeProgettoUrl ?>" class="text-decoration-none">
+                        <?= htmlspecialchars($row["Nome"]) ?>
+                      </a>
+                    </h5>
+                    <span class="badge bg-accent">Nuovo</span>
+                  </div>
+                  <p class="card-text text-muted mb-4"><?= htmlspecialchars($row["Descrizione"]) ?></p>
+                  <div class="progress mb-3" style="height: 8px;">
+                    <div class="progress-bar bg-accent" role="progressbar" style="width: 25%;" aria-valuenow="25" aria-valuemin="0" aria-valuemax="100"></div>
+                  </div>
+                  <div class="d-flex justify-content-between text-muted small">
+                    <span>25% completato</span>
+                    <span>15 giorni rimasti</span>
+                  </div>
+                </div>
+                <div class="card-footer bg-transparent border-0">
+                  <a href="progetto.php?nome=<?= $nomeProgettoUrl ?>" class="btn btn-primary w-100">Partecipa al progetto</a>
+                </div>
+              </div>
+            </div>
+            <?php
+        }
+        ?>
+      </div>
 
-          // Mostra solo i primi 3 progetti (o meno se totali < 3)
-          for ($i = 0; $i < min($maxDisplay, $totalProgetti); $i++) {
-              $row = $progetti[$i];
-              // Utilizziamo urlencode() per passare il nome del progetto via URL in sicurezza
-              $nomeProgettoUrl = urlencode($row["Nome"]);
+      <?php if ($totalProgetti > 3): ?>
+        <div class="text-center mt-4">
+          <a href="visualizzaProgetti.php" class="btn btn-outline-primary">Visualizza tutti i progetti</a>
+        </div>
+      <?php endif; ?>
+    </section>
 
-              echo '<div class="col-md-4 mb-3">';
-              echo '  <div class="card h-100 shadow-sm">';
-              echo '    <div class="card-body">';
-              echo '      <h5 class="card-title"><a href="progetto.php?nome=' . $nomeProgettoUrl . '">' . htmlspecialchars($row["Nome"]) . '</a></h5>';
-              echo '      <p class="card-text">' . htmlspecialchars($row["Descrizione"]) . '</p>';
-              echo '    </div>';
-              echo '  </div>';
-              echo '</div>';
-          }
-          echo '</div>';
+    <!-- Classifiche -->
+    <div class="row g-4 animate-fadein" style="animation-delay: 0.6s">
+      <!-- Classifica Creatori -->
+      <div class="col-lg-4 col-md-6">
+        <section class="p-4 bg-light rounded-lg">
+          <h3 class="h4 mb-4">Classifica Creatori</h3>
+          <ol class="list-group list-group-numbered">
+            <li class="list-group-item d-flex justify-content-between align-items-start">
+              <div class="ms-2 me-auto">
+                <div class="fw-bold">Noe</div>
+                <span class="text-muted small">5 progetti</span>
+              </div>
+              <span class="badge bg-accent rounded-pill">1°</span>
+            </li>
+            <li class="list-group-item d-flex justify-content-between align-items-start">
+              <div class="ms-2 me-auto">
+                <div class="fw-bold">Ale</div>
+                <span class="text-muted small">3 progetti</span>
+              </div>
+              <span class="badge bg-primary rounded-pill">2°</span>
+            </li>
+          </ol>
+        </section>
+      </div>
 
-          // Se sono presenti più di 3 progetti, visualizza il bottone "Visualizza altri"
-          if ($totalProgetti > 3) {
-              echo '<div class="text-center mt-3">';
-              echo '  <a href="visualizzaProgetti.php" class="btn btn-secondary">Visualizza altri</a>';
-              echo '</div>';
-          }
-          ?>
-      </section>
+      <!-- Progetti Quasi Finiti -->
+      <div class="col-lg-4 col-md-6">
+        <section class="p-4 bg-light rounded-lg">
+          <h3 class="h4 mb-4">Progetti Quasi Finiti</h3>
+          <ol class="list-group list-group-numbered">
+            <li class="list-group-item d-flex justify-content-between align-items-start">
+              <div class="ms-2 me-auto">
+                <div class="fw-bold">Basi di dati</div>
+                <span class="text-muted small">95% completato</span>
+              </div>
+              <span class="badge bg-accent rounded-pill">€1,250</span>
+            </li>
+            <li class="list-group-item d-flex justify-content-between align-items-start">
+              <div class="ms-2 me-auto">
+                <div class="fw-bold">Ingegneria</div>
+                <span class="text-muted small">89% completato</span>
+              </div>
+              <span class="badge bg-primary rounded-pill">€980</span>
+            </li>
+          </ol>
+        </section>
+      </div>
 
-      <!-- Altre sezioni della homepage -->
-      <section class="mt-5">
-        <h3>Classifica Creatori</h3>
-        <ol class="list-group list-group-numbered shadow-sm rounded-lg">
-          <li class="list-group-item">Noe</li>
-          <li class="list-group-item">Ale</li>
-        </ol>
-      </section>
-
-      <section class="mt-5">
-        <h3>Progetti Quasi Finiti</h3>
-        <ol class="list-group list-group-numbered shadow-sm rounded-lg">
-          <li class="list-group-item">Basi di dati</li>
-          <li class="list-group-item">Ingegneria</li>
-        </ol>
-      </section>
-
-      <section class="mt-5">
-        <h3>Classifica Utenti</h3>
-        <ol class="list-group list-group-numbered shadow-sm rounded-lg">
-          <li class="list-group-item">Leo</li>
-          <li class="list-group-item">Marco</li>
-        </ol>
-      </section>
-
+      <!-- Classifica Utenti -->
+      <div class="col-lg-4 col-md-6">
+        <section class="p-4 bg-light rounded-lg">
+          <h3 class="h4 mb-4">Classifica Utenti</h3>
+          <ol class="list-group list-group-numbered">
+            <li class="list-group-item d-flex justify-content-between align-items-start">
+              <div class="ms-2 me-auto">
+                <div class="fw-bold">Leo</div>
+                <span class="text-muted small">12 contributi</span>
+              </div>
+              <span class="badge bg-accent rounded-pill">Top</span>
+            </li>
+            <li class="list-group-item d-flex justify-content-between align-items-start">
+              <div class="ms-2 me-auto">
+                <div class="fw-bold">Marco</div>
+                <span class="text-muted small">8 contributi</span>
+              </div>
+              <span class="badge bg-primary rounded-pill">2°</span>
+            </li>
+          </ol>
+        </section>
+      </div>
     </div>
   </main>
 
-  <footer class="text-center mt-5 text-muted">
-    <p>Progetto Bostarter &copy; 2025</p>
+  <footer class="footer py-5 mt-5">
+    <div class="container">
+      <div class="row">
+        <div class="col-md-6">
+          <h5 class="text-white">Bostarter</h5>
+          <p class="text-white-50">La piattaforma che sostiene le idee innovative e le fa crescere.</p>
+        </div>
+        <div class="col-md-3">
+          <h5 class="text-white">Link utili</h5>
+          <ul class="list-unstyled footer-links">
+            <li><a href="index.php">Home</a></li>
+            <li><a href="visualizzaProgetti.php">Progetti</a></li>
+            <li><a href="#">Come funziona</a></li>
+          </ul>
+        </div>
+        <div class="col-md-3">
+          <h5 class="text-white">Contatti</h5>
+          <ul class="list-unstyled footer-links">
+            <li><a href="mailto:info@bostarter.it">info@bostarter.it</a></li>
+            <li><a href="#">Termini e condizioni</a></li>
+          </ul>
+        </div>
+      </div>
+      <hr class="my-4 bg-white-10">
+      <div class="text-center">
+        <p class="text-white-50 mb-0">&copy; 2025 Bostarter. Tutti i diritti riservati.</p>
+      </div>
+    </div>
   </footer>
-
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

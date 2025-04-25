@@ -1,6 +1,6 @@
 <?php
-// visualizza_progetto.php
-session_start();
+include_once 'connection.php';
+include_once 'navbar.php';
 
 // include per auth, DB e logging
 include_once 'connection.php';
