@@ -1,64 +1,53 @@
 <?php
-// Includi il file di connessione e navbar
-include 'connection.php';
-include 'navbar.php';
+session_start();
+include_once 'auth.php';   // definisce requireLogin(), requireCreator()
+requireLogin();
 
-// Connessioni ai database
-$mysqlConn   = getMySQLConnection();
+include_once 'connection.php';
+include_once 'navbar.php';
+include_once 'mongodb.php';
+
+$mysqlConn     = getMySQLConnection();
 $logCollection = getMongoDBConnection();
-
-// Funzione per scrivere un log su MongoDB
-function writeLog($action, $details) {
-    global $logCollection;
-    $logEntry = [
-        'action'    => $action,
-        'details'   => $details,
-        'timestamp' => new MongoDB\BSON\UTCDateTime(),
-    ];
-
-    $bulkWrite = new MongoDB\Driver\BulkWrite;
-    $bulkWrite->insert($logEntry);
-
-    try {
-        $logCollection->executeBulkWrite('Bostarter.logs', $bulkWrite);
-    } catch (MongoDB\Driver\Exception\Exception $e) {
-        die("Errore durante la scrittura del log: " . $e->getMessage());
-    }
-}
-
-// Log di accesso alla pagina di inserimento progetto
-writeLog('Visita pagina inserimento progetto', 'Accesso alla pagina di inserimento progetto');
+writeLog('Visita pagina inserimento progetto', 'Accesso alla pagina');
 
 $message = '';
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    // Acquisizione e sanitizzazione dei dati dal form
+    // 1) Acquisizione e sanitizzazione
     $nome        = trim($_POST['nome']);
     $descrizione = trim($_POST['descrizione']);
     $budget      = trim($_POST['budget']);
     $dataLimite  = $_POST['dataLimite'];
     $software    = isset($_POST['software']) ? 1 : 0;
     $hardware    = isset($_POST['hardware']) ? 1 : 0;
-    
     try {
-        // Inserimento del progetto nel database MySQL
-        $stmt = $mysqlConn->prepare(
-            "INSERT INTO Projects (Nome, Descrizione, Budget, DataLimite, Software, Hardware) \
-             VALUES (:nome, :descrizione, :budget, :dataLimite, :software, :hardware)"
-        );
-        $stmt->bindParam(':nome', $nome);
-        $stmt->bindParam(':descrizione', $descrizione);
-        $stmt->bindParam(':budget', $budget);
-        $stmt->bindParam(':dataLimite', $dataLimite);
-        $stmt->bindParam(':software', $software, PDO::PARAM_INT);
-        $stmt->bindParam(':hardware', $hardware, PDO::PARAM_INT);
+        // 3) Stored procedure
+        $stmt = $mysqlConn->prepare("
+            CALL InserisciProgetto(
+                :inNome,
+                :inEmailCreatore,
+                :inDescrizione,
+                :inDataInserimento,
+                :inDataLimite,
+                :inBudget,
+                :inStato,
+                :inTipo
+            )
+        ");
+        $stmt->bindParam(':inNome',            $nome,            PDO::PARAM_STR);
+        $stmt->bindParam(':inEmailCreatore',   $emailCreatore,   PDO::PARAM_STR);
+        $stmt->bindParam(':inDescrizione',     $descrizione,     PDO::PARAM_STR);
+        $stmt->bindParam(':inDataInserimento', $dataInserimento, PDO::PARAM_STR);
+        $stmt->bindParam(':inDataLimite',      $dataLimite,      PDO::PARAM_STR);
+        $stmt->bindParam(':inBudget',          $budget);
+        $stmt->bindParam(':inStato',           $stato,           PDO::PARAM_STR);
+        $stmt->bindParam(':inTipo',            $tipo,            PDO::PARAM_STR);
         $stmt->execute();
 
-        // Log dell'inserimento
-        writeLog('Inserimento progetto', 'Progetto "' . $nome . '" inserito');
-
+        writeLog('Inserimento progetto', "Progetto \"$nome\" inserito da $emailCreatore");
         $message = 'Progetto inserito con successo!';
     } catch (PDOException $e) {
-        die("Errore durante l'inserimento del progetto: " . $e->getMessage());
+        die("Errore durante l'inserimento: " . $e->getMessage());
     }
 }
 ?>
