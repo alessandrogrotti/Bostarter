@@ -1,11 +1,10 @@
 <?php
 include_once 'auth.php';
-requireLogin();
 
 include_once 'connection.php';
 include_once 'mongodb.php';
 
-$mysqlConn = getMySQLConnection(); 
+$mysqlConn = getMySQLConnection();
 $logCollection = getMongoDBConnection();
 $email = $_SESSION['id'];
 $message = "";
@@ -51,7 +50,7 @@ try {
         $skillToRemove = $_POST['remove_skill'];
 
         $stmtRemove = $mysqlConn->prepare("
-            DELETE FROM POSSIEDE 
+            DELETE FROM POSSIEDE
             WHERE Email_Utente = :email AND Competenza_Skill = :skill
         ");
         $stmtRemove->bindParam(':email', $email);
@@ -65,7 +64,7 @@ try {
     // Recupera skill dell'utente
     $stmtSkill = $mysqlConn->prepare("
         SELECT Competenza_Skill AS Competenza, Livello
-        FROM POSSIEDE 
+        FROM POSSIEDE
         WHERE Email_Utente = :email
     ");
     $stmtSkill->bindParam(':email', $email);
@@ -74,8 +73,8 @@ try {
 
     // Recupera skill disponibili
     $stmtAvailable = $mysqlConn->prepare("
-        SELECT Competenza 
-        FROM SKILL 
+        SELECT Competenza
+        FROM SKILL
         WHERE Competenza NOT IN (
             SELECT Competenza_Skill FROM POSSIEDE WHERE Email_Utente = :email
         )
@@ -87,7 +86,6 @@ try {
 } catch (PDOException $e) {
     $message = "Errore nella query: " . $e->getMessage();
 }
-
 ?>
 <?php include_once 'navbar.php'; ?>
 <!DOCTYPE html>
@@ -95,36 +93,49 @@ try {
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Profilo Utente</title>
-  <link rel="stylesheet" href="style.css">
-  <!-- Includi i CDN di Bootstrap -->
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-KyZXEJvU6vY+S3phI6R5rTKlqK0b6Qz7LQPlGy+hptZ2A2gsn2+oXq3zOgC8Y6tA" crossorigin="anonymous">
+  <title>Profilo Utente | Bostarter</title>
+  <!-- Bootstrap CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <!-- Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;500;600;700&family=Libre+Baskerville:wght@400;700&display=swap" rel="stylesheet">
+  <!-- Custom CSS -->
+  <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-  <div class="container mt-4">
-    <div class="bg-white p-4 shadow-sm rounded">
-      <h2>Dati Utente</h2>
+  <header class="hero">
+    <div class="container text-center">
+      <h1>Benvenuto nel tuo Profilo</h1>
+      <p>Gestisci le tue competenze e skill qui!</p>
+    </div>
+  </header>
 
-      <?php if ($message): ?>
-        <div class="alert <?= strpos($message, 'successo') !== false ? 'alert-success' : 'alert-danger' ?>" role="alert">
-          <?= htmlspecialchars($message) ?>
-        </div>
-      <?php endif; ?>
-
-      <?php if ($userData): ?>
-        <div class="row">
-          <div class="col-md-6">
-            <p><strong>Nickname:</strong> <?= htmlspecialchars($userData['Nickname']) ?></p>
-            <p><strong>Email:</strong> <?= htmlspecialchars($userData['Email']) ?></p>
-            <p><strong>Nome:</strong> <?= htmlspecialchars($userData['Nome']) ?></p>
-            <p><strong>Cognome:</strong> <?= htmlspecialchars($userData['Cognome']) ?></p>
-            <p><strong>Anno di nascita:</strong> <?= htmlspecialchars($userData['Anno']) ?></p>
-            <p><strong>Luogo di nascita:</strong> <?= htmlspecialchars($userData['Luogo']) ?></p>
+  <div class="container mt-5">
+    <div class="card shadow-sm rounded mb-4">
+      <div class="card-body">
+        <h3 class="card-title text-center">Dati Utente</h3>
+        <?php if ($message): ?>
+          <div class="alert <?= strpos($message, 'successo') !== false ? 'alert-success' : 'alert-danger' ?>" role="alert">
+            <?= htmlspecialchars($message) ?>
           </div>
-        </div>
+        <?php endif; ?>
 
-        <h3 class="mt-4">Aggiungi una nuova skill</h3>
-        <form method="POST" class="mb-4">
+        <?php if ($userData): ?>
+          <ul class="list-group">
+            <li class="list-group-item"><strong>Nickname:</strong> <?= htmlspecialchars($userData['Nickname']) ?></li>
+            <li class="list-group-item"><strong>Email:</strong> <?= htmlspecialchars($userData['Email']) ?></li>
+            <li class="list-group-item"><strong>Nome:</strong> <?= htmlspecialchars($userData['Nome']) ?></li>
+            <li class="list-group-item"><strong>Cognome:</strong> <?= htmlspecialchars($userData['Cognome']) ?></li>
+            <li class="list-group-item"><strong>Anno di nascita:</strong> <?= htmlspecialchars($userData['Anno']) ?></li>
+            <li class="list-group-item"><strong>Luogo di nascita:</strong> <?= htmlspecialchars($userData['Luogo']) ?></li>
+          </ul>
+        <?php endif; ?>
+      </div>
+    </div>
+
+    <div class="card shadow-sm rounded mb-4">
+      <div class="card-body">
+        <h4>Aggiungi una nuova skill</h4>
+        <form method="POST">
           <div class="mb-3">
             <label for="skills" class="form-label">Seleziona una skill:</label>
             <select name="skill" id="skills" class="form-select">
@@ -145,10 +156,14 @@ try {
             </select>
           </div>
 
-          <button type="submit" class="btn btn-success">Salva</button>
+          <button type="submit" class="btn btn-primary">Salva Skill</button>
         </form>
+      </div>
+    </div>
 
-        <h3>Lista delle skill selezionate</h3>
+    <div class="card shadow-sm rounded mb-4">
+      <div class="card-body">
+        <h4>Le tue skill selezionate</h4>
         <?php if (count($userSkills) > 0): ?>
           <ul class="list-group">
             <?php foreach ($userSkills as $skill): ?>
@@ -161,15 +176,12 @@ try {
             <?php endforeach; ?>
           </ul>
         <?php else: ?>
-          <p>Nessuna competenza associata.</p>
+          <p class="text-muted">Nessuna competenza associata.</p>
         <?php endif; ?>
-      <?php endif; ?>
-                                                                      
+      </div>
+    </div>
+  </div>
 
-  <footer class="text-center mt-5 text-muted">
-    <p>Progetto Bostarter &copy; 2025</p>
-  </footer>
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <?php include_once 'footer.php'; ?>
 </body>
 </html>
