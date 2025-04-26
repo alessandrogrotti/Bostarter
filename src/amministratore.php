@@ -9,7 +9,6 @@ include_once 'navbar.php';
 include_once 'mongodb.php';
 include_once 'mysql.php';
 
-
 writeLog('Visita pagina competenza', 'Accesso alla pagina per aggiunta competenza da parte dell’amministratore');
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['competenza'])) {
@@ -38,35 +37,58 @@ $competenze = ottieniCompetenze();
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <link rel="stylesheet" href="style.css" />
   <title>Amministratore - Aggiunta Competenza</title>
+  <!-- Bootstrap -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <!-- Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;500;600;700&family=Libre+Baskerville:wght@400;700&display=swap" rel="stylesheet">
+  <!-- Custom CSS -->
+  <link rel="stylesheet" href="style.css" />
 </head>
 <body>
 
-  <main class="container mt-5">
-    <h2>Aggiungi una competenza</h2>
-    <form method="POST" action="amministratore.php">
-      <div class="mb-3">
-        <label for="competenza" class="form-label">Inserisci competenza:</label>
-        <input type="text" id="competenza" name="competenza" class="form-control" required />
-      </div>
-      <button type="submit" class="btn btn-success">Inserisci</button>
-    </form>
+<header class="hero-section">
+  <div class="container text-center py-5">
+    <h1 class="display-4 text-white mb-4 animate-fadein">Gestione Competenze</h1>
+    <p class="lead text-white-50 animate-fadein" style="animation-delay: 0.2s;">Aggiungi o rimuovi competenze disponibili nel sistema</p>
+  </div>
+</header>
 
-    <h3 class="mt-4">Lista delle competenze:</h3>
-    <ul class="list-group mt-3">
+
+<main class="container">
+
+  <section class="mb-5">
+    <h2 class="section-title">Aggiungi una competenza</h2>
+    <div class="card card-custom p-4">
+      <form method="POST" action="amministratore.php">
+        <div class="mb-3">
+          <label for="competenza" class="form-label">Nome competenza:</label>
+          <input type="text" id="competenza" name="competenza" class="form-control" required />
+        </div>
+        <div class="text-center">
+          <button type="submit" class="btn btn-custom">Inserisci</button>
+        </div>
+      </form>
+    </div>
+  </section>
+
+  <section class="mb-5">
+    <h2 class="section-title">Lista delle competenze</h2>
+    <ul class="list-group list-group-flush list-group-custom">
       <?php foreach ($competenze as $competenza): ?>
-        <li class="list-group-item">
-          <?php echo htmlspecialchars($competenza['Competenza']); ?>
-          <a href="?removeCompetenza=<?php echo urlencode($competenza['Competenza']); ?>" class="btn btn-danger btn-sm float-end ml-2">Rimuovi</a>
+        <li class="list-group-item d-flex justify-content-between align-items-center">
+          <?= htmlspecialchars($competenza['Competenza']); ?>
+          <a href="?removeCompetenza=<?= urlencode($competenza['Competenza']); ?>" class="btn btn-danger btn-sm">Rimuovi</a>
         </li>
       <?php endforeach; ?>
     </ul>
-  </main>
+  </section>
 
-  <footer class="text-center mt-5 text-muted">
-    <p>Progetto Bostarter &copy; 2025</p>
-  </footer>
+</main>
+
+<footer class="text-center mt-5 text-muted">
+  <p>Progetto Bostarter &copy; 2025</p>
+</footer>
 
 </body>
 </html>
