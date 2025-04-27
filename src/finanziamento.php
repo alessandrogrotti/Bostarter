@@ -1,9 +1,8 @@
 <?php
-session_start();
 include_once 'auth.php';         // requireLogin(), requireCreator()
 include_once 'connection.php';   // getMySQLConnection()
 include_once 'mongodb.php';// writeLog()
-include_once 'navbar.php';
+//include_once 'navbar.php';
 requireLogin();
 
 
@@ -87,6 +86,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     header("Location: finanziamento.php?nome=" . urlencode($nome_progetto));
     exit;
 }
+include 'navbar.php';
+
 ?>
 <!DOCTYPE html>
 <html lang="it">
@@ -98,7 +99,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <?php include 'navbar.php'; ?>
+
   <main class="container mt-5">
     <?php if (!empty($_SESSION['fin_ok'])): ?>
       <div class="alert alert-success">

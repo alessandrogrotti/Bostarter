@@ -1,15 +1,8 @@
 <?php
-
-session_start();
-
-
-
-
 // 1) Include tutte le librerie PRIMA di qualsiasi logica POST o output
 include_once 'connection.php';       // definisce getMySQLConnection()
 include_once 'mongodb.php';         // definisce getMongoDBConnection() e writeLog()
 include_once 'auth.php';            // definisce requireLogin(), isLoggedIn()
-include_once 'navbar.php';
 
 $conn          = getMySQLConnection();
 $logCollection = getMongoDBConnection();
