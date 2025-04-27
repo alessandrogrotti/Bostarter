@@ -208,7 +208,7 @@ END;
 $ DELIMITER ;
 
 DELIMITER $
-CREATE PROCEDURE InserisciProgetto(IN Nome VARCHAR(100), IN Email_Creatore VARCHAR(255), IN Descrizione TEXT, IN Data_Inserimento DATE, IN Data_Limite DATE, IN Budget DECIMAL(10,2), IN Stato VARCHAR(50), IN Tipo VARCHAR(20))
+CREATE PROCEDURE InserisciProgetto(IN Nome VARCHAR(100), IN Email_Creatore VARCHAR(255), IN Descrizione TEXT, IN Data_Limite DATE, IN Budget DECIMAL(10,2), IN Tipo VARCHAR(20))
 BEGIN
     DECLARE CreatorePresente INT DEFAULT 0;
     
@@ -216,11 +216,8 @@ BEGIN
 
     IF (CreatorePresente > 0) AND (Tipo = "Hardware" OR Tipo = "Software") THEN
         INSERT INTO PROGETTO (Nome, Email_Creatore, Descrizione, Data_Inserimento, Data_Limite, Budget, Stato, Tipo)
-        VALUES (Nome, Email_Creatore, Descrizione, Data_Inserimento, Data_Limite, Budget, Stato, Tipo);
+        VALUES (Nome, Email_Creatore, Descrizione, CURDATE(), Data_Limite, Budget, "Aperto", Tipo);
         
-        UPDATE CREATORE 
-        SET Nr_progetti = Nr_progetti + 1
-        WHERE (Email_Utente = Email_Creatore);
     END IF;
 END;
 $ DELIMITER ;

@@ -13,42 +13,59 @@ writeLog('Visita pagina inserimento progetto', 'Accesso alla pagina');
 
 $message = '';
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    // 1) Acquisizione e sanitizzazione
-    $nome        = trim($_POST['nome']);
-    $descrizione = trim($_POST['descrizione']);
-    $budget      = trim($_POST['budget']);
-    $dataLimite  = $_POST['dataLimite'];
-    $software    = isset($_POST['software']) ? 1 : 0;
-    $hardware    = isset($_POST['hardware']) ? 1 : 0;
-    try {
-        // 3) Stored procedure
-        $stmt = $mysqlConn->prepare("
-            CALL InserisciProgetto(
-                :inNome,
-                :inEmailCreatore,
-                :inDescrizione,
-                :inDataInserimento,
-                :inDataLimite,
-                :inBudget,
-                :inStato,
-                :inTipo
-            )
-        ");
-        $stmt->bindParam(':inNome',            $nome,            PDO::PARAM_STR);
-        $stmt->bindParam(':inEmailCreatore',   $emailCreatore,   PDO::PARAM_STR);
-        $stmt->bindParam(':inDescrizione',     $descrizione,     PDO::PARAM_STR);
-        $stmt->bindParam(':inDataInserimento', $dataInserimento, PDO::PARAM_STR);
-        $stmt->bindParam(':inDataLimite',      $dataLimite,      PDO::PARAM_STR);
-        $stmt->bindParam(':inBudget',          $budget);
-        $stmt->bindParam(':inStato',           $stato,           PDO::PARAM_STR);
-        $stmt->bindParam(':inTipo',            $tipo,            PDO::PARAM_STR);
-        $stmt->execute();
+  // 1) Acquisizione e sanitizzazione
+  $nome        = trim($_POST['nome']);
+  $descrizione = trim($_POST['descrizione']);
+  $budget      = floatval($_POST['budget']);
+  $dataLimite  = $_POST['dataLimite'];
 
-        writeLog('Inserimento progetto', "Progetto \"$nome\" inserito da $emailCreatore");
-        $message = 'Progetto inserito con successo!';
-    } catch (PDOException $e) {
-        die("Errore durante l'inserimento: " . $e->getMessage());
-    }
+  $software = isset($_POST['software']) && $_POST['software'] == 1;
+  $hardware = isset($_POST['hardware']) && $_POST['hardware'] == 1;
+
+  // 2) emailCreatore da sessione
+  $emailCreatore = $_SESSION['id'];
+  
+
+  // 3) definizione di $tipo
+  if ($software && ! $hardware) {
+      $tipo = 'Software';
+  } elseif ($hardware && ! $software) {
+      $tipo = 'Hardware';
+  } else {
+      die('Errore: seleziona esattamente una tipologia (Software O Hardware).');
+  }
+
+  try {
+      // 4) Stored procedure con 6 parametri già corretti
+      $stmt = $mysqlConn->prepare("
+          CALL InserisciProgetto(
+              :inNome,
+              :inEmailCreatore,
+              :inDescrizione,
+              :inDataLimite,
+              :inBudget,
+              :inTipo
+          )
+      ");
+      $stmt->bindParam(':inNome',          $nome,          PDO::PARAM_STR);
+      $stmt->bindParam(':inEmailCreatore', $emailCreatore, PDO::PARAM_STR);
+      $stmt->bindParam(':inDescrizione',   $descrizione,   PDO::PARAM_STR);
+      $stmt->bindParam(':inDataLimite',    $dataLimite,    PDO::PARAM_STR);
+      $stmt->bindParam(':inBudget',        $budget);
+      $stmt->bindParam(':inTipo',          $tipo,          PDO::PARAM_STR);
+      $stmt->execute();
+
+      // 5) Verifica che l'INSERT sia andato a buon fine
+      if ($stmt->rowCount() > 0) {
+          writeLog('Inserimento progetto', "Progetto \"$nome\" inserito da $emailCreatore");
+          $message = 'Progetto inserito con successo!';
+      } else {
+          $message = 'Attenzione: nessun progetto è stato inserito. 
+                      Controlla email creatore e tipologia.';
+      }
+  } catch (PDOException $e) {
+      die("Errore durante l'inserimento: " . $e->getMessage());
+  }
 }
 ?>
 
