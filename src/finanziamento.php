@@ -2,11 +2,14 @@
 session_start();
 include_once 'auth.php';         // requireLogin(), requireCreator()
 include_once 'connection.php';   // getMySQLConnection()
-include_once 'mongodb.php';      // writeLog()
+include_once 'mongodb.php';// writeLog()
+include_once 'navbar.php';
 requireLogin();
+
 
 $mysqlConn     = getMySQLConnection();
 $logCollection= getMongoDBConnection();
+
 
 // Recupera e pulisce il nome progetto da GET o POST (in POST il redirect avrà già settato)
 // usiamo trim + htmlspecialchars

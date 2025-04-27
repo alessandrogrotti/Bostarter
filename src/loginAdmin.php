@@ -1,28 +1,28 @@
 <?php
 include_once 'auth.php';
 
-$message = "";
+// Se il form viene inviato
+if ($_SERVER['REQUEST_METHOD'] == 'POST') {
+  $code = $_POST['password']; // Codice di sicurezza inserito dall'utente
 
-if ($_SERVER["REQUEST_METHOD"] === "POST") {
-  $email = trim($_POST['email']);
-  $password = trim($_POST['password']);
-
-  if (login($email, $password)) {
-    header("Location: utente.php");
-    exit();
+  // Verifica il codice di sicurezza
+  if (verifyAdminCode($code)) {
+    // Se il codice è corretto, aggiorna la sessione e reindirizza
+    $_SESSION['is_admin_verified'] = true;
+    header("Location: amministratore.php");
+    exit;
   } else {
-    $message = "Credenziali non valide";
+    $message = "Codice di sicurezza errato.";
   }
 }
 ?>
-
 <?php include_once 'navbar.php'; ?>
 <!DOCTYPE html>
 <html lang="it">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Login</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Login Admin | Bostarter</title>
   <!-- Bootstrap CSS -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
   <!-- Google Fonts -->
@@ -32,11 +32,11 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 </head>
 <body>
 
-<!-- Hero Section -->
+<!-- Hero Section (più semplice per login) -->
 <header class="hero">
   <div class="container text-center py-5">
-    <h1 class="display-5 text-white mb-3 animate-fadein">Login Utente</h1>
-    <p class="lead text-white-50 animate-fadein" style="animation-delay: 0.2s">Inserisci le tue credenziali per entrare</p>
+    <h1 class="display-5 text-white mb-3 animate-fadein">Accesso Amministratore</h1>
+    <p class="lead text-white-50 animate-fadein" style="animation-delay: 0.2s">Inserisci il codice di sicurezza per entrare</p>
   </div>
 </header>
 
@@ -52,15 +52,11 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 
       <div class="card shadow-sm animate-fadein" style="animation-delay: 0.4s;">
         <div class="card-body p-5">
-          <h2 class="mb-4 text-center">Login</h2>
+          <h2 class="mb-4 text-center">Login Admin</h2>
           <form method="POST" action="">
             <div class="mb-3">
-              <label for="email" class="form-label">Email</label>
-              <input type="email" class="form-control" id="email" name="email" required autofocus>
-            </div>
-            <div class="mb-3">
-              <label for="password" class="form-label">Password</label>
-              <input type="password" class="form-control" id="password" name="password" required>
+              <label for="password" class="form-label">Codice di Sicurezza</label>
+              <input type="password" class="form-control" id="password" name="password" required autofocus>
             </div>
             <div class="d-grid">
               <button type="submit" class="btn btn-primary">Accedi</button>
@@ -69,13 +65,10 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
         </div>
       </div>
 
-      <p class="mt-3 text-center">Non hai un account? <a href="registrazione.php">Registrati</a></p>
-
     </div>
   </div>
 </main>
 
 <?php include_once 'footer.php'; ?>
-
 </body>
 </html>
