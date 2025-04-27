@@ -151,7 +151,7 @@ if (
         );
 
         // g) Redirect per evitare doppio submit
-        header("Location: visualizza_progetto.php?nome=" . urlencode($nomeProgetto));
+        header("Location: progetto.php?nome=" . urlencode($nomeProgetto));
         exit;
 
     } catch (PDOException $e) {
@@ -229,6 +229,15 @@ $availableSkills = $stmtAvailableSkills->fetchAll(PDO::FETCH_ASSOC);
       <h2><?= htmlspecialchars($progetto["Nome"]) ?></h2>
       <p><?= nl2br(htmlspecialchars($progetto["Descrizione"])) ?></p>
     </section>
+
+        <!-- Finanziamento-->
+    <!-- Bottone che manda via URL il nome del progetto -->
+    <button
+      onclick="window.location.href='finanziamento.php?nome=<?= urlencode($progetto['Nome']) ?>';"
+      class="btn btn-success"
+    >
+     Finanzia questo progetto!
+    </button>
 
     <!-- Reward -->
     <section class="mb-5">
