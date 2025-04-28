@@ -250,7 +250,7 @@ BEGIN
     SET ProgettoPresente = (SELECT COUNT(*) FROM PROGETTO WHERE (Nome = Nome_ProgettoSoftware));
     SET TipoProgetto = (SELECT Tipo FROM PROGETTO WHERE (Nome = Nome_ProgettoSoftware));
     
-	/*SELECT CreatorePresente, ProgettoPresente, TipoProgetto;*/
+	SELECT CreatorePresente, ProgettoPresente, TipoProgetto;
 
     IF (CreatorePresente > 0) AND (ProgettoPresente > 0) AND (TipoProgetto = "Software") THEN
         INSERT INTO PROFILO (Nome, Nome_ProgettoSoftware)
