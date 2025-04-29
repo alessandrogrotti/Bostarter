@@ -1,5 +1,4 @@
 <?php
-session_start();
 include_once 'auth.php';   // definisce requireLogin(), requireCreator()
 requireLogin();
 

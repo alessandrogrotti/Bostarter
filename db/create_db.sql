@@ -173,7 +173,6 @@ CREATE PROCEDURE GetAvailableProjects ()
 BEGIN
     SELECT *
     FROM PROGETTO
-    WHERE Stato = 'Aperto'
     ORDER BY Data_Inserimento DESC;
 END;
 $ DELIMITER ;
@@ -343,7 +342,7 @@ BEGIN
     WHERE Nome_Progetto = NEW.Nome_Progetto;
 
     UPDATE PROGETTO
-    SET Stato = 'CHIUSO'
+    SET Stato = 'Chiuso'
     WHERE Nome = NEW.Nome_Progetto
     AND totale >= Budget;
 END;
@@ -358,8 +357,8 @@ ON SCHEDULE EVERY 1 DAY
 DO
 BEGIN
     UPDATE PROGETTO
-    SET Stato = 'CHIUSO'
-    WHERE Data_Limite < CURDATE() AND Stato != 'CHIUSO';
+    SET Stato = 'Chiuso'
+    WHERE Data_Limite < CURDATE() AND Stato != 'Chiuso';
 END;
 $
 DELIMITER ;

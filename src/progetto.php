@@ -133,9 +133,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['profilo'])) {
 // 5) Recupera i dettagli del progetto
 try {
   $stmt = $conn->prepare(
-      "SELECT Nome, Descrizione, Email_Creatore, Tipo
+      "SELECT Nome, Descrizione, Email_Creatore, Tipo, Stato
        FROM PROGETTO
-       WHERE Nome = :nome AND Stato = 'aperto'"
+       WHERE Nome = :nome "
   );
   $stmt->bindParam(':nome', $nomeProgetto, PDO::PARAM_STR);
   $stmt->execute();
@@ -213,40 +213,66 @@ $availableSkills = $stmtAvailableSkills->fetchAll(PDO::FETCH_ASSOC);
 
   <main class="container mt-5">
     <!-- Informazioni progetto -->
-    <section class="mb-5">
-      <h2><?= htmlspecialchars($progetto["Nome"]) ?></h2>
-      <p><?= nl2br(htmlspecialchars($progetto["Descrizione"])) ?></p>
-    </section>
+    <div id="infoProgetto">
+      <section class="mb-5">
+        <h2><?= htmlspecialchars($progetto["Nome"]) ?></h2>
+        <p><?= htmlspecialchars($progetto["Descrizione"]) ?></p>
+      </section>
+    </div iv>
 
     <!-- Finanziamento-->
-    <button
-      onclick="window.location.href='finanziamento.php?nome=<?= urlencode($progetto['Nome']) ?>';"
-      class="btn btn-success"
-    >
-     Finanzia questo progetto!
-    </button>
+    <div id="finanziamento">
+      <?php if ($progetto['Stato'] === 'Aperto'): ?>
+        <button
+          onclick="window.location.href='finanziamento.php?nome=<?= urlencode($progetto['Nome']) ?>';"
+          class="btn btn-success"
+        >
+          Finanzia questo progetto!
+        </button>
+      <?php else: ?>
+        <div class="alert alert-secondary mt-3">
+          <i class="bi bi-lock-fill me-2"></i>
+          Il progetto è chiuso per i finanziamenti.
+        </div>
+      <?php endif; ?>
+    </div>
 
     <!-- Reward -->
-    <section class="mb-5">
-      <h4>Lista delle reward:</h4>
-      <?php if ($rewards): ?>
-        <ul class="list-group">
-          <?php foreach ($rewards as $r): ?>
-            <li class="list-group-item">
-              <strong><?= htmlspecialchars($r['Codice']) ?></strong>:
-              <?= htmlspecialchars($r['Descrizione']) ?>
-            </li>
-          <?php endforeach; ?>
-        </ul>
-      <?php else: ?>
-        <p>Nessuna reward disponibile.</p>
-      <?php endif; ?>
-    </section>
+    <div id="Reward">
+      <!-- Controllo se creatore del progetto per Inserimento delle reward -->
+      <div id="inserimentoReward">
+        <?php if (isLoggedIn() && $_SESSION['id'] === $progetto['Email_Creatore']): ?>
+          <a
+          href="nuovaReward.php?nome=<?= urlencode($progetto['Nome']) ?>"
+          class="btn btn-primary mb-3"
+          >
+            Aggiungi nuova reward
+          </a>
+        <?php endif; ?>
+      </div>
+
+      <!-- Lista delle reward -->
+      <div id="listaReward">
+        <section class="mb-5">
+          <h4>Lista delle reward:</h4>
+          <?php if ($rewards): ?>
+            <ul class="list-group">
+              <?php foreach ($rewards as $r): ?>
+                <li class="list-group-item">
+                  <strong><?= htmlspecialchars($r['Codice']) ?></strong>:
+                  <?= htmlspecialchars($r['Descrizione']) ?>
+                </li>
+              <?php endforeach; ?>
+            </ul>
+          <?php else: ?>
+            <p>Nessuna reward disponibile.</p>
+          <?php endif; ?>
+        </section>
+      </div>
 
     <!-- Commenti -->
     <section class="mb-5">
       <h4>Commenti:</h4>
-
       <?php if (isLoggedIn()): ?>
         <!-- Form per nuovo commento -->
         <form method="POST" class="mb-4">
