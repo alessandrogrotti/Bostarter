@@ -11,6 +11,23 @@ writeLog('Visita pagina progetti', 'Accesso alla pagina dei progetti da parte di
 try {
     $stmt = $mysqlConn->query("CALL GetAvailableProjects()");
     $progetti = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    $stmt->closeCursor(); // IMPORTANTE per liberare la connessione prima di altre query
+
+    foreach ($progetti as &$progetto) {
+        $nomeProgetto = $progetto['Nome'];
+        $fotoStmt = $mysqlConn->prepare("SELECT Valore FROM FOTO WHERE Nome_Progetto = :nomeProgetto LIMIT 1");
+        $fotoStmt->bindParam(':nomeProgetto', $nomeProgetto, PDO::PARAM_STR);
+        $fotoStmt->execute();
+        $foto = $fotoStmt->fetchColumn();
+        $fotoStmt->closeCursor();
+
+        if ($foto) {
+            $progetto['Foto'] = $foto; // Il valore è il percorso già pronto
+        } else {
+            $progetto['Foto'] = "uploads/placeholder.jpg"; // Immagine di default
+        }
+    }
+    unset($progetto);
 } catch (PDOException $e) {
     die("Errore durante l'esecuzione della stored procedure: " . $e->getMessage());
 }
@@ -67,6 +84,9 @@ try {
             <?php $nomeProgettoUrl = urlencode($row["Nome"]); ?>
             <div class="col-lg-4 col-md-6">
               <div class="card shadow-hover h-100">
+                <?php if (!empty($row['Foto'])): ?>
+                  <img src="<?= htmlspecialchars($row['Foto']) ?>" class="card-img-top" alt="Foto progetto" style="height: 200px; object-fit: cover;">
+                <?php endif; ?>
                 <div class="card-body">
                   <div class="d-flex justify-content-between align-items-start mb-3">
                     <h5 class="card-title mb-0">
