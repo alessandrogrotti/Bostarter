@@ -67,8 +67,26 @@ try {
       ?>
       <div class="col-lg-4 col-md-6">
         <div class="card shadow-hover h-100">
-          <?php if (!empty($row['Foto'])): ?>
-            <img src="<?= htmlspecialchars($row['Foto'][0]) ?>" class="card-img-top" alt="Foto Progetto" style="object-fit: cover; height: 200px;">
+        <?php if (!empty($row['Foto'])): ?>
+            <div id="carousel-<?= $i ?>" class="carousel slide" data-bs-ride="carousel">
+              <div class="carousel-inner">
+                <?php foreach ($row['Foto'] as $index => $fotoUrl): ?>
+                  <div class="carousel-item <?= $index === 0 ? 'active' : '' ?>">
+                    <img src="<?= htmlspecialchars($fotoUrl) ?>" class="d-block w-100" alt="Foto Progetto" style="object-fit: cover; height: 200px;">
+                  </div>
+                <?php endforeach; ?>
+              </div>
+              <?php if (count($row['Foto']) > 1): ?>
+                <button class="carousel-control-prev" type="button" data-bs-target="#carousel-<?= $i ?>" data-bs-slide="prev">
+                  <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+                  <span class="visually-hidden">Precedente</span>
+                </button>
+                <button class="carousel-control-next" type="button" data-bs-target="#carousel-<?= $i ?>" data-bs-slide="next">
+                  <span class="carousel-control-next-icon" aria-hidden="true"></span>
+                  <span class="visually-hidden">Successiva</span>
+                </button>
+              <?php endif; ?>
+            </div>
           <?php else: ?>
             <img src="placeholder.jpg" class="card-img-top" alt="Nessuna immagine" style="object-fit: cover; height: 200px;">
           <?php endif; ?>
