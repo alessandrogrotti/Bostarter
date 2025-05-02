@@ -56,73 +56,57 @@ try {
   <section class="mb-5 animate-fadein" style="animation-delay: 0.4s">
     <h2 class="section-title">Progetti Attivi</h2>
     <div class="row g-4">
-      <?php
-      $maxDisplay = 3;
-      $totalProgetti = count($progetti);
+  <?php
+  $maxDisplay = 3;
+  $totalProgetti = count($progetti);
 
-      for ($i = 0; $i < min($maxDisplay, $totalProgetti); $i++) {
-          $row = $progetti[$i];
-          $nomeProgettoUrl = urlencode($row["Nome"]);
-          ?>
-          <div class="col-lg-4 col-md-6">
-            <div class="card shadow-hover h-100">
-              <?php if (!empty($row['Foto'])): ?>
-                <!-- Mostra la prima foto del progetto -->
-                <img src="<?= htmlspecialchars($row['Foto'][0]) ?>" class="card-img-top" alt="Foto Progetto" style="object-fit: cover; height: 200px;">
-              <?php else: ?>
-                <!-- Immagine placeholder se nessuna foto -->
-                <img src="placeholder.jpg" class="card-img-top" alt="Nessuna immagine" style="object-fit: cover; height: 200px;">
-              <?php endif; ?>
+  for ($i = 0; $i < min($maxDisplay, $totalProgetti); $i++) {
+      $row = $progetti[$i];
+      $nomeProgettoUrl = urlencode($row["Nome"]);
+      $percentuale = isset($row["Completamento"]) ? intval($row["Completamento"]) : 25; // fallback
+      ?>
+      <div class="col-lg-4 col-md-6">
+        <div class="card shadow-hover h-100">
+          <?php if (!empty($row['Foto'])): ?>
+            <img src="<?= htmlspecialchars($row['Foto'][0]) ?>" class="card-img-top" alt="Foto Progetto" style="object-fit: cover; height: 200px;">
+          <?php else: ?>
+            <img src="placeholder.jpg" class="card-img-top" alt="Nessuna immagine" style="object-fit: cover; height: 200px;">
+          <?php endif; ?>
 
+          <div class="card-body">
+            <div class="d-flex justify-content-between align-items-start mb-3">
+              <h5 class="card-title mb-0">
+                <a href="progetto.php?nome=<?= $nomeProgettoUrl ?>" class="text-decoration-none">
+                  <?= htmlspecialchars($row["Nome"]) ?>
+                </a>
+              </h5>
+              <span class="badge bg-accent">Nuovo</span>
+            </div>
+            <p class="card-text text-muted mb-4"><?= htmlspecialchars($row["Descrizione"]) ?></p>
 
-        for ($i = 0; $i < min($maxDisplay, $totalProgetti); $i++) {
-            $row = $progetti[$i];
-            $nomeProgettoUrl = urlencode($row["Nome"]);
-            ?>
-            <div class="col-lg-4 col-md-6">
-              <div class="card shadow-hover h-100">
-                <div class="card-body">
-                  <div class="d-flex justify-content-between align-items-start mb-3">
-                    <h5 class="card-title mb-0">
-                      <a href="progetto.php?nome=<?= $nomeProgettoUrl ?>" class="text-decoration-none">
-                        <?= htmlspecialchars($row["Nome"]) ?>
-                      </a>
-                    </h5>
-                    <span class="badge bg-accent">Nuovo</span>
-                  </div>
-                  <p class="card-text text-muted mb-4"><?= htmlspecialchars($row["Descrizione"]) ?></p>
-                  <div class="progress mb-3" style="height: 8px;">
-                    <div class="progress-bar bg-accent" role="progressbar" style="width: 25%;" aria-valuenow="25" aria-valuemin="0" aria-valuemax="100"></div>
-                  </div>
-                  <div class="d-flex justify-content-between text-muted small">
-                    <span> <?= htmlspecialchars($row["Budget"]) ?> </span>
-                    <span><?= htmlspecialchars($row["Data_Limite"]) ?> </span>
-                  </div>
-                  <div>
-                    <span> <?= htmlspecialchars($row["Tipo"]) ?> <span>
-                  </div>
-                  <div>
-                    <span> <?= htmlspecialchars($row["Stato"]) ?> <span>
-                  </div>
-                </div>
-                <p class="card-text text-muted mb-4"><?= htmlspecialchars($row["Descrizione"]) ?></p>
-                <div class="progress mb-3" style="height: 8px;">
-                  <div class="progress-bar bg-accent" role="progressbar" style="width: 25%;" aria-valuenow="25" aria-valuemin="0" aria-valuemax="100"></div>
-                </div>
-                <div class="d-flex justify-content-between text-muted small">
-                  <span>25% completato</span>
-                  <span>15 giorni rimasti</span>
-                </div>
-              </div>
-              <div class="card-footer bg-transparent border-0">
-                <a href="progetto.php?nome=<?= $nomeProgettoUrl ?>" class="btn btn-primary w-100">Partecipa al progetto</a>
-              </div>
+            <div class="progress mb-3" style="height: 8px;">
+              <div class="progress-bar bg-accent" role="progressbar" style="width: <?= $percentuale ?>%;" aria-valuenow="<?= $percentuale ?>" aria-valuemin="0" aria-valuemax="100"></div>
+            </div>
+
+            <div class="d-flex justify-content-between text-muted small">
+              <span><?= htmlspecialchars($row["Budget"]) ?></span>
+              <span><?= htmlspecialchars($row["Data_Limite"]) ?></span>
+            </div>
+            <div class="text-muted small mt-2">
+              <span><?= htmlspecialchars($row["Tipo"]) ?></span> | 
+              <span><?= htmlspecialchars($row["Stato"]) ?></span>
             </div>
           </div>
-          <?php
-      }
-      ?>
-    </div>
+
+          <div class="card-footer bg-transparent border-0">
+            <a href="progetto.php?nome=<?= $nomeProgettoUrl ?>" class="btn btn-primary w-100">Partecipa al progetto</a>
+          </div>
+        </div>
+      </div>
+      <?php
+  }
+  ?>
+</div>
 
     <?php if ($totalProgetti > 3): ?>
       <div class="text-center mt-4">
