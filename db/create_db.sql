@@ -173,7 +173,6 @@ CREATE PROCEDURE GetAvailableProjects ()
 BEGIN
     SELECT *
     FROM PROGETTO
-    WHERE Stato = 'Aperto'
     ORDER BY Data_Inserimento DESC;
 END;
 $ DELIMITER ;
@@ -250,7 +249,7 @@ BEGIN
     SET ProgettoPresente = (SELECT COUNT(*) FROM PROGETTO WHERE (Nome = Nome_ProgettoSoftware));
     SET TipoProgetto = (SELECT Tipo FROM PROGETTO WHERE (Nome = Nome_ProgettoSoftware));
     
-	/*SELECT CreatorePresente, ProgettoPresente, TipoProgetto;*/
+	SELECT CreatorePresente, ProgettoPresente, TipoProgetto;
 
     IF (CreatorePresente > 0) AND (ProgettoPresente > 0) AND (TipoProgetto = "Software") THEN
         INSERT INTO PROFILO (Nome, Nome_ProgettoSoftware)
@@ -343,7 +342,7 @@ BEGIN
     WHERE Nome_Progetto = NEW.Nome_Progetto;
 
     UPDATE PROGETTO
-    SET Stato = 'CHIUSO'
+    SET Stato = 'Chiuso'
     WHERE Nome = NEW.Nome_Progetto
     AND totale >= Budget;
 END;
@@ -358,8 +357,8 @@ ON SCHEDULE EVERY 1 DAY
 DO
 BEGIN
     UPDATE PROGETTO
-    SET Stato = 'CHIUSO'
-    WHERE Data_Limite < CURDATE() AND Stato != 'CHIUSO';
+    SET Stato = 'Chiuso'
+    WHERE Data_Limite < CURDATE() AND Stato != 'Chiuso';
 END;
 $
 DELIMITER ;

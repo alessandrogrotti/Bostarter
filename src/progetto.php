@@ -69,12 +69,73 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['commento'])) {
     }
 }
 
+// 4) Gestione inserimento profilo
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['profilo'])) {
+  // a) Verifica autenticazione e che sia creatore
+  requireLogin();
+  if (!isCreator()) {
+      die("Non sei autorizzato a inserire profili in questo progetto.");
+  }
+
+  // b) Pulisci i dati dal form
+  $nomeProfilo      = trim($_POST['profilo']);
+  $skill            = trim($_POST['skill']);
+  $livello          = intval($_POST['level']);
+  $emailCreatore    = $_SESSION['id'];  // presuppone che l'email del creatore sia in sessione
+  $nomeProgetto     = $nomeProgetto;    // già definito più sopra da GET
+
+  try {
+      // c) Chiamata alla SP per inserire il profilo
+      $stmtP = $conn->prepare("CALL InserisciProfilo(:p_Nome, :p_Progetto, :p_EmailCreatore)");
+      $stmtP->bindParam(':p_Nome',            $nomeProfilo,   PDO::PARAM_STR);
+      $stmtP->bindParam(':p_Progetto',        $nomeProgetto,  PDO::PARAM_STR);
+      $stmtP->bindParam(':p_EmailCreatore',   $emailCreatore, PDO::PARAM_STR);
+      $stmtP->execute();
+      // dopo CALL, chiudi il cursor per poter fare altre query
+      $stmtP->closeCursor();
+
+      $row = $stmtP->fetch(PDO::FETCH_ASSOC);
+      $idProfilo = $row['NewId'] ?? null;
+      $stmtP->closeCursor();
+
+      if (! $idProfilo) {
+          throw new Exception("Impossibile recuperare l'ID del profilo inserito.");
+      }
+
+      // e) Inserimento nella tabella RICHIEDE
+      $stmtR = $conn->prepare("
+          INSERT INTO RICHIEDE (Id_Profilo, Competenza_Skill, Livello)
+          VALUES (:p_IdProfilo, :p_Skill, :p_Livello)
+      ");
+      $stmtR->bindParam(':p_IdProfilo', $idProfilo, PDO::PARAM_INT);
+      $stmtR->bindParam(':p_Skill',     $skill,     PDO::PARAM_STR);
+      $stmtR->bindParam(':p_Livello',   $livello,   PDO::PARAM_INT);
+      $stmtR->execute();
+      $stmtR->closeCursor();
+
+      // f) (Opzionale) Log su MongoDB
+      writeLog(
+          'Aggiunta profilo',
+          "Creatore $emailCreatore ha aggiunto il profilo '$nomeProfilo' (ID $idProfilo) al progetto $nomeProgetto con skill $skill livello $livello"
+      );
+
+      // g) Redirect PRIMA di qualsiasi output
+      header("Location: progetto.php?nome=" . urlencode($nomeProgetto));
+      exit;
+  } catch (PDOException $e) {
+      die("Errore durante l'inserimento del profilo: " . $e->getMessage());
+  } catch (Exception $e) {
+      die($e->getMessage());
+  }
+}
+
+
 // 5) Recupera i dettagli del progetto
 try {
   $stmt = $conn->prepare(
-      "SELECT Nome, Descrizione, Email_Creatore
+      "SELECT Nome, Descrizione, Email_Creatore, Tipo, Stato
        FROM PROGETTO
-       WHERE Nome = :nome AND Stato = 'aperto'"
+       WHERE Nome = :nome "
   );
   $stmt->bindParam(':nome', $nomeProgetto, PDO::PARAM_STR);
   $stmt->execute();
@@ -87,84 +148,14 @@ if (! $progetto) {
   die("Progetto non trovato o non più aperto.");
 }
 
-// ——— 6) GESTIONE INVIO NUOVO PROFILO + SKILL RICHIESTA
-if (
-    $_SERVER['REQUEST_METHOD'] === 'POST'
-    && isset($_POST['profilo'], $_POST['skill'], $_POST['level'])
-) {
-    // a) Assicurati che l’utente sia loggato
-    requireLogin();
-
-    // b) Leggi e sanifica i dati
-    $nomeProfilo   = trim($_POST['profilo']);
-    $competenza    = $_POST['skill'];
-    $livello       = (int) $_POST['level'];
-    // Ora $progetto è DEFINITO perché l'abbiamo caricato sopra
-    $nomeProgetto  = $progetto['Nome'];
-    $emailCreatore = $progetto['Email_Creatore'];
-
-    try {
-        // c) Chiamo la stored procedure InserisciProfilo
-        $stmtSP = $conn->prepare("
-            CALL InserisciProfilo(
-                :nomeProfilo,
-                :nomeProgetto,
-                :emailCreatore
-            )
-        ");
-        $stmtSP->execute([
-            ':nomeProfilo'   => $nomeProfilo,
-            ':nomeProgetto'  => $nomeProgetto,
-            ':emailCreatore' => $emailCreatore
-        ]);
-        $stmtSP->closeCursor();
-
-        // d) Prendo l'ID dell'ultimo insert
-        $idProfilo = $conn->query("SELECT LAST_INSERT_ID()")->fetchColumn();
-        if (! $idProfilo) {
-            throw new Exception("Il profilo non è stato creato: controlla permessi o tipo progetto.");
-        }
-
-        // e) Inserisco la skill richiesta
-        $stmtR = $conn->prepare("
-            INSERT INTO RICHIEDE (Livello, Id_Profilo, Competenza_Skill)
-            VALUES (:livello, :idProfilo, :competenza)
-        ");
-        $stmtR->execute([
-            ':livello'    => $livello,
-            ':idProfilo'  => $idProfilo,
-            ':competenza' => $competenza
-        ]);
-
-        // f) Log su MongoDB
-        writeLog(
-            'Aggiunta profilo e skill richiesta',
-            [
-                'profilo'   => $nomeProfilo,
-                'idProfilo' => $idProfilo,
-                'progetto'  => $nomeProgetto,
-                'skill'     => $competenza,
-                'livello'   => $livello
-            ]
-        );
-
-        // g) Redirect per evitare doppio submit
-        header("Location: progetto.php?nome=" . urlencode($nomeProgetto));
-        exit;
-
-    } catch (PDOException $e) {
-        die("Errore PDO nell'inserimento del profilo/skill: " . $e->getMessage());
-    } catch (Exception $e) {
-        die("Errore: " . $e->getMessage());
-    }
-}
 
 
-// 5) Include la navbar solo dopo gestione POST
+
+// 6) Include la navbar solo dopo gestione POST
 include_once 'navbar.php';
 
 
-// 6) Recupera le reward
+// 7) Recupera le reward
 try {
     $stmtR = $conn->prepare(
         "SELECT Codice, Descrizione, Foto
@@ -179,7 +170,7 @@ try {
     die("Errore nella query delle reward: " . $e->getMessage());
 }
 
-// 7) Recupera i commenti
+// 8) Recupera i commenti
 try {
     $stmtC = $conn->prepare(
         "SELECT Data, Testo, Email_Utente
@@ -196,7 +187,7 @@ try {
 }
 
 
-// 8) Recupera le skill presenti nel db
+// 9) Recupera le skill presenti nel db
 // Recupera tutte le skill disponibili escluse quelle già associate all'utente
 $availableSkillsQuery = "
     SELECT Competenza 
@@ -219,45 +210,69 @@ $availableSkills = $stmtAvailableSkills->fetchAll(PDO::FETCH_ASSOC);
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <?php /* navbar già inclusa */ ?>
 
   <main class="container mt-5">
     <!-- Informazioni progetto -->
-    <section class="mb-5">
-      <h2><?= htmlspecialchars($progetto["Nome"]) ?></h2>
-      <p><?= nl2br(htmlspecialchars($progetto["Descrizione"])) ?></p>
-    </section>
+    <div id="infoProgetto">
+      <section class="mb-5">
+        <h2><?= htmlspecialchars($progetto["Nome"]) ?></h2>
+        <p><?= htmlspecialchars($progetto["Descrizione"]) ?></p>
+      </section>
+    </div iv>
 
-        <!-- Finanziamento-->
-    <!-- Bottone che manda via URL il nome del progetto -->
-    <button
-      onclick="window.location.href='finanziamento.php?nome=<?= urlencode($progetto['Nome']) ?>';"
-      class="btn btn-success"
-    >
-     Finanzia questo progetto!
-    </button>
+    <!-- Finanziamento-->
+    <div id="finanziamento">
+      <?php if ($progetto['Stato'] === 'Aperto'): ?>
+        <button
+          onclick="window.location.href='finanziamento.php?nome=<?= urlencode($progetto['Nome']) ?>';"
+          class="btn btn-success"
+        >
+          Finanzia questo progetto!
+        </button>
+      <?php else: ?>
+        <div class="alert alert-secondary mt-3">
+          <i class="bi bi-lock-fill me-2"></i>
+          Il progetto è chiuso per i finanziamenti.
+        </div>
+      <?php endif; ?>
+    </div>
 
     <!-- Reward -->
-    <section class="mb-5">
-      <h4>Lista delle reward:</h4>
-      <?php if ($rewards): ?>
-        <ul class="list-group">
-          <?php foreach ($rewards as $r): ?>
-            <li class="list-group-item">
-              <strong><?= htmlspecialchars($r['Codice']) ?></strong>:
-              <?= htmlspecialchars($r['Descrizione']) ?>
-            </li>
-          <?php endforeach; ?>
-        </ul>
-      <?php else: ?>
-        <p>Nessuna reward disponibile.</p>
-      <?php endif; ?>
-    </section>
+    <div id="Reward">
+      <!-- Controllo se creatore del progetto per Inserimento delle reward -->
+      <div id="inserimentoReward">
+        <?php if (isLoggedIn() && $_SESSION['id'] === $progetto['Email_Creatore']): ?>
+          <a
+          href="nuovaReward.php?nome=<?= urlencode($progetto['Nome']) ?>"
+          class="btn btn-primary mb-3"
+          >
+            Aggiungi nuova reward
+          </a>
+        <?php endif; ?>
+      </div>
+
+      <!-- Lista delle reward -->
+      <div id="listaReward">
+        <section class="mb-5">
+          <h4>Lista delle reward:</h4>
+          <?php if ($rewards): ?>
+            <ul class="list-group">
+              <?php foreach ($rewards as $r): ?>
+                <li class="list-group-item">
+                  <strong><?= htmlspecialchars($r['Codice']) ?></strong>:
+                  <?= htmlspecialchars($r['Descrizione']) ?>
+                </li>
+              <?php endforeach; ?>
+            </ul>
+          <?php else: ?>
+            <p>Nessuna reward disponibile.</p>
+          <?php endif; ?>
+        </section>
+      </div>
 
     <!-- Commenti -->
     <section class="mb-5">
       <h4>Commenti:</h4>
-
       <?php if (isLoggedIn()): ?>
         <!-- Form per nuovo commento -->
         <form method="POST" class="mb-4">
@@ -298,51 +313,48 @@ $availableSkills = $stmtAvailableSkills->fetchAll(PDO::FETCH_ASSOC);
     </section>
 
   <!-- Controllo per vedere tipo del progetto --> 
+  <?php if (($progetto['Tipo']) === 'Software'):?>
+
+
   <!-- Controllo per vedere se creatore o meno --> 
-
-   
-
-  <!-- Inserire un nuovo profilo -->
-  <h4>Aggiungi un nuovo profilo:</h4>
-  <form method="POST" action="" class="mb-4">
-    <div class="mb-3">
-      <label for="profilo" class="form-label">Nome del profilo:</label>
-      <input
-        type="text"
-        id="profilo"
-        name="profilo"
-        class="form-control"
-        required
-        maxlength="1000"
-      >
-    </div>
-    <div class="mb-3">
-      <label for="skills" class="form-label">Seleziona una skill:</label>
-      <select name="skill" id="skills" class="form-select" required>
-        <?php foreach ($availableSkills as $skill): ?>
-          <option value="<?= htmlspecialchars($skill['Competenza']) ?>">
-            <?= htmlspecialchars($skill['Competenza']) ?>
-          </option>
-        <?php endforeach; ?>
-      </select>
-    </div>
-    <div class="mb-3">
-      <label for="level" class="form-label">Seleziona il livello:</label>
-      <select name="level" id="level" class="form-select" required>
-        <?php for ($i = 1; $i <= 5; $i++): ?>
-          <option value="<?= $i ?>"><?= $i ?></option>
-        <?php endfor; ?>
-      </select>
-    </div>
-    <button type="submit" class="btn btn-primary">
-      Aggiungi profilo
-    </button>
-  </form>
-
-
-
-
-
+      <?php if (isCreator()): ?>
+      <!-- Inserire un nuovo profilo -->
+      <h4>Aggiungi un nuovo profilo:</h4>
+      <form method="POST" action="" class="mb-4">
+        <div class="mb-3">
+          <label for="profilo" class="form-label">Nome del profilo:</label>
+          <input
+            type="text"
+            id="profilo"
+            name="profilo"
+            class="form-control"
+            required
+            maxlength="1000"
+          >
+        </div>
+        <div class="mb-3">
+          <label for="skills" class="form-label">Seleziona una skill:</label>
+          <select name="skill" id="skills" class="form-select" required>
+            <?php foreach ($availableSkills as $skill): ?>
+              <option value="<?= htmlspecialchars($skill['Competenza'], ENT_QUOTES) ?>">
+                <?= htmlspecialchars($skill['Competenza']) ?>
+              </option>
+            <?php endforeach; ?>
+          </select>
+        </div>
+        <div class="mb-3">
+          <label for="level" class="form-label">Seleziona il livello:</label>
+          <select name="level" id="level" class="form-select" required>
+            <?php for ($i = 1; $i <= 5; $i++): ?>
+              <option value="<?= $i ?>"><?= $i ?></option>
+            <?php endfor; ?>
+          </select>
+        </div>
+        <button type="submit" class="btn btn-primary">
+          Aggiungi profilo
+        </button>
+      </form>
+    <?php endif; ?>
 
     <!-- Profili richiesti -->
     <section class="mb-5">
@@ -360,8 +372,11 @@ $availableSkills = $stmtAvailableSkills->fetchAll(PDO::FETCH_ASSOC);
     </section>
   </main>
 
+  <?php endif; ?>
+
   <footer class="text-center mt-5 py-3 bg-light">
     <p>Progetto Bostarter &copy; <?= date('Y') ?></p>
   </footer>
+
 </body>
 </html>

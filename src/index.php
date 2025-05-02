@@ -74,14 +74,36 @@ try {
                 <img src="placeholder.jpg" class="card-img-top" alt="Nessuna immagine" style="object-fit: cover; height: 200px;">
               <?php endif; ?>
 
-              <div class="card-body">
-                <div class="d-flex justify-content-between align-items-start mb-3">
-                  <h5 class="card-title mb-0">
-                    <a href="progetto.php?nome=<?= $nomeProgettoUrl ?>" class="text-decoration-none">
-                      <?= htmlspecialchars($row["Nome"]) ?>
-                    </a>
-                  </h5>
-                  <span class="badge bg-accent">Nuovo</span>
+
+        for ($i = 0; $i < min($maxDisplay, $totalProgetti); $i++) {
+            $row = $progetti[$i];
+            $nomeProgettoUrl = urlencode($row["Nome"]);
+            ?>
+            <div class="col-lg-4 col-md-6">
+              <div class="card shadow-hover h-100">
+                <div class="card-body">
+                  <div class="d-flex justify-content-between align-items-start mb-3">
+                    <h5 class="card-title mb-0">
+                      <a href="progetto.php?nome=<?= $nomeProgettoUrl ?>" class="text-decoration-none">
+                        <?= htmlspecialchars($row["Nome"]) ?>
+                      </a>
+                    </h5>
+                    <span class="badge bg-accent">Nuovo</span>
+                  </div>
+                  <p class="card-text text-muted mb-4"><?= htmlspecialchars($row["Descrizione"]) ?></p>
+                  <div class="progress mb-3" style="height: 8px;">
+                    <div class="progress-bar bg-accent" role="progressbar" style="width: 25%;" aria-valuenow="25" aria-valuemin="0" aria-valuemax="100"></div>
+                  </div>
+                  <div class="d-flex justify-content-between text-muted small">
+                    <span> <?= htmlspecialchars($row["Budget"]) ?> </span>
+                    <span><?= htmlspecialchars($row["Data_Limite"]) ?> </span>
+                  </div>
+                  <div>
+                    <span> <?= htmlspecialchars($row["Tipo"]) ?> <span>
+                  </div>
+                  <div>
+                    <span> <?= htmlspecialchars($row["Stato"]) ?> <span>
+                  </div>
                 </div>
                 <p class="card-text text-muted mb-4"><?= htmlspecialchars($row["Descrizione"]) ?></p>
                 <div class="progress mb-3" style="height: 8px;">

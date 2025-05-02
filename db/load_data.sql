@@ -22,7 +22,7 @@ INSERT INTO PROGETTO (
     '2025-07-01',
     5000.00,
     'Aperto',
-    'Hardware'
+    'Software'
 ),
 (
     'App Gestione Spese',
@@ -32,7 +32,7 @@ INSERT INTO PROGETTO (
     '2025-06-15',
     2000.00,
     'Aperto',
-    'Software'
+    'Hardware'
 ),
 (
     'Piattaforma E-learning',
@@ -61,6 +61,7 @@ INSERT INTO REWARD (Codice, Descrizione, Foto, Nome_Progetto) VALUES
 ('RWD-SDS-2', 'Accesso anticipato alla versione beta e demo esclusiva', 'img/rewards/rwd-sds-2.jpg', 'Sistema Domotico Smart'),
 ('RWD-SDS-3', 'Installazione gratuita del sistema per i primi 50 finanziatori', 'img/rewards/rwd-sds-3.jpg', 'Sistema Domotico Smart');
 
+/*
 
 -- Aggiunge un utente nella tabella UTENTE
 INSERT INTO UTENTE (Email, Nickname, Password, Luogo, Anno, Nome, Cognome) 
@@ -114,6 +115,8 @@ CALL InserisciProfilo(
     'Nuovo Progetto',
     'creatore@esempio.com'
 );
+
+*/
 
 CALL InserisciCompetenza('Java');
 CALL InserisciCompetenza('SQL');

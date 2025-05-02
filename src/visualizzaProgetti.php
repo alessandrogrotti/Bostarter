@@ -101,8 +101,14 @@ try {
                     <div class="progress-bar bg-accent" role="progressbar" style="width: 25%;" aria-valuenow="25" aria-valuemin="0" aria-valuemax="100"></div>
                   </div>
                   <div class="d-flex justify-content-between text-muted small">
-                    <span>25% completato</span>
-                    <span>15 giorni rimasti</span>
+                    <span> <?= htmlspecialchars($row["Budget"]) ?> </span>
+                    <span><?= htmlspecialchars($row["Data_Limite"]) ?> </span>
+                  </div>
+                  <div>
+                    <span> <?= htmlspecialchars($row["Tipo"]) ?> <span>
+                  </div>
+                  <div>
+                    <span> <?= htmlspecialchars($row["Stato"]) ?> <span>
                   </div>
                 </div>
                 <div class="card-footer bg-transparent border-0">
