@@ -84,10 +84,8 @@ CALL InserisciProgetto(
     'Nuovo Progetto',                  -- Nome del progetto
     'creatore@esempio.com',             -- Email del creatore (deve essere un creatore valido)
     'Descrizione del progetto...',     -- Descrizione
-    '2025-04-12',                       -- Data di inserimento
     '2025-12-31',                       -- Data limite
     5000.00,                            -- Budget
-    'Attivo',                           -- Stato del progetto
     'Software'                          -- Tipo del progetto (può essere "Hardware" o "Software")
 );
 
