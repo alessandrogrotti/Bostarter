@@ -121,3 +121,6 @@ CALL InserisciCompetenza('Java');
 CALL InserisciCompetenza('SQL');
 CALL InserisciCompetenza('Teamwork');
 
+SHOW GRANTS FOR CURRENT_USER();
+
+

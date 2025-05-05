@@ -1,33 +1,12 @@
 <?php
-session_start();
 
 // Includi il file di connessione e navbar
 include_once 'connection.php';
 include_once 'navbar.php';
+include_once 'mongodb.php';
 
 // Connessioni ai database
 $mysqlConn = getMySQLConnection();
-$logCollection = getMongoDBConnection();
-
-// Funzione per scrivere un log su MongoDB
-function writeLog($action, $details) {
-    global $logCollection;
-    
-    $logEntry = [
-        'action' => $action,
-        'details' => $details,
-        'timestamp' => new MongoDB\BSON\UTCDateTime(),
-    ];
-
-    $bulkWrite = new MongoDB\Driver\BulkWrite;
-    $bulkWrite->insert($logEntry);
-
-    try {
-        $logCollection->executeBulkWrite('Bostarter.logs', $bulkWrite);
-    } catch (MongoDB\Driver\Exception\Exception $e) {
-        die("Errore durante la scrittura del log: " . $e->getMessage());
-    }
-}
 
 // Se la richiesta è in POST, gestiamo l'inserimento del finanziamento
 if ($_SERVER["REQUEST_METHOD"] === "POST") {
