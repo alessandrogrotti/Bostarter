@@ -172,7 +172,6 @@ CREATE PROCEDURE GetAvailableProjects ()
 BEGIN
     SELECT *
     FROM PROGETTO
-    WHERE Stato = 'Aperto'
     ORDER BY Data_Inserimento DESC;
 END;
 $ DELIMITER ;
@@ -204,8 +203,12 @@ END;
 $ DELIMITER ;
 
 DELIMITER $
+<<<<<<< HEAD
 CREATE PROCEDURE InserisciProgetto(IN Nome VARCHAR(100), IN Email_Creatore VARCHAR(255), IN Descrizione TEXT, IN Data_Inserimento DATE, 
                                    IN Data_Limite DATE, IN Budget DECIMAL(10,2), IN Stato VARCHAR(50), IN Tipo VARCHAR(20))
+=======
+CREATE PROCEDURE InserisciProgetto(IN Nome VARCHAR(100), IN Email_Creatore VARCHAR(255), IN Descrizione TEXT, IN Data_Limite DATE, IN Budget DECIMAL(10,2), IN Tipo VARCHAR(20))
+>>>>>>> develop
 BEGIN
     DECLARE CreatorePresente INT DEFAULT 0;
     
@@ -213,11 +216,8 @@ BEGIN
 
     IF (CreatorePresente > 0) AND (Tipo = "Hardware" OR Tipo = "Software") THEN
         INSERT INTO PROGETTO (Nome, Email_Creatore, Descrizione, Data_Inserimento, Data_Limite, Budget, Stato, Tipo)
-        VALUES (Nome, Email_Creatore, Descrizione, Data_Inserimento, Data_Limite, Budget, Stato, Tipo);
+        VALUES (Nome, Email_Creatore, Descrizione, CURDATE(), Data_Limite, Budget, "Aperto", Tipo);
         
-        UPDATE CREATORE 
-        SET Nr_progetti = Nr_progetti + 1
-        WHERE (Email_Utente = Email_Creatore);
     END IF;
 END;
 $ DELIMITER ;
@@ -248,6 +248,8 @@ BEGIN
     SET ProgettoPresente = (SELECT COUNT(*) FROM PROGETTO WHERE (Nome = Nome_ProgettoSoftware));
     SET TipoProgetto = (SELECT Tipo FROM PROGETTO WHERE (Nome = Nome_ProgettoSoftware));
     
+	SELECT CreatorePresente, ProgettoPresente, TipoProgetto;
+
     IF (CreatorePresente > 0) AND (ProgettoPresente > 0) AND (TipoProgetto = "Software") THEN
         INSERT INTO PROFILO (Nome, Nome_ProgettoSoftware)
         VALUES (Nome, Nome_ProgettoSoftware);
@@ -338,7 +340,7 @@ BEGIN
     WHERE Nome_Progetto = NEW.Nome_Progetto;
 
     UPDATE PROGETTO
-    SET Stato = 'CHIUSO'
+    SET Stato = 'Chiuso'
     WHERE Nome = NEW.Nome_Progetto
     AND totale >= Budget;
 END;
@@ -353,8 +355,8 @@ ON SCHEDULE EVERY 1 DAY
 DO
 BEGIN
     UPDATE PROGETTO
-    SET Stato = 'CHIUSO'
-    WHERE Data_Limite < CURDATE() AND Stato != 'CHIUSO';
+    SET Stato = 'Chiuso'
+    WHERE Data_Limite < CURDATE() AND Stato != 'Chiuso';
 END;
 $
 DELIMITER ;
