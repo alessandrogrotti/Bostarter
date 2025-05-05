@@ -33,38 +33,71 @@ if (! $progetto) {
 
 // 5) gestione form POST
 if ($_SERVER['REQUEST_METHOD'] === 'POST' 
-    && isset($_POST['codice'], $_POST['descrizione'], $_POST['foto'])
+    && isset($_POST['codice'], $_POST['descrizione'])
 ) {
     $codice      = trim($_POST['codice']);
     $descrizione = trim($_POST['descrizione']);
-    $foto        = trim($_POST['foto']);  // se vuoi un file upload, cambia qui
+    $fotoPath    = ''; // Variabile per il percorso della foto
 
-    if ($codice === '' || $descrizione === '' ) {
+    // Gestione dell'upload dell'immagine
+    if (isset($_FILES['foto']) && $_FILES['foto']['error'] === UPLOAD_ERR_OK) {
+        $uploadDir = 'uploads/';
+        if (!file_exists($uploadDir)) {
+            mkdir($uploadDir, 0777, true);
+        }
+
+        $originalName = basename($_FILES['foto']['name']);
+        $extension = strtolower(pathinfo($originalName, PATHINFO_EXTENSION));
+
+        // Verifica l'estensione del file (solo immagini)
+        if (in_array($extension, ['jpg', 'jpeg', 'png', 'gif'])) {
+            $newFileName = uniqid('reward_', true) . '.' . $extension;
+            $destinationPath = $uploadDir . $newFileName;
+
+            // Salvataggio dell'immagine
+            if (move_uploaded_file($_FILES['foto']['tmp_name'], $destinationPath)) {
+                $fotoPath = $destinationPath; // Salvo il percorso della foto
+            } else {
+                $errorMessage = "Errore durante il salvataggio dell'immagine.";
+            }
+        } else {
+            $errorMessage = "Formato immagine non valido.";
+        }
+    }
+
+    // Controlla che i campi obbligatori siano compilati
+    if ($codice === '' || $descrizione === '') {
         $errorMessage = "Compila tutti i campi obbligatori.";
     } else {
+        // Prendi l'email dell'utente loggato
+        $emailCreatore = $_SESSION['id'];  // oppure modifica se usi un altro nome per l'email nella sessione
+
         try {
+            // Esegui la chiamata alla stored procedure
             $stmtI = $conn->prepare(
-                "CALL InsertReward(
-                    :p_Codice,
-                    :p_Descrizione,
-                    :p_Foto,
-                    :p_Nome_Progetto
+                "CALL InserisciReward(
+                    :codice,
+                    :descrizione,
+                    :foto,
+                    :nome_progetto,
+                    :email_creatore
                 )"
             );
-            $stmtI->bindParam(':p_Codice',         $codice,       PDO::PARAM_STR);
-            $stmtI->bindParam(':p_Descrizione',    $descrizione,  PDO::PARAM_STR);
-            $stmtI->bindParam(':p_Foto',           $foto,         PDO::PARAM_STR);
-            $stmtI->bindParam(':p_Nome_Progetto',  $nomeProgetto, PDO::PARAM_STR);
+            $stmtI->bindParam(':codice',         $codice,        PDO::PARAM_STR);
+            $stmtI->bindParam(':descrizione',    $descrizione,   PDO::PARAM_STR);
+            $stmtI->bindParam(':foto',           $fotoPath,      PDO::PARAM_STR);  // Passa il percorso della foto
+            $stmtI->bindParam(':nome_progetto',  $nomeProgetto,  PDO::PARAM_STR);
+            $stmtI->bindParam(':email_creatore', $emailCreatore, PDO::PARAM_STR);
             $stmtI->execute();
             $stmtI->closeCursor();
 
-            // log su MongoDB
+            // Log su MongoDB
             writeLog(
                 'Inserimento reward',
-                "Creatore {$_SESSION['id']} ha aggiunto reward '$codice' al progetto $nomeProgetto"
+                "Creatore $emailCreatore ha aggiunto reward '$codice' al progetto $nomeProgetto"
             );
 
-            // redirect
+            // Redirect alla pagina del progetto
             header("Location: progetto.php?nome=" . urlencode($nomeProgetto));
             exit;
         } catch (PDOException $e) {
@@ -94,7 +127,7 @@ include_once 'navbar.php';
       <div class="alert alert-danger"><?= htmlspecialchars($errorMessage) ?></div>
     <?php endif; ?>
 
-    <form method="POST" class="mb-5">
+    <form method="POST" class="mb-5" enctype="multipart/form-data">
       <div class="mb-3">
         <label for="codice" class="form-label">Codice reward:</label>
         <input
@@ -118,14 +151,13 @@ include_once 'navbar.php';
         ><?= isset($descrizione) ? htmlspecialchars($descrizione) : '' ?></textarea>
       </div>
       <div class="mb-3">
-        <label for="foto" class="form-label">URL o percorso immagine (opzionale):</label>
+        <label for="foto" class="form-label">Carica immagine:</label>
         <input
-          type="text"
+          type="file"
           id="foto"
           name="foto"
           class="form-control"
-          maxlength="255"
-          value="<?= isset($foto) ? htmlspecialchars($foto) : '' ?>"
+          accept="image/*"
         >
       </div>
       <button type="submit" class="btn btn-primary">Salva reward</button>
