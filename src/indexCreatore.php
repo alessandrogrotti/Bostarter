@@ -11,7 +11,7 @@ $emailCreatore = $_SESSION['id'];
 
 // Query per recuperare i progetti del creatore loggato
 try {
-  $sql = "SELECT * FROM Progetto WHERE Email_Creatore = :emailCreatore";
+  $sql = "SELECT * FROM PROGETTO WHERE Email_Creatore = :emailCreatore";
   $stmt = $mysqlConn->prepare($sql);
   $stmt->execute(['emailCreatore' => $emailCreatore]);
   $progetti = $stmt->fetchAll(PDO::FETCH_ASSOC);

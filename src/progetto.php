@@ -148,8 +148,18 @@ if (! $progetto) {
   die("Progetto non trovato o non più aperto.");
 }
 
-
-
+// Recupera immagini del progetto dalla tabella FOTO
+try {
+  $stmtF = $conn->prepare(
+      "SELECT Valore FROM FOTO WHERE Nome_Progetto = :nome"
+  );
+  $stmtF->bindParam(':nome', $nomeProgetto, PDO::PARAM_STR);
+  $stmtF->execute();
+  $fotoProgetto = $stmtF->fetchAll(PDO::FETCH_ASSOC);
+  $stmtF->closeCursor();
+} catch (PDOException $e) {
+  die("Errore nel recupero delle immagini del progetto: " . $e->getMessage());
+}
 
 // 6) Include la navbar solo dopo gestione POST
 include_once 'navbar.php';
@@ -217,6 +227,15 @@ $availableSkills = $stmtAvailableSkills->fetchAll(PDO::FETCH_ASSOC);
       <section class="mb-5">
         <h2><?= htmlspecialchars($progetto["Nome"]) ?></h2>
         <p><?= htmlspecialchars($progetto["Descrizione"]) ?></p>
+        <?php if (!empty($fotoProgetto)): ?>
+        <div class="row mt-4">
+          <?php foreach ($fotoProgetto as $foto): ?>
+            <div class="col-md-4 mb-3">
+              <img src="<?= htmlspecialchars($foto['Valore']) ?>" alt="Foto progetto" class="img-fluid rounded shadow" style="width: 100%; max-width: 500px; height: auto;">
+            </div>
+          <?php endforeach; ?>
+        </div>
+      <?php endif; ?>
       </section>
     </div iv>
 
@@ -225,7 +244,7 @@ $availableSkills = $stmtAvailableSkills->fetchAll(PDO::FETCH_ASSOC);
       <?php if ($progetto['Stato'] === 'Aperto'): ?>
         <button
           onclick="window.location.href='finanziamento.php?nome=<?= urlencode($progetto['Nome']) ?>';"
-          class="btn btn-success"
+          class="btn btn-success my-4"
         >
           Finanzia questo progetto!
         </button>
@@ -251,24 +270,32 @@ $availableSkills = $stmtAvailableSkills->fetchAll(PDO::FETCH_ASSOC);
         <?php endif; ?>
       </div>
 
-      <!-- Lista delle reward -->
-      <div id="listaReward">
-        <section class="mb-5">
-          <h4>Lista delle reward:</h4>
-          <?php if ($rewards): ?>
-            <ul class="list-group">
-              <?php foreach ($rewards as $r): ?>
-                <li class="list-group-item">
-                  <strong><?= htmlspecialchars($r['Codice']) ?></strong>:
-                  <?= htmlspecialchars($r['Descrizione']) ?>
-                </li>
-              <?php endforeach; ?>
-            </ul>
-          <?php else: ?>
-            <p>Nessuna reward disponibile.</p>
-          <?php endif; ?>
-        </section>
-      </div>
+    <!-- Lista delle reward -->
+    <div id="listaReward">
+      <section class="mb-5">
+        <h4>Lista delle reward:</h4>
+        <?php if ($rewards): ?>
+          <ul class="list-group">
+            <?php foreach ($rewards as $r): ?>
+              <li class="list-group-item d-flex align-items-center">
+                <div class="me-3">
+                  <?php if (!empty($r['Foto'])): ?>
+                    <img src="<?= htmlspecialchars($r['Foto']) ?>" alt="Immagine reward" class="img-fluid" style="width: 50px; height: auto;">
+                  <?php else: ?>
+                    <span class="text-muted">Nessuna immagine</span>
+                  <?php endif; ?>
+                </div>
+                <div>
+                  <strong><?= htmlspecialchars($r['Codice']) ?></strong>: <?= htmlspecialchars($r['Descrizione']) ?>
+                </div>
+              </li>
+            <?php endforeach; ?>
+          </ul>
+        <?php else: ?>
+          <p>Nessuna reward disponibile.</p>
+        <?php endif; ?>
+      </section>
+    </div>
 
     <!-- Commenti -->
     <section class="mb-5">
