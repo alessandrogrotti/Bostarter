@@ -203,12 +203,8 @@ END;
 $ DELIMITER ;
 
 DELIMITER $
-<<<<<<< HEAD
 CREATE PROCEDURE InserisciProgetto(IN Nome VARCHAR(100), IN Email_Creatore VARCHAR(255), IN Descrizione TEXT, IN Data_Inserimento DATE, 
                                    IN Data_Limite DATE, IN Budget DECIMAL(10,2), IN Stato VARCHAR(50), IN Tipo VARCHAR(20))
-=======
-CREATE PROCEDURE InserisciProgetto(IN Nome VARCHAR(100), IN Email_Creatore VARCHAR(255), IN Descrizione TEXT, IN Data_Limite DATE, IN Budget DECIMAL(10,2), IN Tipo VARCHAR(20))
->>>>>>> develop
 BEGIN
     DECLARE CreatorePresente INT DEFAULT 0;
     
