@@ -49,11 +49,18 @@ CREATE TABLE COMMENTO (
     Data DATE,
     Testo TEXT,
     Email_Utente VARCHAR(255),
-    Email_Creatore VARCHAR(255),
     Nome_Progetto VARCHAR(100),
     FOREIGN KEY (Email_Utente) REFERENCES UTENTE(Email),
     FOREIGN KEY (Email_Creatore) REFERENCES CREATORE(Email_Utente),
     FOREIGN KEY (Nome_Progetto) REFERENCES PROGETTO(Nome)
+) ENGINE = "INNODB";
+
+CREATE TABLE RISPOSTA (
+	Id_Commento INT,
+    Id_Risposta INT,
+    PRIMARY KEY (Id_Commento, Id_Risposta),
+    FOREIGN KEY (Id_Commento) REFERENCES COMMENTO(Id),
+    FOREIGN KEY (Id_Risposta) REFERENCES COMMENTO(Id)
 ) ENGINE = "INNODB";
 
 CREATE TABLE REWARD (
@@ -81,6 +88,13 @@ CREATE TABLE COMPOSIZIONE (
     Nome_Componente VARCHAR(100),
     PRIMARY KEY (Nome_ProgettoHardware, Nome_Componente),
     FOREIGN KEY (Nome_ProgettoHardware) REFERENCES PROGETTO(Nome)
+) ENGINE = "INNODB";
+
+CREATE TABLE COMPONENTE (
+	Nome VARCHAR(100) PRIMARY KEY,
+    Descrizione VARCHAR(100),
+    Prezzo DOUBLE,
+    Quantità INT
 ) ENGINE = "INNODB";
 
 CREATE TABLE PROFILO (
