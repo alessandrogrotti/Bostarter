@@ -15,6 +15,7 @@
 # Escludi file di configurazione locali (se necessario, puoi includerli in un file di configurazione separato)
 .env
 .idea
+.prettierrc
 config.local.php
 
 # Escludi cartelle di cache
