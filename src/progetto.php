@@ -70,56 +70,49 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['commento'])) {
 }
 
 // 4) Gestione inserimento profilo
-  if ($_SERVER['REQUEST_METHOD'] === 'POST'
-      && isset($_POST['profilo'], $_POST['skill'], $_POST['level'])
-  ) {
-      // a) Verifica autenticazione e che sia il creatore
-      requireLogin();
-      if (!isCreator()) {
-          die("Solo il creatore del progetto può aggiungere profili.");
-      }
+if ($_SERVER['REQUEST_METHOD'] === 'POST'
+    && isset($_POST['profilo'], $_POST['skill'], $_POST['level'])
+) {
+    requireLogin();
+    if (! isCreator()) {
+        die("Solo il creatore del progetto può aggiungere profili.");
+    }
 
-      // b) Pulisci i dati in ingresso
-      $nomeProfilo    = trim($_POST['profilo']);
-      $competenza     = $_POST['skill'];
-      $livello        = (int) $_POST['level'];
-      $emailCreatore  = $progetto['Email_Creatore'];
-      $emailUtente    = $_SESSION['id'];  // l’utente che sta inserendo
+    // pulizia dati
+    $nomeProfilo   = trim($_POST['profilo']);
+    $competenza    = $_POST['skill'];
+    $livello       = (int) $_POST['level'];
 
-      // c) Chiamata alla SP InserisciProfiloRichede
-      try {
-          $stmt = $conn->prepare(
-              "CALL InserisciProfiloRichede(
-                  :p_Nome,
-                  :p_Nome_ProgettoSoftware,
-                  :p_Email_Creatore,
-                  :p_Livello,
-                  :p_Competenza_Skill
-              )"
-          );
-          $stmt->bindParam(':p_Nome',                     $nomeProfilo,  PDO::PARAM_STR);
-          $stmt->bindParam(':p_Nome_ProgettoSoftware',    $nomeProgetto, PDO::PARAM_STR);
-          $stmt->bindParam(':p_Email_Creatore',           $emailCreatore,PDO::PARAM_STR);
-          $stmt->bindParam(':p_Livello',                  $livello,      PDO::PARAM_INT);
-          $stmt->bindParam(':p_Competenza_Skill',         $competenza,   PDO::PARAM_STR);
-          $stmt->execute();
-          $stmt->closeCursor();
+    // chiamo la stored procedure
+    try {
+        $stmt = $conn->prepare(
+            "CALL InserisciProfiloRichiede(
+                :p_Nome,
+                :p_Nome_ProgettoSoftware,
+                :p_Email_Creatore,
+                :p_Livello,
+                :p_Competenza_Skill
+            )"
+        );
+        $stmt->bindParam(':p_Nome',                     $nomeProfilo,   PDO::PARAM_STR);
+        $stmt->bindParam(':p_Nome_ProgettoSoftware',    $nomeProgetto,  PDO::PARAM_STR);
+        $stmt->bindParam(':p_Email_Creatore',           $progetto['Email_Creatore'], PDO::PARAM_STR);
+        $stmt->bindParam(':p_Livello',                  $livello,       PDO::PARAM_INT);
+        $stmt->bindParam(':p_Competenza_Skill',         $competenza,    PDO::PARAM_STR);
+        $stmt->execute();
+        $stmt->closeCursor();
 
-          // d) Log su MongoDB
-          writeLog(
-              'Inserimento profilo',
-              "Utente $emailUtente ha aggiunto profilo '$nomeProfilo' al progetto '$nomeProgetto'"
-          );
+        writeLog(
+            'Inserimento profilo',
+            "Creatore {$_SESSION['id']} ha aggiunto profilo '$nomeProfilo' al progetto '$nomeProgetto'"
+        );
 
-          // e) Redirect prima di qualsiasi output
-          header("Location: progetto.php?nome=" . urlencode($nomeProgetto));
-          exit;
-      } catch (PDOException $e) {
-          die("Errore nell'inserimento del profilo: " . $e->getMessage());
-      }
+        header("Location: progetto.php?nome=" . urlencode($nomeProgetto));
+        exit;
+    } catch (PDOException $e) {
+        die("Errore nell'inserimento del profilo: " . $e->getMessage());
+    }
 }
-
-
 
 // 5) Recupera i dettagli del progetto
 try {
@@ -377,18 +370,25 @@ $availableSkills = $stmtAvailableSkills->fetchAll(PDO::FETCH_ASSOC);
     <!-- Profili richiesti -->
     <section class="mb-5">
       <h4>Profili richiesti:</h4>
-      <ul class="list-group">
-        <li class="list-group-item d-flex justify-content-between align-items-center">
-          <span>Profilo 1</span>
-          <button class="btn btn-outline-primary btn-sm">Invia candidatura</button>
-        </li>
-        <li class="list-group-item d-flex justify-content-between align-items-center">
-          <span>Profilo 2</span>
-          <button class="btn btn-outline-primary btn-sm">Invia candidatura</button>
-        </li>
-      </ul>
+      <?php if (!empty($profilesRequested)): ?>
+        <ul class="list-group">
+          <?php foreach ($profilesRequested as $pr): ?>
+            <li class="list-group-item d-flex justify-content-between align-items-center">
+              <div>
+                <strong><?= htmlspecialchars($pr['Profilo']) ?></strong><br>
+                <small>Skill: <?= htmlspecialchars($pr['Competenza_Skill']) ?> – Livello: <?= $pr['Livello'] ?></small>
+              </div>
+              <a
+                href="candidatura.php?profilo_id=<?= $pr['Id'] ?>&progetto=<?= urlencode($nomeProgetto) ?>"
+                class="btn btn-outline-primary btn-sm"
+              >Invia candidatura</a>
+            </li>
+          <?php endforeach; ?>
+        </ul>
+      <?php else: ?>
+        <p class="text-muted">Nessun profilo richiesto al momento.</p>
+      <?php endif; ?>
     </section>
-  </main>
 
   <?php endif; ?>
 

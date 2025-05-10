@@ -252,31 +252,9 @@ $ DELIMITER ;
 
 -- Inserisci risposta ad un commento
 
-/*
-DELIMITER $
-CREATE PROCEDURE InserisciProfilo(IN Nome VARCHAR(100), Nome_ProgettoSoftware VARCHAR(100), Email_Creatore VARCHAR(255))
-BEGIN
-	DECLARE CreatorePresente INT DEFAULT 0;
-    DECLARE ProgettoPresente INT DEFAULT 0;
-    DECLARE TipoProgetto VARCHAR(20);
-
-	SET CreatorePresente = (SELECT COUNT(*) FROM CREATORE WHERE (Email_Utente = Email_Creatore));
-    SET ProgettoPresente = (SELECT COUNT(*) FROM PROGETTO WHERE (Nome = Nome_ProgettoSoftware));
-    SET TipoProgetto = (SELECT Tipo FROM PROGETTO WHERE (Nome = Nome_ProgettoSoftware));
-    
-	SELECT CreatorePresente, ProgettoPresente, TipoProgetto;
-
-    IF (CreatorePresente > 0) AND (ProgettoPresente > 0) AND (TipoProgetto = "Software") THEN
-        INSERT INTO PROFILO (Nome, Nome_ProgettoSoftware)
-        VALUES (Nome, Nome_ProgettoSoftware);
-    END IF;
-END;
-$ DELIMITER ;
-*/
-
 
 DELIMITER $
-CREATE PROCEDURE InserisciProfiloRichiede(IN p_Nome VARCHAR(100), IN p_Nome_ProgettoSoftware VARCHAR(100), IN p_Email_Creatore VARCHAR(255), IN p_Livello INT, IN p_Competenza_Skill VARCHAR(100))
+CREATE PROCEDURE InserisciProfiloRichiede(IN Nome VARCHAR(100), IN Nome_ProgettoSoftware VARCHAR(100), IN Email_Creatore VARCHAR(255), IN Livello INT, IN Competenza_Skill VARCHAR(100))
 BEGIN
     DECLARE CreatorePresente INT DEFAULT 0;
     DECLARE ProgettoPresente INT DEFAULT 0;
@@ -287,18 +265,20 @@ BEGIN
     SET ProgettoPresente = (SELECT COUNT(*) FROM PROGETTO WHERE (Nome = Nome_ProgettoSoftware));
     SET TipoProgetto = (SELECT Tipo FROM PROGETTO WHERE (Nome = Nome_ProgettoSoftware));
 
-    IF (CreatorePresente > 0) AND (ProgettoPresente > 0) AND (TipoProgetto = "Software") THEN
+    /*IF (CreatorePresente > 0) AND (ProgettoPresente > 0) AND (TipoProgetto = 'Software') THEN*/
     
         INSERT INTO PROFILO (Nome, Nome_ProgettoSoftware)
-        VALUES (p_Nome, p_Nome_ProgettoSoftware);
+        VALUES (Nome, Nome_ProgettoSoftware);
         
         SET nuovoIdProfilo = LAST_INSERT_ID();
         
         INSERT INTO RICHIEDE (Livello, Id_Profilo, Competenza_Skill)
-        VALUES (p_Livello, nuovoIdProfilo, p_Competenza_Skill);
-    END IF;
+        VALUES (Livello, nuovoIdProfilo, Competenza_Skill);
+    /*END IF;*/
+    
 END;
 $ DELIMITER ;
+
 
 
 DELIMITER $
