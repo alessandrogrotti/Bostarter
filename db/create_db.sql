@@ -51,7 +51,6 @@ CREATE TABLE COMMENTO (
     Email_Utente VARCHAR(255),
     Nome_Progetto VARCHAR(100),
     FOREIGN KEY (Email_Utente) REFERENCES UTENTE(Email),
-    FOREIGN KEY (Email_Creatore) REFERENCES CREATORE(Email_Utente),
     FOREIGN KEY (Nome_Progetto) REFERENCES PROGETTO(Nome)
 ) ENGINE = "INNODB";
 
@@ -204,11 +203,11 @@ $ DELIMITER ;
 -- In questo scenario, la stored procedure non ha bisogno di eseguire un SELECT perché riceve già il valore. -- 
 
 DELIMITER $
-CREATE PROCEDURE InsertComment (IN p_Testo TEXT, IN p_Email_Utente VARCHAR(255), IN p_Email_Creatore VARCHAR(255), 
+CREATE PROCEDURE InsertComment (IN p_Testo TEXT, IN p_Email_Utente VARCHAR(255), 
 								IN p_Nome_Progetto VARCHAR(100))
 BEGIN
-    INSERT INTO COMMENTO (Data, Testo, Email_Utente, Email_Creatore, Nome_Progetto)
-    VALUES (CURDATE(), p_Testo, p_Email_Utente, p_Email_Creatore, p_Nome_Progetto);
+    INSERT INTO COMMENTO (Data, Testo, Email_Utente, Nome_Progetto)
+    VALUES (CURDATE(), p_Testo, p_Email_Utente, p_Nome_Progetto);
 END;
 $ DELIMITER ;
 
@@ -236,8 +235,7 @@ END;
 $ DELIMITER ;
 
 DELIMITER $
-CREATE PROCEDURE InserisciReward(IN Codice VARCHAR(50), IN Descrizione TEXT, IN Foto VARCHAR(255), IN Nome_Progetto VARCHAR(100), IN Email_UtenteCreatore VARCHAR(255)
-)
+CREATE PROCEDURE InserisciReward(IN Codice VARCHAR(50), IN Descrizione TEXT, IN Foto VARCHAR(255), IN Nome_Progetto VARCHAR(100), IN Email_UtenteCreatore VARCHAR(255))
 BEGIN
     DECLARE CreatoreProgetto INT DEFAULT 0;
 
@@ -250,7 +248,40 @@ BEGIN
 END;
 $ DELIMITER ;
 
--- Inserisci risposta ad un commento
+DELIMITER $
+CREATE PROCEDURE RispostaCommento (IN p_Testo TEXT, IN p_Email_Utente VARCHAR(255), IN p_Nome_Progetto VARCHAR(100), IN p_IdCommento INT)
+BEGIN
+    DECLARE nuovoId INT;
+
+    -- Controlla che il commento appartenga al progetto
+    IF NOT EXISTS (
+        SELECT 1
+        FROM COMMENTO
+        WHERE Id = p_IdCommento AND Nome_Progetto = p_Nome_Progetto
+    ) THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Commento non valido o non appartiene al progetto.';
+    END IF;
+
+    -- Controlla che non abbia già una risposta
+    IF EXISTS (
+        SELECT 1
+        FROM RISPOSTA
+        WHERE Id_Commento = p_IdCommento
+    ) THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Questo commento ha già una risposta.';
+    END IF;
+
+    -- Inserisci nuovo commento come risposta
+    INSERT INTO COMMENTO (Data, Testo, Email_Utente, Nome_Progetto)
+    VALUES (CURDATE(), p_Testo, p_Email_Utente, p_Nome_Progetto);
+
+    SET nuovoId = LAST_INSERT_ID();
+
+    -- Inserisci nella tabella RISPOSTA
+    INSERT INTO RISPOSTA (Id_Commento, Id_Risposta)
+    VALUES (p_IdCommento, nuovoId);
+END;
+$ DELIMITER ;
 
 DELIMITER $
 CREATE PROCEDURE InserisciProfilo(IN Nome VARCHAR(100), Nome_ProgettoSoftware VARCHAR(100), Email_Creatore VARCHAR(255))

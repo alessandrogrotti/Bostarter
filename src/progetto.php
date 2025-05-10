@@ -13,6 +13,32 @@ if ($nomeProgetto === '') {
     die("Nome progetto non specificato.");
 }
 
+// 2.b) Gestione invio risposta a un commento
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['risposta']) && isset($_POST['id_commento'])) {
+  requireLogin();
+
+  $testoRisposta = trim($_POST['risposta']);
+  $emailUtente   = $_SESSION['id'];
+  $idCommento    = intval($_POST['id_commento']); // Recupera l'ID del commento
+
+  try {
+      $stmtR = $conn->prepare("CALL RispostaCommento(:p_Testo, :p_Email_Utente, :p_Nome_Progetto, :p_IdCommento)");
+      $stmtR->bindParam(':p_Testo',         $testoRisposta, PDO::PARAM_STR);
+      $stmtR->bindParam(':p_Email_Utente',  $emailUtente,   PDO::PARAM_STR);
+      $stmtR->bindParam(':p_Nome_Progetto', $nomeProgetto,  PDO::PARAM_STR);
+      $stmtR->bindParam(':p_IdCommento',    $idCommento,    PDO::PARAM_INT);
+      $stmtR->execute();
+      $stmtR->closeCursor();
+
+      writeLog('Risposta commento', "Utente $emailUtente ha risposto al commento $idCommento nel progetto $nomeProgetto");
+
+      header("Location: progetto.php?nome=" . urlencode($nomeProgetto));
+      exit;
+  } catch (PDOException $e) {
+      die("Errore nell'inserimento della risposta: " . $e->getMessage());
+  }
+}
+
 // 3) Gestione invio commento (POST)
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['commento'])) {
     // a) Verifica autenticazione
@@ -44,13 +70,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['commento'])) {
             "CALL InsertComment(
                 :p_Testo,
                 :p_Email_Utente,
-                :p_Email_Creatore,
                 :p_Nome_Progetto
             )"
         );
         $stmtI->bindParam(':p_Testo',          $testoCommento, PDO::PARAM_STR);
         $stmtI->bindParam(':p_Email_Utente',   $emailUtente,   PDO::PARAM_STR);
-        $stmtI->bindParam(':p_Email_Creatore', $emailCreatore, PDO::PARAM_STR);
         $stmtI->bindParam(':p_Nome_Progetto',  $nomeProgetto,  PDO::PARAM_STR);
         $stmtI->execute();
         $stmtI->closeCursor();
@@ -182,12 +206,18 @@ try {
 
 // 8) Recupera i commenti
 try {
-    $stmtC = $conn->prepare(
-        "SELECT Data, Testo, Email_Utente
-         FROM COMMENTO
-         WHERE Nome_Progetto = :nome
-         ORDER BY Data DESC"
-    );
+  $stmtC = $conn->prepare(
+    "SELECT c.Id, c.Data, c.Testo, c.Email_Utente
+     FROM COMMENTO c
+     WHERE c.Nome_Progetto = :nome
+      AND NOT EXISTS (
+         SELECT 1
+         FROM RISPOSTA r
+         WHERE Id_Risposta = c.Id
+       )
+     ORDER BY c.Data DESC"
+  );
+
     $stmtC->bindParam(':nome', $nomeProgetto, PDO::PARAM_STR);
     $stmtC->execute();
     $comments = $stmtC->fetchAll(PDO::FETCH_ASSOC);
@@ -223,8 +253,8 @@ $availableSkills = $stmtAvailableSkills->fetchAll(PDO::FETCH_ASSOC);
 
   <main class="container mt-5">
     <!-- Informazioni progetto -->
-    <div id="infoProgetto">
-      <section class="mb-5">
+    <div id="infoProgetto" class="mb-5">
+      <section>
         <h2><?= htmlspecialchars($progetto["Nome"]) ?></h2>
         <p><?= htmlspecialchars($progetto["Descrizione"]) ?></p>
         <?php if (!empty($fotoProgetto)): ?>
@@ -235,12 +265,12 @@ $availableSkills = $stmtAvailableSkills->fetchAll(PDO::FETCH_ASSOC);
             </div>
           <?php endforeach; ?>
         </div>
-      <?php endif; ?>
+        <?php endif; ?>
       </section>
-    </div iv>
+    </div>
 
-    <!-- Finanziamento-->
-    <div id="finanziamento">
+    <!-- Finanziamento -->
+    <div id="finanziamento" class="mb-5">
       <?php if ($progetto['Stato'] === 'Aperto'): ?>
         <button
           onclick="window.location.href='finanziamento.php?nome=<?= urlencode($progetto['Nome']) ?>';"
@@ -257,8 +287,7 @@ $availableSkills = $stmtAvailableSkills->fetchAll(PDO::FETCH_ASSOC);
     </div>
 
     <!-- Reward -->
-    <div id="Reward">
-      <!-- Controllo se creatore del progetto per Inserimento delle reward -->
+    <div id="Reward" class="mb-5">
       <div id="inserimentoReward">
         <?php if (isLoggedIn() && $_SESSION['id'] === $progetto['Email_Creatore']): ?>
           <a
@@ -270,67 +299,118 @@ $availableSkills = $stmtAvailableSkills->fetchAll(PDO::FETCH_ASSOC);
         <?php endif; ?>
       </div>
 
-    <!-- Lista delle reward -->
-    <div id="listaReward">
-      <section class="mb-5">
-        <h4>Lista delle reward:</h4>
-        <?php if ($rewards): ?>
-          <ul class="list-group">
-            <?php foreach ($rewards as $r): ?>
-              <li class="list-group-item d-flex align-items-center">
-                <div class="me-3">
-                  <?php if (!empty($r['Foto'])): ?>
-                    <img src="<?= htmlspecialchars($r['Foto']) ?>" alt="Immagine reward" class="img-fluid" style="width: 50px; height: auto;">
-                  <?php else: ?>
-                    <span class="text-muted">Nessuna immagine</span>
-                  <?php endif; ?>
-                </div>
-                <div>
-                  <strong><?= htmlspecialchars($r['Codice']) ?></strong>: <?= htmlspecialchars($r['Descrizione']) ?>
-                </div>
-              </li>
-            <?php endforeach; ?>
-          </ul>
-        <?php else: ?>
-          <p>Nessuna reward disponibile.</p>
-        <?php endif; ?>
-      </section>
+      <div id="listaReward">
+        <section class="mb-5">
+          <h4>Lista delle reward:</h4>
+          <?php if ($rewards): ?>
+            <ul class="list-group">
+              <?php foreach ($rewards as $r): ?>
+                <li class="list-group-item d-flex align-items-center">
+                  <div class="me-3">
+                    <?php if (!empty($r['Foto'])): ?>
+                      <img src="<?= htmlspecialchars($r['Foto']) ?>" alt="Immagine reward" class="img-fluid" style="width: 50px; height: auto;">
+                    <?php else: ?>
+                      <span class="text-muted">Nessuna immagine</span>
+                    <?php endif; ?>
+                  </div>
+                  <div>
+                    <strong><?= htmlspecialchars($r['Codice']) ?></strong>: <?= htmlspecialchars($r['Descrizione']) ?>
+                  </div>
+                </li>
+              <?php endforeach; ?>
+            </ul>
+          <?php else: ?>
+            <p>Nessuna reward disponibile.</p>
+          <?php endif; ?>
+        </section>
+      </div>
     </div>
 
-    <!-- Commenti -->
-    <section class="mb-5">
-      <h4>Commenti:</h4>
+    <!-- Commento -->
+    <section id="commento" class="mb-5">
       <?php if (isLoggedIn()): ?>
-        <!-- Form per nuovo commento -->
-        <form method="POST" class="mb-4">
+        <h4>Aggiungi un commento:</h4>
+        <form method="POST" action="" class="mb-4">
           <div class="mb-3">
-            <label for="commento" class="form-label">Inserisci commento:</label>
-            <input
-              type="text"
+            <label for="commento" class="form-label">Il tuo commento:</label>
+            <textarea
               id="commento"
               name="commento"
               class="form-control"
               required
               maxlength="1000"
-            >
+              rows="3"
+            ></textarea>
           </div>
-          <button type="submit" class="btn btn-secondary">Aggiungi</button>
+          <button type="submit" class="btn btn-primary">
+            Invia commento
+          </button>
         </form>
       <?php else: ?>
         <p>
-          <a href="login.php">Accedi</a> per inserire un commento.
+          <a href="login.php">Accedi</a> per lasciare un commento.
         </p>
       <?php endif; ?>
+    </section>
 
-      <!-- Elenco commenti -->
+    <!-- Commenti esistenti -->
+    <section class="mb-5">
+      <h4>Commenti:</h4>
       <?php if ($comments): ?>
         <ul class="list-group">
           <?php foreach ($comments as $c): ?>
             <li class="list-group-item">
-              <small class="text-muted">
-                <?= htmlspecialchars($c['Data']) ?> da <?= htmlspecialchars($c['Email_Utente']) ?>
-              </small>
-              <p class="mb-0"><?= nl2br(htmlspecialchars($c['Testo'])) ?></p>
+                <small class="text-muted">
+                    <?= htmlspecialchars($c['Data']) ?> da <?= htmlspecialchars($c['Email_Utente']) ?>
+                </small>
+                <p class="mb-1 fw-bold">Commento:</p>
+                <p class="mb-0"><?= nl2br(htmlspecialchars($c['Testo'])) ?></p>
+
+                <!-- Recupera le risposte per questo commento -->
+                <?php
+                    $stmtR = $conn->prepare(
+                        "SELECT c.Testo, c.Data, c.Email_Utente
+                        FROM COMMENTO c
+                        INNER JOIN RISPOSTA r ON c.Id = r.Id_Risposta
+                        WHERE r.Id_Commento = :id_commento"
+                    );
+                    $stmtR->bindParam(':id_commento', $c['Id'], PDO::PARAM_INT);
+                    $stmtR->execute();
+                    $response = $stmtR->fetch(PDO::FETCH_ASSOC);
+                    $stmtR->closeCursor();
+                ?>
+
+                <!-- Se il commento ha una risposta, visualizzala -->
+                <?php if ($response): ?>
+                    <div class="mt-3">
+                        <small class="text-muted"><?= htmlspecialchars($response['Data']) ?> da <?= htmlspecialchars($response['Email_Utente']) ?></small>
+                        <p class="mb-1 fw-bold">Risposta:</p>
+                        <p class="mb-0"><?= nl2br(htmlspecialchars($response['Testo'])) ?></p>
+                    </div>
+                <?php else: ?>
+                    <!-- Se non ci sono risposte, mostra il campo di testo per rispondere -->
+                    <?php if (isLoggedIn()): ?>
+                        <form method="POST" action="" class="mt-3">
+                            <div class="mb-3">
+                                <label for="risposta_<?= $c['Id'] ?>" class="form-label">Rispondi a questo commento:</label>
+                                <textarea
+                                    id="risposta_<?= $c['Id'] ?>"
+                                    name="risposta"
+                                    class="form-control"
+                                    required
+                                    maxlength="1000"
+                                    rows="3"
+                                ></textarea>
+                            </div>
+                            <input type="hidden" name="id_commento" value="<?= $c['Id'] ?>">
+                            <button type="submit" class="btn btn-primary">Rispondi</button>
+                        </form>
+                    <?php else: ?>
+                        <p>
+                            <a href="login.php">Accedi</a> per rispondere a questo commento.
+                        </p>
+                    <?php endif; ?>
+                <?php endif; ?>
             </li>
           <?php endforeach; ?>
         </ul>
@@ -339,67 +419,65 @@ $availableSkills = $stmtAvailableSkills->fetchAll(PDO::FETCH_ASSOC);
       <?php endif; ?>
     </section>
 
-  <!-- Controllo per vedere tipo del progetto --> 
-  <?php if (($progetto['Tipo']) === 'Software'):?>
-
-
-  <!-- Controllo per vedere se creatore o meno --> 
+    <!-- Sezione per aggiungere un profilo se il progetto è di tipo Software -->
+    <?php if (($progetto['Tipo']) === 'Software'): ?>
       <?php if (isCreator()): ?>
-      <!-- Inserire un nuovo profilo -->
-      <h4>Aggiungi un nuovo profilo:</h4>
-      <form method="POST" action="" class="mb-4">
-        <div class="mb-3">
-          <label for="profilo" class="form-label">Nome del profilo:</label>
-          <input
-            type="text"
-            id="profilo"
-            name="profilo"
-            class="form-control"
-            required
-            maxlength="1000"
-          >
-        </div>
-        <div class="mb-3">
-          <label for="skills" class="form-label">Seleziona una skill:</label>
-          <select name="skill" id="skills" class="form-select" required>
-            <?php foreach ($availableSkills as $skill): ?>
-              <option value="<?= htmlspecialchars($skill['Competenza'], ENT_QUOTES) ?>">
-                <?= htmlspecialchars($skill['Competenza']) ?>
-              </option>
-            <?php endforeach; ?>
-          </select>
-        </div>
-        <div class="mb-3">
-          <label for="level" class="form-label">Seleziona il livello:</label>
-          <select name="level" id="level" class="form-select" required>
-            <?php for ($i = 1; $i <= 5; $i++): ?>
-              <option value="<?= $i ?>"><?= $i ?></option>
-            <?php endfor; ?>
-          </select>
-        </div>
-        <button type="submit" class="btn btn-primary">
-          Aggiungi profilo
-        </button>
-      </form>
+        <section class="mb-5">
+          <h4>Aggiungi un nuovo profilo:</h4>
+          <form method="POST" action="" class="mb-4">
+            <div class="mb-3">
+              <label for="profilo" class="form-label">Nome del profilo:</label>
+              <input
+                type="text"
+                id="profilo"
+                name="profilo"
+                class="form-control"
+                required
+                maxlength="1000"
+              >
+            </div>
+            <div class="mb-3">
+              <label for="skills" class="form-label">Seleziona una skill:</label>
+              <select name="skill" id="skills" class="form-select" required>
+                <?php foreach ($availableSkills as $skill): ?>
+                  <option value="<?= htmlspecialchars($skill['Competenza'], ENT_QUOTES) ?>">
+                    <?= htmlspecialchars($skill['Competenza']) ?>
+                  </option>
+                <?php endforeach; ?>
+              </select>
+            </div>
+            <div class="mb-3">
+              <label for="level" class="form-label">Seleziona il livello:</label>
+              <select name="level" id="level" class="form-select" required>
+                <?php for ($i = 1; $i <= 5; $i++): ?>
+                  <option value="<?= $i ?>"><?= $i ?></option>
+                <?php endfor; ?>
+              </select>
+            </div>
+            <button type="submit" class="btn btn-primary">
+              Aggiungi profilo
+            </button>
+          </form>
+        </section>
+      <?php endif; ?>
+
+      <!-- Profili richiesti -->
+      <section class="mb-5">
+        <h4>Profili richiesti:</h4>
+        <ul class="list-group">
+          <li class="list-group-item d-flex justify-content-between align-items-center">
+            <span>Profilo 1</span>
+            <button class="btn btn-outline-primary btn-sm">Invia candidatura</button>
+          </li>
+          <li class="list-group-item d-flex justify-content-between align-items-center">
+            <span>Profilo 2</span>
+            <button class="btn btn-outline-primary btn-sm">Invia candidatura</button>
+          </li>
+        </ul>
+      </section>
     <?php endif; ?>
 
-    <!-- Profili richiesti -->
-    <section class="mb-5">
-      <h4>Profili richiesti:</h4>
-      <ul class="list-group">
-        <li class="list-group-item d-flex justify-content-between align-items-center">
-          <span>Profilo 1</span>
-          <button class="btn btn-outline-primary btn-sm">Invia candidatura</button>
-        </li>
-        <li class="list-group-item d-flex justify-content-between align-items-center">
-          <span>Profilo 2</span>
-          <button class="btn btn-outline-primary btn-sm">Invia candidatura</button>
-        </li>
-      </ul>
-    </section>
   </main>
-
-  <?php endif; ?>
 
   <footer class="text-center mt-5 py-3 bg-light">
     <p>Progetto Bostarter &copy; <?= date('Y') ?></p>
