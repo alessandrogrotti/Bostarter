@@ -74,4 +74,30 @@ function eliminaComponente($nome, $nomeProgettoHardware) {
         return false;
     }
 }
+
+/*
+function eliminaProfilo($nome, $nomeProgettoHardware) {
+    try {
+        $conn = getMySQLConnection();
+        $stmt = $conn->prepare("CALL EliminaComponente(?, ?)");
+        $stmt->bindParam(1, $nome, PDO::PARAM_STR);
+        $stmt->bindParam(2, $nomeProgettoHardware, PDO::PARAM_STR);
+        return $stmt->execute();
+    } catch (Exception $e) {
+        return false;
+    }
+}
+*/
+
+function ottieniProfiliPerProgetto($nomeProgettoSoftware) {
+    try {
+        $conn = getMySQLConnection();
+        $stmt = $conn->prepare("CALL OttieniProfiliPerProgetto(?)");
+        $stmt->bindParam(1, $nomeProgettoSoftware, PDO::PARAM_STR);
+        $stmt->execute();
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    } catch (Exception $e) {
+        return [];
+    }
+}
 ?>

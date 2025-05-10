@@ -176,6 +176,16 @@ $
 DELIMITER ;
 
 DELIMITER $
+CREATE PROCEDURE OttieniProfiliPerProgetto(IN p_Nome_ProgettoSoftware VARCHAR(100))
+BEGIN
+    SELECT * 
+    FROM PROFILO, RICHIEDE
+    WHERE Nome_ProgettoSoftware = p_Nome_ProgettoSoftware AND Id_Profilo = Id;
+END;
+$
+DELIMITER ;
+
+DELIMITER $
 CREATE PROCEDURE EliminaComponente(
     IN p_Nome_Componente VARCHAR(100),
     IN p_Nome_ProgettoHardware VARCHAR(100)

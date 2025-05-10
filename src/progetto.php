@@ -160,6 +160,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['eliminaComponente']))
   }
 }
 
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['eliminaProfilo'])) {
+  requireLogin();
+  if (!isCreator()) {
+      die("Non sei autorizzato a eliminare profilo in questo progetto.");
+  }
+
+  $nomeComponenteDaEliminare = trim($_POST['eliminaProfilo']);
+  if (eliminaProfilo($nomeProfiloDaEliminare, $nomeProgetto)) {
+      writeLog('Eliminazione profilo', "Creatore ha eliminato il profilo '$nomeProfiloDaEliminare' dal progetto $nomeProgetto");
+      header("Location: progetto.php?nome=" . urlencode($nomeProgetto));
+      exit;
+  } else {
+      die("Errore nell'eliminazione del profilo.");
+  }
+}
+
 try {
     $stmt = $conn->prepare(
         "SELECT Nome, Descrizione, Email_Creatore, Tipo, Stato FROM PROGETTO WHERE Nome = :nome"
@@ -224,6 +240,7 @@ $availableSkillsQuery = "SELECT Competenza FROM SKILL ORDER BY Competenza";
 $stmtAvailableSkills = $conn->prepare($availableSkillsQuery);
 $stmtAvailableSkills->execute();
 $availableSkills = $stmtAvailableSkills->fetchAll(PDO::FETCH_ASSOC);
+$profili = ottieniProfiliPerProgetto($nomeProgetto);
 $componenti = ottieniComponentiPerProgetto($nomeProgetto);
 ?>
 
@@ -423,16 +440,25 @@ $componenti = ottieniComponentiPerProgetto($nomeProgetto);
         </form>
         <section class="mb-5">
           <h4>Profili richiesti:</h4>
-          <ul class="list-group">
-            <li class="list-group-item d-flex justify-content-between align-items-center">
-              <span>Profilo 1</span>
-              <button class="btn btn-outline-primary btn-sm">Invia candidatura</button>
-            </li>
-            <li class="list-group-item d-flex justify-content-between align-items-center">
-              <span>Profilo 2</span>
-              <button class="btn btn-outline-primary btn-sm">Invia candidatura</button>
-            </li>
-          </ul>
+          <?php if ($profili): ?>
+            <ul class="list-group">
+              <?php foreach ($profili as $profilo): ?>
+                <li class="list-group-item d-flex justify-content-between align-items-center">
+                  <div>
+                    <strong><?= htmlspecialchars($profilo['Nome']) ?></strong>
+                    <p><?= htmlspecialchars($profilo['Competenza_Skill']) ?></p>
+                    <p>Livello: <?= number_format($profilo['Livello'], 2) ?></p>
+                  </div>
+                  <form method="POST" class="d-inline">
+                    <input type="hidden" name="eliminaComponente" value="<?= htmlspecialchars($profilo['Nome']) ?>">
+                    <button type="submit" class="btn btn-danger btn-sm">Elimina</button>
+                  </form>
+                </li>
+              <?php endforeach; ?>
+            </ul>
+          <?php else: ?>
+            <p>Nessun profilo disponibile per questo progetto.</p>
+          <?php endif; ?>
         </section>
       <?php else: ?>
         <h4>Aggiungi un nuovo componente:</h4>
