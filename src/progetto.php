@@ -216,8 +216,12 @@ $availableSkills = $stmtAvailableSkills->fetchAll(PDO::FETCH_ASSOC);
 <head>
   <meta charset="UTF-8">
   <title><?= htmlspecialchars($progetto["Nome"]) ?> | Bostarter</title>
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-  <link rel="stylesheet" href="style.css">
+  <!-- Bootstrap CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <!-- Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;500;600;700&family=Libre+Baskerville:wght@400;700&display=swap" rel="stylesheet">
+  <!-- Custom CSS -->
+  <link rel="stylesheet" href="style.css" />
 </head>
 <body>
 
@@ -399,11 +403,62 @@ $availableSkills = $stmtAvailableSkills->fetchAll(PDO::FETCH_ASSOC);
     </section>
   </main>
 
+  <?php else: ?>
+    <?php if (isCreator()): ?>
+      <!-- Inserire un nuovo profilo -->
+      <h4>Aggiungi un nuovo componente:</h4>
+      <form method="POST" action="" class="mb-4">
+        <div class="mb-3">
+          <label for="profilo" class="form-label">Nome del componente:</label>
+          <input
+            type="text"
+            id="profilo"
+            name="profilo"
+            class="form-control"
+            required
+            maxlength="1000"
+          >
+        </div>
+        <div class="mb-3">
+          <label for="skills" class="form-label">Seleziona una skill:</label>
+          <select name="skill" id="skills" class="form-select" required>
+            <?php foreach ($availableSkills as $skill): ?>
+              <option value="<?= htmlspecialchars($skill['Competenza'], ENT_QUOTES) ?>">
+                <?= htmlspecialchars($skill['Competenza']) ?>
+              </option>
+            <?php endforeach; ?>
+          </select>
+        </div>
+        <div class="mb-3">
+          <label for="level" class="form-label">Seleziona il livello:</label>
+          <select name="level" id="level" class="form-select" required>
+            <?php for ($i = 1; $i <= 5; $i++): ?>
+              <option value="<?= $i ?>"><?= $i ?></option>
+            <?php endfor; ?>
+          </select>
+        </div>
+        <button type="submit" class="btn btn-primary">
+          Aggiungi componente
+        </button>
+      </form>
+    <?php endif; ?>
+
+    <!-- Profili richiesti -->
+    <section class="mb-5">
+      <h4>Componenti richiesti:</h4>
+      <ul class="list-group">
+        <li class="list-group-item d-flex justify-content-between align-items-center">
+          <span>Profilo 1</span>
+        </li>
+        <li class="list-group-item d-flex justify-content-between align-items-center">
+          <span>Profilo 2</span>
+        </li>
+      </ul>
+    </section>
+  </main>
+
   <?php endif; ?>
-
-  <footer class="text-center mt-5 py-3 bg-light">
-    <p>Progetto Bostarter &copy; <?= date('Y') ?></p>
-  </footer>
-
+  
+  <?php include_once 'footer.php'; ?>
 </body>
 </html>
