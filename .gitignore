@@ -16,6 +16,7 @@
 .env
 .prettierrc
 .idea
+.prettierrc
 config.local.php
 
 # Escludi cartelle di cache
