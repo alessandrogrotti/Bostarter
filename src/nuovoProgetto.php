@@ -1,9 +1,9 @@
 <?php
-include_once 'auth.php';   // definisce requireLogin(), requireCreator()
+include_once 'auth.php';   
 requireLogin();
+requireCreator();
 
 include_once 'connection.php';
-include_once 'navbar.php';
 include_once 'mongodb.php';
 
 $mysqlConn     = getMySQLConnection();
@@ -11,27 +11,21 @@ $logCollection = getMongoDBConnection();
 writeLog('Visita pagina inserimento progetto', 'Accesso alla pagina');
 
 $message = '';
-$uploadDir = 'uploads/'; // Directory di destinazione immagini
+$uploadDir = 'uploads/';
 
-// Crea la cartella uploads/ se non esiste
 if (!file_exists($uploadDir)) {
     mkdir($uploadDir, 0777, true);
 }
 
+$software = isset($_POST['software']) && $_POST['software'] == 1;
+$hardware = isset($_POST['hardware']) && $_POST['hardware'] == 1;
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    // 1) Acquisizione e sanitizzazione input
     $nome        = trim($_POST['nome']);
     $descrizione = trim($_POST['descrizione']);
     $budget      = floatval($_POST['budget']);
     $dataLimite  = $_POST['dataLimite'];
 
-    $software = isset($_POST['software']) && $_POST['software'] == 1;
-    $hardware = isset($_POST['hardware']) && $_POST['hardware'] == 1;
-
-    // 2) emailCreatore da sessione
-    $emailCreatore = $_SESSION['id'];
-
-    // 3) definizione di $tipo
     if ($software && !$hardware) {
         $tipo = 'Software';
     } elseif ($hardware && !$software) {
@@ -41,7 +35,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     try {
-        // 4) Stored procedure per inserimento progetto
         $stmt = $mysqlConn->prepare("
             CALL InserisciProgetto(
                 :inNome,
@@ -53,32 +46,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             )
         ");
         $stmt->bindParam(':inNome',          $nome,          PDO::PARAM_STR);
-        $stmt->bindParam(':inEmailCreatore', $emailCreatore, PDO::PARAM_STR);
+        $stmt->bindParam(':inEmailCreatore', $_SESSION['id'], PDO::PARAM_STR);
         $stmt->bindParam(':inDescrizione',   $descrizione,   PDO::PARAM_STR);
         $stmt->bindParam(':inDataLimite',    $dataLimite,    PDO::PARAM_STR);
         $stmt->bindParam(':inBudget',        $budget);
         $stmt->bindParam(':inTipo',          $tipo,          PDO::PARAM_STR);
         $stmt->execute();
 
-        // 5) Verifica inserimento progetto
         if ($stmt->rowCount() > 0) {
-            writeLog('Inserimento progetto', "Progetto \"$nome\" inserito da $emailCreatore");
+            writeLog('Inserimento progetto', "Progetto \"$nome\" inserito con successo");
 
-            // 6) Gestione upload immagini se esistono
             if (isset($_FILES['foto']) && count($_FILES['foto']['name']) > 0) {
                 foreach ($_FILES['foto']['tmp_name'] as $index => $tmpName) {
                     if ($_FILES['foto']['error'][$index] === UPLOAD_ERR_OK) {
                         $originalName = basename($_FILES['foto']['name'][$index]);
                         $extension = strtolower(pathinfo($originalName, PATHINFO_EXTENSION));
 
-                        // Accetta solo immagini
                         if (in_array($extension, ['jpg', 'jpeg', 'png', 'gif'])) {
                             $newFileName = uniqid('img_', true) . '.' . $extension;
                             $destinationPath = $uploadDir . $newFileName;
 
-                            // Salva fisicamente il file
                             if (move_uploaded_file($tmpName, $destinationPath)) {
-                                // Inserisci il percorso nel database FOTO
                                 $insertFoto = $mysqlConn->prepare("INSERT INTO FOTO (Valore, Nome_Progetto) VALUES (:valore, :nomeProgetto)");
                                 $insertFoto->bindParam(':valore', $destinationPath, PDO::PARAM_STR);
                                 $insertFoto->bindParam(':nomeProgetto', $nome, PDO::PARAM_STR);
@@ -105,11 +93,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Inserisci Progetto | Bostarter</title>
-  <!-- Bootstrap CSS -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;500;600;700&family=Libre+Baskerville:wght@400;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
+  <?php require_once 'navbar.php'?>
   <main class="container py-5">
     <h1 class="mb-4">Nuovo Progetto</h1>
 
@@ -138,11 +127,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       </div>
       <div class="col-md-4 d-flex align-items-center">
         <div class="form-check me-3">
-          <input class="form-check-input" type="checkbox" value="1" id="software" name="software">
+          <input class="form-check-input" type="checkbox" value="1" id="software" name="software" <?= $software ? 'checked' : '' ?>>
           <label class="form-check-label" for="software">Software</label>
         </div>
         <div class="form-check">
-          <input class="form-check-input" type="checkbox" value="1" id="hardware" name="hardware">
+          <input class="form-check-input" type="checkbox" value="1" id="hardware" name="hardware" <?= $hardware ? 'checked' : '' ?>>
           <label class="form-check-label" for="hardware">Hardware</label>
         </div>
       </div>
@@ -158,11 +147,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     </form>
   </main>
 
-  <footer class="text-center mt-5 text-muted">
-    <p>Progetto Bostarter &copy; 2025</p>
-  </footer>
-
-  <!-- Bootstrap JS -->
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <?php require_once 'footer.php'?>
 </body>
 </html>
