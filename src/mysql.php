@@ -1,6 +1,7 @@
 <?php
 include_once 'connection.php';
 
+// Funzioni per competenze
 function inserisciCompetenza($nomeCompetenza) {
     try {
         $conn = getMySQLConnection();
@@ -33,3 +34,44 @@ function ottieniCompetenze() {
         return [];
     }
 }
+
+// Funzioni per componenti
+function inserisciComponente($nome, $nomeProgettoHardware, $descrizione, $prezzo, $quantita) {
+    try {
+        $conn = getMySQLConnection();
+        $stmt = $conn->prepare("CALL InserisciComponente(?, ?, ?, ?, ?)");
+        $stmt->bindParam(1, $nome, PDO::PARAM_STR);
+        $stmt->bindParam(2, $nomeProgettoHardware, PDO::PARAM_STR);
+        $stmt->bindParam(3, $descrizione, PDO::PARAM_STR);
+        $stmt->bindParam(4, $prezzo, PDO::PARAM_STR);
+        $stmt->bindParam(5, $quantita, PDO::PARAM_INT);
+        return $stmt->execute();
+    } catch (Exception $e) {
+        return false;
+    }
+}
+
+function ottieniComponentiPerProgetto($nomeProgettoHardware) {
+    try {
+        $conn = getMySQLConnection();
+        $stmt = $conn->prepare("CALL OttieniComponentiPerProgetto(?)");
+        $stmt->bindParam(1, $nomeProgettoHardware, PDO::PARAM_STR);
+        $stmt->execute();
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    } catch (Exception $e) {
+        return [];
+    }
+}
+
+function eliminaComponente($nome, $nomeProgettoHardware) {
+    try {
+        $conn = getMySQLConnection();
+        $stmt = $conn->prepare("CALL EliminaComponente(?, ?)");
+        $stmt->bindParam(1, $nome, PDO::PARAM_STR);
+        $stmt->bindParam(2, $nomeProgettoHardware, PDO::PARAM_STR);
+        return $stmt->execute();
+    } catch (Exception $e) {
+        return false;
+    }
+}
+?>

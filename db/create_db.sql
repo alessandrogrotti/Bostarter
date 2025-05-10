@@ -82,18 +82,14 @@ CREATE TABLE FINANZIAMENTO (
     FOREIGN KEY (Codice_Reward) REFERENCES REWARD(Codice)
 ) ENGINE = "INNODB";
 
-CREATE TABLE COMPOSIZIONE (
-    Nome_ProgettoHardware VARCHAR(100),
-    Nome_Componente VARCHAR(100),
-    PRIMARY KEY (Nome_ProgettoHardware, Nome_Componente),
-    FOREIGN KEY (Nome_ProgettoHardware) REFERENCES PROGETTO(Nome)
-) ENGINE = "INNODB";
-
 CREATE TABLE COMPONENTE (
-	Nome VARCHAR(100) PRIMARY KEY,
+	Nome VARCHAR(100),
+	Nome_ProgettoHardware VARCHAR(100),
     Descrizione VARCHAR(100),
     Prezzo DOUBLE,
-    Quantità INT
+    Quantità INT,
+    PRIMARY KEY (Nome_ProgettoHardware, Nome),
+    FOREIGN KEY (Nome_ProgettoHardware) REFERENCES PROGETTO(Nome)
 ) ENGINE = "INNODB";
 
 CREATE TABLE PROFILO (
@@ -133,7 +129,6 @@ CREATE TABLE CANDIDATURA (
     FOREIGN KEY (Id_Profilo) REFERENCES PROFILO(Id)
 ) ENGINE = "INNODB";
 
-
 DELIMITER $
 CREATE PROCEDURE InserisciCompetenza(IN nomeCompetenza VARCHAR(100))
 BEGIN
@@ -156,8 +151,47 @@ END;
 $ DELIMITER ;
 
 DELIMITER $
+CREATE PROCEDURE InserisciComponente(
+    IN p_Nome VARCHAR(100),
+    IN p_Nome_ProgettoHardware VARCHAR(100),
+    IN p_Descrizione VARCHAR(100),
+    IN p_Prezzo DOUBLE,
+    IN p_Quantita INT
+)
+BEGIN
+    INSERT INTO COMPONENTE (Nome, Nome_ProgettoHardware, Descrizione, Prezzo, Quantità)
+    VALUES (p_Nome, p_Nome_ProgettoHardware, p_Descrizione, p_Prezzo, p_Quantita);
+END;
+$
+DELIMITER ;
+
+DELIMITER $
+CREATE PROCEDURE OttieniComponentiPerProgetto(IN p_Nome_ProgettoHardware VARCHAR(100))
+BEGIN
+    SELECT * 
+    FROM COMPONENTE
+    WHERE Nome_ProgettoHardware = p_Nome_ProgettoHardware;
+END;
+$
+DELIMITER ;
+
+DELIMITER $
+CREATE PROCEDURE EliminaComponente(
+    IN p_Nome_Componente VARCHAR(100),
+    IN p_Nome_ProgettoHardware VARCHAR(100)
+)
+BEGIN
+    DELETE FROM COMPONENTE
+    WHERE Nome_ProgettoHardware = p_Nome_ProgettoHardware
+    AND Nome = p_Nome_Componente;
+END;
+$
+DELIMITER ;
+
+
+DELIMITER $
 CREATE PROCEDURE RegisterUser (IN p_Email VARCHAR(255), IN p_Nickname VARCHAR(100), IN p_Password VARCHAR(255), 
-							   IN p_Luogo VARCHAR(100), IN p_Anno YEAR, IN p_Nome VARCHAR(100), IN p_Cognome VARCHAR(100))
+                               IN p_Luogo VARCHAR(100), IN p_Anno YEAR, IN p_Nome VARCHAR(100), IN p_Cognome VARCHAR(100))
 BEGIN
     INSERT INTO UTENTE (Email, Nickname, Password, Luogo, Anno, Nome, Cognome)
     VALUES (p_Email, p_Nickname, p_Password, p_Luogo, p_Anno, p_Nome, p_Cognome);
@@ -167,7 +201,7 @@ $ DELIMITER ;
 DELIMITER $
 CREATE PROCEDURE AuthenticateUser (IN p_Email VARCHAR(255), IN p_Password VARCHAR(255))
 BEGIN
-	SELECT *
+    SELECT *
     FROM UTENTE
     WHERE Email = p_Email AND Password = p_Password;
 END;
@@ -192,15 +226,12 @@ $ DELIMITER ;
 
 DELIMITER $
 CREATE PROCEDURE FinanceProject (IN p_Email_Utente VARCHAR(255), IN p_Importo DECIMAL(10,2), IN p_Nome_Progetto VARCHAR(100), 
-								 IN p_Codice_Reward VARCHAR(50))
+                                  IN p_Codice_Reward VARCHAR(50))
 BEGIN
     INSERT INTO FINANZIAMENTO (Data, Importo, Email_Utente, Nome_Progetto, Codice_Reward)
     VALUES (CURDATE(), p_Importo, p_Email_Utente, p_Nome_Progetto, p_Codice_Reward);
 END;
-$ DELIMITER ; 
--- La pagina web/PHP esegue una query per recuperare le reward disponibili e l'utente sceglie quella che desidera. -- 
--- Il form include il codice della reward e viene passato come parametro alla stored procedure "FinanceProject". -- 
--- In questo scenario, la stored procedure non ha bisogno di eseguire un SELECT perché riceve già il valore. -- 
+$ DELIMITER ;
 
 DELIMITER $
 CREATE PROCEDURE InsertComment (IN p_Testo TEXT, IN p_Email_Utente VARCHAR(255), 
@@ -220,7 +251,8 @@ END;
 $ DELIMITER ;
 
 DELIMITER $
-CREATE PROCEDURE InserisciProgetto(IN Nome VARCHAR(100), IN Email_Creatore VARCHAR(255), IN Descrizione TEXT, IN Data_Limite DATE, IN Budget DECIMAL(10,2), IN Tipo VARCHAR(20))
+CREATE PROCEDURE InserisciProgetto(IN Nome VARCHAR(100), IN Email_Creatore VARCHAR(255), IN Descrizione TEXT, 
+                                   IN Data_Limite DATE, IN Budget DECIMAL(10,2), IN Tipo VARCHAR(20))
 BEGIN
     DECLARE CreatorePresente INT DEFAULT 0;
     
@@ -286,11 +318,11 @@ $ DELIMITER ;
 DELIMITER $
 CREATE PROCEDURE InserisciProfilo(IN Nome VARCHAR(100), Nome_ProgettoSoftware VARCHAR(100), Email_Creatore VARCHAR(255))
 BEGIN
-	DECLARE CreatorePresente INT DEFAULT 0;
+    DECLARE CreatorePresente INT DEFAULT 0;
     DECLARE ProgettoPresente INT DEFAULT 0;
     DECLARE TipoProgetto VARCHAR(20);
 
-	SET CreatorePresente = (SELECT COUNT(*) FROM CREATORE WHERE (Email_Utente = Email_Creatore));
+    SET CreatorePresente = (SELECT COUNT(*) FROM CREATORE WHERE (Email_Utente = Email_Creatore));
     SET ProgettoPresente = (SELECT COUNT(*) FROM PROGETTO WHERE (Nome = Nome_ProgettoSoftware));
     SET TipoProgetto = (SELECT Tipo FROM PROGETTO WHERE (Nome = Nome_ProgettoSoftware));
     
@@ -304,21 +336,21 @@ END;
 $ DELIMITER ;
 
 DELIMITER $
-CREATE PROCEDURE GestisciCandidatura(IN Id_Candidatura INT,IN Nuovo_Stato VARCHAR(50),IN Email_Creatore VARCHAR(255))
+CREATE PROCEDURE GestisciCandidatura(IN Id_Candidatura INT, IN Nuovo_Stato VARCHAR(50), IN Email_Creatore VARCHAR(255))
 BEGIN
     DECLARE ProgettoCreatore INT DEFAULT 0;
     DECLARE StatoCandidatura VARCHAR(50);
     
     SET ProgettoCreatore = (SELECT COUNT(*) 
-							FROM CREATORE c
-							JOIN PROGETTO p ON (p.Email_Creatore = c.Email_Utente)
-							JOIN PROFILO pr ON (pr.Nome_ProgettoSoftware = p.Nome)
-							JOIN CANDIDATURA ca ON (ca.Id_Profilo = pr.Id)
-							WHERE (ca.Id = Id_Candidatura) AND (c.Email_Utente = Email_Creatore));
+                            FROM CREATORE c
+                            JOIN PROGETTO p ON (p.Email_Creatore = c.Email_Utente)
+                            JOIN PROFILO pr ON (pr.Nome_ProgettoSoftware = p.Nome)
+                            JOIN CANDIDATURA ca ON (ca.Id_Profilo = pr.Id)
+                            WHERE (ca.Id = Id_Candidatura) AND (c.Email_Utente = Email_Creatore));
     
     SET StatoCandidatura = (SELECT Stato FROM CANDIDATURA WHERE (Id = Id_Candidatura));
 
-    IF (ProgettoCreatore > 0) AND (StatoCandidatura= 'In attesa') THEN
+    IF (ProgettoCreatore > 0) AND (StatoCandidatura = 'In attesa') THEN
         UPDATE CANDIDATURA
         SET Stato = Nuovo_Stato
         WHERE (Id = Id_Candidatura);
@@ -344,8 +376,7 @@ AFTER INSERT ON PROGETTO
 FOR EACH ROW
 BEGIN
     UPDATE CREATORE
-    SET Affidabilità = IF(Nr_progetti + 1 = 0, 0, Affidabilità),  -- sicurezza divisione per zero
-        Nr_progetti = Nr_progetti + 1
+    SET Affidabilità = ROUND(Nr_progetti / (Nr_progetti + 1), 2)
     WHERE Email_Utente = NEW.Email_Creatore;
 END;
 $
@@ -369,7 +400,7 @@ BEGIN
     WHERE Email_Utente = (SELECT Email_Creatore FROM PROGETTO WHERE Nome = NEW.Nome_Progetto LIMIT 1);
 
     UPDATE CREATORE
-    SET Affidabilità = IF(totaleProgetti = 0, 0, ROUND(totaleFinanziamenti / totaleProgetti, 2))
+    SET Affidabilità = ROUND(totaleFinanziamenti / totaleProgetti, 2)
     WHERE Email_Utente = (SELECT Email_Creatore FROM PROGETTO WHERE Nome = NEW.Nome_Progetto LIMIT 1);
 END;
 $

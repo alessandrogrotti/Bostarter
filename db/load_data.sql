@@ -122,3 +122,5 @@ CALL InserisciCompetenza('Java');
 CALL InserisciCompetenza('SQL');
 CALL InserisciCompetenza('Teamwork');
 
+
+
