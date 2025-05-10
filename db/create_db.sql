@@ -51,7 +51,6 @@ CREATE TABLE COMMENTO (
     Email_Utente VARCHAR(255),
     Nome_Progetto VARCHAR(100),
     FOREIGN KEY (Email_Utente) REFERENCES UTENTE(Email),
-    FOREIGN KEY (Email_Creatore) REFERENCES CREATORE(Email_Utente),
     FOREIGN KEY (Nome_Progetto) REFERENCES PROGETTO(Nome)
 ) ENGINE = "INNODB";
 
@@ -83,18 +82,14 @@ CREATE TABLE FINANZIAMENTO (
     FOREIGN KEY (Codice_Reward) REFERENCES REWARD(Codice)
 ) ENGINE = "INNODB";
 
-CREATE TABLE COMPOSIZIONE (
-    Nome_ProgettoHardware VARCHAR(100),
-    Nome_Componente VARCHAR(100),
-    PRIMARY KEY (Nome_ProgettoHardware, Nome_Componente),
-    FOREIGN KEY (Nome_ProgettoHardware) REFERENCES PROGETTO(Nome)
-) ENGINE = "INNODB";
-
 CREATE TABLE COMPONENTE (
-	Nome VARCHAR(100) PRIMARY KEY,
+	Nome VARCHAR(100),
+	Nome_ProgettoHardware VARCHAR(100),
     Descrizione VARCHAR(100),
     Prezzo DOUBLE,
-    Quantità INT
+    Quantità INT,
+    PRIMARY KEY (Nome_ProgettoHardware, Nome),
+    FOREIGN KEY (Nome_ProgettoHardware) REFERENCES PROGETTO(Nome)
 ) ENGINE = "INNODB";
 
 CREATE TABLE PROFILO (
@@ -154,6 +149,45 @@ BEGIN
     SELECT * FROM SKILL;
 END;
 $ DELIMITER ;
+
+DELIMITER $
+CREATE PROCEDURE InserisciComponente(
+    IN p_Nome VARCHAR(100),
+    IN p_Nome_ProgettoHardware VARCHAR(100),
+    IN p_Descrizione VARCHAR(100),
+    IN p_Prezzo DOUBLE,
+    IN p_Quantita INT
+)
+BEGIN
+    INSERT INTO COMPONENTE (Nome, Nome_ProgettoHardware, Descrizione, Prezzo, Quantità)
+    VALUES (p_Nome, p_Nome_ProgettoHardware, p_Descrizione, p_Prezzo, p_Quantita);
+END;
+$
+DELIMITER ;
+
+DELIMITER $
+CREATE PROCEDURE OttieniComponentiPerProgetto(IN p_Nome_ProgettoHardware VARCHAR(100))
+BEGIN
+    SELECT * 
+    FROM COMPONENTE
+    WHERE Nome_ProgettoHardware = p_Nome_ProgettoHardware;
+END;
+$
+DELIMITER ;
+
+DELIMITER $
+CREATE PROCEDURE EliminaComponente(
+    IN p_Nome_Componente VARCHAR(100),
+    IN p_Nome_ProgettoHardware VARCHAR(100)
+)
+BEGIN
+    DELETE FROM COMPONENTE
+    WHERE Nome_ProgettoHardware = p_Nome_ProgettoHardware
+    AND Nome = p_Nome_Componente;
+END;
+$
+DELIMITER ;
+
 
 DELIMITER $
 CREATE PROCEDURE RegisterUser (IN p_Email VARCHAR(255), IN p_Nickname VARCHAR(100), IN p_Password VARCHAR(255), 
@@ -217,8 +251,8 @@ END;
 $ DELIMITER ;
 
 DELIMITER $
-CREATE PROCEDURE InserisciProgetto(IN Nome VARCHAR(100), IN Email_Creatore VARCHAR(255), IN Descrizione TEXT, IN Data_Inserimento DATE, 
-                                   IN Data_Limite DATE, IN Budget DECIMAL(10,2), IN Stato VARCHAR(50), IN Tipo VARCHAR(20))
+CREATE PROCEDURE InserisciProgetto(IN Nome VARCHAR(100), IN Email_Creatore VARCHAR(255), IN Descrizione TEXT, 
+                                   IN Data_Limite DATE, IN Budget DECIMAL(10,2), IN Tipo VARCHAR(20))
 BEGIN
     DECLARE CreatorePresente INT DEFAULT 0;
     
