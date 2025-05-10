@@ -70,64 +70,55 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['commento'])) {
 }
 
 // 4) Gestione inserimento profilo
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['profilo'])) {
-  // a) Verifica autenticazione e che sia creatore
-  requireLogin();
-  if (!isCreator()) {
-      die("Non sei autorizzato a inserire profili in questo progetto.");
-  }
-
-  // b) Pulisci i dati dal form
-  $nomeProfilo      = trim($_POST['profilo']);
-  $skill            = trim($_POST['skill']);
-  $livello          = intval($_POST['level']);
-  $emailCreatore    = $_SESSION['id'];  // presuppone che l'email del creatore sia in sessione
-  $nomeProgetto     = $nomeProgetto;    // già definito più sopra da GET
-
-  try {
-      // c) Chiamata alla SP per inserire il profilo
-      $stmtP = $conn->prepare("CALL InserisciProfilo(:p_Nome, :p_Progetto, :p_EmailCreatore)");
-      $stmtP->bindParam(':p_Nome',            $nomeProfilo,   PDO::PARAM_STR);
-      $stmtP->bindParam(':p_Progetto',        $nomeProgetto,  PDO::PARAM_STR);
-      $stmtP->bindParam(':p_EmailCreatore',   $emailCreatore, PDO::PARAM_STR);
-      $stmtP->execute();
-      // dopo CALL, chiudi il cursor per poter fare altre query
-      $stmtP->closeCursor();
-
-      $row = $stmtP->fetch(PDO::FETCH_ASSOC);
-      $idProfilo = $row['NewId'] ?? null;
-      $stmtP->closeCursor();
-
-      if (! $idProfilo) {
-          throw new Exception("Impossibile recuperare l'ID del profilo inserito.");
+  if ($_SERVER['REQUEST_METHOD'] === 'POST'
+      && isset($_POST['profilo'], $_POST['skill'], $_POST['level'])
+  ) {
+      // a) Verifica autenticazione e che sia il creatore
+      requireLogin();
+      if (!isCreator()) {
+          die("Solo il creatore del progetto può aggiungere profili.");
       }
 
-      // e) Inserimento nella tabella RICHIEDE
-      $stmtR = $conn->prepare("
-          INSERT INTO RICHIEDE (Id_Profilo, Competenza_Skill, Livello)
-          VALUES (:p_IdProfilo, :p_Skill, :p_Livello)
-      ");
-      $stmtR->bindParam(':p_IdProfilo', $idProfilo, PDO::PARAM_INT);
-      $stmtR->bindParam(':p_Skill',     $skill,     PDO::PARAM_STR);
-      $stmtR->bindParam(':p_Livello',   $livello,   PDO::PARAM_INT);
-      $stmtR->execute();
-      $stmtR->closeCursor();
+      // b) Pulisci i dati in ingresso
+      $nomeProfilo    = trim($_POST['profilo']);
+      $competenza     = $_POST['skill'];
+      $livello        = (int) $_POST['level'];
+      $emailCreatore  = $progetto['Email_Creatore'];
+      $emailUtente    = $_SESSION['id'];  // l’utente che sta inserendo
 
-      // f) (Opzionale) Log su MongoDB
-      writeLog(
-          'Aggiunta profilo',
-          "Creatore $emailCreatore ha aggiunto il profilo '$nomeProfilo' (ID $idProfilo) al progetto $nomeProgetto con skill $skill livello $livello"
-      );
+      // c) Chiamata alla SP InserisciProfiloRichede
+      try {
+          $stmt = $conn->prepare(
+              "CALL InserisciProfiloRichede(
+                  :p_Nome,
+                  :p_Nome_ProgettoSoftware,
+                  :p_Email_Creatore,
+                  :p_Livello,
+                  :p_Competenza_Skill
+              )"
+          );
+          $stmt->bindParam(':p_Nome',                     $nomeProfilo,  PDO::PARAM_STR);
+          $stmt->bindParam(':p_Nome_ProgettoSoftware',    $nomeProgetto, PDO::PARAM_STR);
+          $stmt->bindParam(':p_Email_Creatore',           $emailCreatore,PDO::PARAM_STR);
+          $stmt->bindParam(':p_Livello',                  $livello,      PDO::PARAM_INT);
+          $stmt->bindParam(':p_Competenza_Skill',         $competenza,   PDO::PARAM_STR);
+          $stmt->execute();
+          $stmt->closeCursor();
 
-      // g) Redirect PRIMA di qualsiasi output
-      header("Location: progetto.php?nome=" . urlencode($nomeProgetto));
-      exit;
-  } catch (PDOException $e) {
-      die("Errore durante l'inserimento del profilo: " . $e->getMessage());
-  } catch (Exception $e) {
-      die($e->getMessage());
-  }
+          // d) Log su MongoDB
+          writeLog(
+              'Inserimento profilo',
+              "Utente $emailUtente ha aggiunto profilo '$nomeProfilo' al progetto '$nomeProgetto'"
+          );
+
+          // e) Redirect prima di qualsiasi output
+          header("Location: progetto.php?nome=" . urlencode($nomeProgetto));
+          exit;
+      } catch (PDOException $e) {
+          die("Errore nell'inserimento del profilo: " . $e->getMessage());
+      }
 }
+
 
 
 // 5) Recupera i dettagli del progetto
