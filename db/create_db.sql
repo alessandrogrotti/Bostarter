@@ -176,6 +176,16 @@ $
 DELIMITER ;
 
 DELIMITER $
+CREATE PROCEDURE OttieniProfiliPerProgetto(IN p_Nome_ProgettoSoftware VARCHAR(100))
+BEGIN
+    SELECT * 
+    FROM PROFILO, RICHIEDE
+    WHERE Nome_ProgettoSoftware = p_Nome_ProgettoSoftware AND Id_Profilo = Id;
+END;
+$
+DELIMITER ;
+
+DELIMITER $
 CREATE PROCEDURE EliminaComponente(
     IN p_Nome_Componente VARCHAR(100),
     IN p_Nome_ProgettoHardware VARCHAR(100)
@@ -315,25 +325,34 @@ BEGIN
 END;
 $ DELIMITER ;
 
+
 DELIMITER $
-CREATE PROCEDURE InserisciProfilo(IN Nome VARCHAR(100), Nome_ProgettoSoftware VARCHAR(100), Email_Creatore VARCHAR(255))
+CREATE PROCEDURE InserisciProfiloRichiede(IN Nome VARCHAR(100), IN Nome_ProgettoSoftware VARCHAR(100), IN Email_Creatore VARCHAR(255), IN Livello INT, IN Competenza_Skill VARCHAR(100))
 BEGIN
     DECLARE CreatorePresente INT DEFAULT 0;
     DECLARE ProgettoPresente INT DEFAULT 0;
     DECLARE TipoProgetto VARCHAR(20);
+    DECLARE nuovoIdProfilo INT;
 
     SET CreatorePresente = (SELECT COUNT(*) FROM CREATORE WHERE (Email_Utente = Email_Creatore));
     SET ProgettoPresente = (SELECT COUNT(*) FROM PROGETTO WHERE (Nome = Nome_ProgettoSoftware));
     SET TipoProgetto = (SELECT Tipo FROM PROGETTO WHERE (Nome = Nome_ProgettoSoftware));
-    
-	SELECT CreatorePresente, ProgettoPresente, TipoProgetto;
 
-    IF (CreatorePresente > 0) AND (ProgettoPresente > 0) AND (TipoProgetto = "Software") THEN
+    /*IF (CreatorePresente > 0) AND (ProgettoPresente > 0) AND (TipoProgetto = 'Software') THEN*/
+    
         INSERT INTO PROFILO (Nome, Nome_ProgettoSoftware)
         VALUES (Nome, Nome_ProgettoSoftware);
-    END IF;
+        
+        SET nuovoIdProfilo = LAST_INSERT_ID();
+        
+        INSERT INTO RICHIEDE (Livello, Id_Profilo, Competenza_Skill)
+        VALUES (Livello, nuovoIdProfilo, Competenza_Skill);
+    /*END IF;*/
+    
 END;
 $ DELIMITER ;
+
+
 
 DELIMITER $
 CREATE PROCEDURE GestisciCandidatura(IN Id_Candidatura INT, IN Nuovo_Stato VARCHAR(50), IN Email_Creatore VARCHAR(255))

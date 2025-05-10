@@ -78,49 +78,47 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['commento'])) {
     }
 }
 
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['profilo'])) {
+if ($_SERVER['REQUEST_METHOD'] === 'POST'
+    && isset($_POST['profilo'], $_POST['skill'], $_POST['level'])
+) {
     requireLogin();
-    if (!isCreator()) {
-        die("Non sei autorizzato a inserire profili in questo progetto.");
+    if (! isCreator()) {
+        die("Solo il creatore del progetto può aggiungere profili.");
     }
 
-    $nomeProfilo = trim($_POST['profilo']);
-    $skill = trim($_POST['skill']);
-    $livello = intval($_POST['level']);
-    $emailCreatore = $_SESSION['id'];
-    $nomeProgetto = $nomeProgetto;
+    // pulizia dati
+    $nomeProfilo   = trim($_POST['profilo']);
+    $competenza    = $_POST['skill'];
+    $livello       = (int) $_POST['level'];
 
+    // chiamo la stored procedure
     try {
-        $stmtP = $conn->prepare("CALL InserisciProfilo(:p_Nome, :p_Progetto, :p_EmailCreatore)");
-        $stmtP->bindParam(':p_Nome', $nomeProfilo, PDO::PARAM_STR);
-        $stmtP->bindParam(':p_Progetto', $nomeProgetto, PDO::PARAM_STR);
-        $stmtP->bindParam(':p_EmailCreatore', $emailCreatore, PDO::PARAM_STR);
-        $stmtP->execute();
-        $stmtP->closeCursor();
-
-        $row = $stmtP->fetch(PDO::FETCH_ASSOC);
-        $idProfilo = $row['NewId'] ?? null;
-        $stmtP->closeCursor();
-
-        if (!$idProfilo) {
-            throw new Exception("Impossibile recuperare l'ID del profilo inserito.");
-        }
-
-        $stmtR = $conn->prepare(
-            "INSERT INTO RICHIEDE (Id_Profilo, Competenza_Skill, Livello) VALUES (:p_IdProfilo, :p_Skill, :p_Livello)"
+        $stmt = $conn->prepare(
+            "CALL InserisciProfiloRichiede(
+                :p_Nome,
+                :p_Nome_ProgettoSoftware,
+                :p_Email_Creatore,
+                :p_Livello,
+                :p_Competenza_Skill
+            )"
         );
-        $stmtR->bindParam(':p_IdProfilo', $idProfilo, PDO::PARAM_INT);
-        $stmtR->bindParam(':p_Skill', $skill, PDO::PARAM_STR);
-        $stmtR->bindParam(':p_Livello', $livello, PDO::PARAM_INT);
-        $stmtR->execute();
-        $stmtR->closeCursor();
-        writeLog('Aggiunta profilo', "Creatore $emailCreatore ha aggiunto il profilo '$nomeProfilo' (ID $idProfilo) al progetto $nomeProgetto con skill $skill livello $livello");
+        $stmt->bindParam(':p_Nome',                     $nomeProfilo,   PDO::PARAM_STR);
+        $stmt->bindParam(':p_Nome_ProgettoSoftware',    $nomeProgetto,  PDO::PARAM_STR);
+        $stmt->bindParam(':p_Email_Creatore',           $progetto['Email_Creatore'], PDO::PARAM_STR);
+        $stmt->bindParam(':p_Livello',                  $livello,       PDO::PARAM_INT);
+        $stmt->bindParam(':p_Competenza_Skill',         $competenza,    PDO::PARAM_STR);
+        $stmt->execute();
+        $stmt->closeCursor();
+
+        writeLog(
+            'Inserimento profilo',
+            "Creatore {$_SESSION['id']} ha aggiunto profilo '$nomeProfilo' al progetto '$nomeProgetto'"
+        );
+
         header("Location: progetto.php?nome=" . urlencode($nomeProgetto));
         exit;
     } catch (PDOException $e) {
-        die("Errore durante l'inserimento del profilo: " . $e->getMessage());
-    } catch (Exception $e) {
-        die($e->getMessage());
+        die("Errore nell'inserimento del profilo: " . $e->getMessage());
     }
 }
 
@@ -146,7 +144,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['nomeComponente'])) {
   }
 }
 
-// Elimina componente
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['eliminaComponente'])) {
   requireLogin();
   if (!isCreator()) {
@@ -163,6 +160,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['eliminaComponente']))
   }
 }
 
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['eliminaProfilo'])) {
+  requireLogin();
+  if (!isCreator()) {
+      die("Non sei autorizzato a eliminare profilo in questo progetto.");
+  }
+
+  $nomeComponenteDaEliminare = trim($_POST['eliminaProfilo']);
+  if (eliminaProfilo($nomeProfiloDaEliminare, $nomeProgetto)) {
+      writeLog('Eliminazione profilo', "Creatore ha eliminato il profilo '$nomeProfiloDaEliminare' dal progetto $nomeProgetto");
+      header("Location: progetto.php?nome=" . urlencode($nomeProgetto));
+      exit;
+  } else {
+      die("Errore nell'eliminazione del profilo.");
+  }
+}
 
 try {
     $stmt = $conn->prepare(
@@ -228,6 +240,7 @@ $availableSkillsQuery = "SELECT Competenza FROM SKILL ORDER BY Competenza";
 $stmtAvailableSkills = $conn->prepare($availableSkillsQuery);
 $stmtAvailableSkills->execute();
 $availableSkills = $stmtAvailableSkills->fetchAll(PDO::FETCH_ASSOC);
+$profili = ottieniProfiliPerProgetto($nomeProgetto);
 $componenti = ottieniComponentiPerProgetto($nomeProgetto);
 ?>
 
@@ -427,16 +440,25 @@ $componenti = ottieniComponentiPerProgetto($nomeProgetto);
         </form>
         <section class="mb-5">
           <h4>Profili richiesti:</h4>
-          <ul class="list-group">
-            <li class="list-group-item d-flex justify-content-between align-items-center">
-              <span>Profilo 1</span>
-              <button class="btn btn-outline-primary btn-sm">Invia candidatura</button>
-            </li>
-            <li class="list-group-item d-flex justify-content-between align-items-center">
-              <span>Profilo 2</span>
-              <button class="btn btn-outline-primary btn-sm">Invia candidatura</button>
-            </li>
-          </ul>
+          <?php if ($profili): ?>
+            <ul class="list-group">
+              <?php foreach ($profili as $profilo): ?>
+                <li class="list-group-item d-flex justify-content-between align-items-center">
+                  <div>
+                    <strong><?= htmlspecialchars($profilo['Nome']) ?></strong>
+                    <p><?= htmlspecialchars($profilo['Competenza_Skill']) ?></p>
+                    <p>Livello: <?= number_format($profilo['Livello'], 2) ?></p>
+                  </div>
+                  <form method="POST" class="d-inline">
+                    <input type="hidden" name="eliminaComponente" value="<?= htmlspecialchars($profilo['Nome']) ?>">
+                    <button type="submit" class="btn btn-danger btn-sm">Elimina</button>
+                  </form>
+                </li>
+              <?php endforeach; ?>
+            </ul>
+          <?php else: ?>
+            <p>Nessun profilo disponibile per questo progetto.</p>
+          <?php endif; ?>
         </section>
       <?php else: ?>
         <h4>Aggiungi un nuovo componente:</h4>

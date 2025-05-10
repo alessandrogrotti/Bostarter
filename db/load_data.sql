@@ -122,5 +122,5 @@ CALL InserisciCompetenza('Java');
 CALL InserisciCompetenza('SQL');
 CALL InserisciCompetenza('Teamwork');
 
-
+CALL InserisciProfiloRichiede('Frontend Developer', 'Sistema Domotico Smart', 'mario.rossi@example.com', 3,'Java');
 
