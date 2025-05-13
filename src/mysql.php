@@ -114,6 +114,25 @@ function OttieniListaAffidabilità() {
 }
 
 
+function OttieniListaProgetti() {
+    try {
+        $conn = getMySQLConnection();
+        $stmt = $conn->prepare("CALL OttieniListaProgetti()");
+        $stmt->execute();
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    } catch (Exception $e) {
+        return [];
+    }
+}
+
+function OttieniListaFinanziatori() {
+    try {
+        $conn = getMySQLConnection();
+        $stmt = $conn->prepare("CALL OttieniListaFinanziamenti()");
+        $stmt->execute();
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    } catch (Exception $e) {
+        return [];
+    }
+}
 ?>
-
-

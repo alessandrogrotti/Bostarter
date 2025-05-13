@@ -475,15 +475,35 @@ BEGIN
 END;
 $ DELIMITER ;
 
-/* 
 CREATE VIEW progetti_quasi_completi AS
 SELECT p.Nome,
-       (p.Budget - COALESCE(SUM(f.Importo), 0)) AS Differenza
+       (p.Budget - COALESCE(SUM(f.Importo), 0)) AS Differenza, p.Budget
 FROM PROGETTO p
 LEFT JOIN FINANZIAMENTO f ON p.Nome = f.Nome_Progetto
 WHERE p.Stato = 'Aperto'
 GROUP BY p.Nome, p.Budget
-ORDER BY Differenza ASC
-LIMIT 3;
-*/
+ORDER BY Differenza ASC;
 
+DELIMITER $
+CREATE PROCEDURE OttieniListaProgetti ()
+BEGIN
+    SELECT *
+    FROM progetti_quasi_completi;
+END;
+$ DELIMITER ;
+
+CREATE VIEW classifica_finanziatori AS
+SELECT u.Nickname,
+       SUM(f.Importo) AS Totale
+FROM FINANZIAMENTO f
+JOIN UTENTE u ON f.Email_Utente = u.Email
+GROUP BY u.Nickname
+ORDER BY Totale DESC;
+
+DELIMITER $
+CREATE PROCEDURE OttieniListaFinanziamenti ()
+BEGIN
+    SELECT *
+    FROM classifica_finanziatori;
+END;
+$ DELIMITER ;

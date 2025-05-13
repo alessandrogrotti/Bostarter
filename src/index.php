@@ -29,9 +29,10 @@ try {
 }
 
 $vistaAffidabilità = OttieniListaAffidabilità();
+$vistaProgetti = OttieniListaProgetti();
+$vistaFinanziatori = OttieniListaFinanziatori();
 
-
- include_once 'navbar.php'; 
+include_once 'navbar.php'; 
 
 ?>
 <!DOCTYPE html>
@@ -147,14 +148,14 @@ $vistaAffidabilità = OttieniListaAffidabilità();
       <section class="p-4 bg-light rounded-lg">
         <h3 class="h4 mb-4">Classifica Creatori</h3>
         <ol class="list-group list-group-numbered">
-          <?php foreach ($vistaAffidabilità as $creatore): ?>
+          <?php for ($i = 0; $i < min(3, count($vistaAffidabilità)); $i++): ?>
             <li class="list-group-item d-flex justify-content-between align-items-start">
               <div class="ms-2 me-auto">
-                <div class="fw-bold"><?= htmlspecialchars($creatore['Nickname']) ?></div>
-                <span> affidabilità: <?= htmlspecialchars($creatore['Affidabilità']) ?> </span>
+                <div class="fw-bold"><?= htmlspecialchars($vistaAffidabilità[$i]['Nickname']) ?></div>
+                <span> Affidabilità: <?= htmlspecialchars($vistaAffidabilità[$i]['Affidabilità']) ?> </span>
               </div>
             </li>
-          <?php endforeach; ?>
+          <?php endfor; ?>
         </ol>
       </section>
     </div>
@@ -164,20 +165,14 @@ $vistaAffidabilità = OttieniListaAffidabilità();
       <section class="p-4 bg-light rounded-lg">
         <h3 class="h4 mb-4">Progetti Quasi Finiti</h3>
         <ol class="list-group list-group-numbered">
-          <li class="list-group-item d-flex justify-content-between align-items-start">
-            <div class="ms-2 me-auto">
-              <div class="fw-bold">Basi di dati</div>
-              <span class="text-muted small">95% completato</span>
-            </div>
-            <span class="badge bg-accent rounded-pill">€1,250</span>
-          </li>
-          <li class="list-group-item d-flex justify-content-between align-items-start">
-            <div class="ms-2 me-auto">
-              <div class="fw-bold">Ingegneria</div>
-              <span class="text-muted small">89% completato</span>
-            </div>
-            <span class="badge bg-primary rounded-pill">€980</span>
-          </li>
+          <?php for ($i = 0; $i < min(3, count($vistaProgetti)); $i++): ?>
+            <li class="list-group-item d-flex justify-content-between align-items-start">
+              <div class="ms-2 me-auto">
+                <div class="fw-bold"><?= htmlspecialchars($vistaProgetti[$i]['Nome']) ?></div>
+                <span><?= htmlspecialchars($vistaProgetti[$i]['Differenza']) ?>€ al completamento</span>
+              </div>
+            </li>
+          <?php endfor; ?>
         </ol>
       </section>
     </div>
@@ -187,23 +182,18 @@ $vistaAffidabilità = OttieniListaAffidabilità();
       <section class="p-4 bg-light rounded-lg">
         <h3 class="h4 mb-4">Classifica Utenti</h3>
         <ol class="list-group list-group-numbered">
-          <li class="list-group-item d-flex justify-content-between align-items-start">
-            <div class="ms-2 me-auto">
-              <div class="fw-bold">Leo</div>
-              <span class="text-muted small">12 contributi</span>
-            </div>
-            <span class="badge bg-accent rounded-pill">Top</span>
-          </li>
-          <li class="list-group-item d-flex justify-content-between align-items-start">
-            <div class="ms-2 me-auto">
-              <div class="fw-bold">Marco</div>
-              <span class="text-muted small">8 contributi</span>
-            </div>
-            <span class="badge bg-primary rounded-pill">2°</span>
-          </li>
+          <?php for ($i = 0; $i < min(3, count($vistaFinanziatori)); $i++): ?>
+            <li class="list-group-item d-flex justify-content-between align-items-start">
+              <div class="ms-2 me-auto">
+                <div class="fw-bold"><?= htmlspecialchars($vistaFinanziatori[$i]['Nickname']) ?></div>
+                <span>Finanziati: <?= htmlspecialchars($vistaFinanziatori[$i]['Totale']) ?>€</span>
+              </div>
+            </li>
+          <?php endfor; ?>
         </ol>
       </section>
     </div>
+
   </div>
 </main>
 
