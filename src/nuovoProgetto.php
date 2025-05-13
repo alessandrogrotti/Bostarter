@@ -99,6 +99,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 </head>
 <body>
   <?php require_once 'navbar.php'?>
+  
   <main class="container py-5">
     <h1 class="mb-4">Nuovo Progetto</h1>
 

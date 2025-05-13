@@ -105,34 +105,6 @@ try {
         </div>
       <?php endif; ?>
     </section>
-
-    <!-- Classifica Creatori -->
-    <section class="mb-5">
-      <h2 class="section-title">Classifica Creatori</h2>
-      <ol class="list-group list-group-numbered list-group-custom">
-        <li class="list-group-item">Noe</li>
-        <li class="list-group-item">Ale</li>
-      </ol>
-    </section>
-
-    <!-- Progetti Quasi Finiti -->
-    <section class="mb-5">
-      <h2 class="section-title">Progetti Quasi Finiti</h2>
-      <ol class="list-group list-group-numbered list-group-custom">
-        <li class="list-group-item">Basi di dati</li>
-        <li class="list-group-item">Ingegneria</li>
-      </ol>
-    </section>
-
-    <!-- Classifica Utenti -->
-    <section class="mb-5">
-      <h2 class="section-title">Classifica Utenti</h2>
-      <ol class="list-group list-group-numbered list-group-custom">
-        <li class="list-group-item">Leo</li>
-        <li class="list-group-item">Marco</li>
-      </ol>
-    </section>
-
   </div>
 </main>
 
