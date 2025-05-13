@@ -377,29 +377,28 @@ BEGIN
 END;
 $ DELIMITER ;
 
--- Trigger per l'aggiornamento automatico del numero dei progetti di un creatore --
 DELIMITER $$
-CREATE TRIGGER aggiorna_nr_progetti
+CREATE TRIGGER aggiorna_profilo_creatore
 AFTER INSERT ON PROGETTO
 FOR EACH ROW
 BEGIN
+    -- Aggiorna il numero di progetti
     UPDATE CREATORE
     SET Nr_progetti = Nr_progetti + 1
     WHERE Email_Utente = NEW.Email_Creatore;
+
+    -- Aggiorna l'affidabilità
+    UPDATE CREATORE c
+    SET Affidabilità = (
+        SELECT ROUND(COUNT(DISTINCT p.Nome) / c.Nr_progetti, 2)
+        FROM PROGETTO p
+        JOIN FINANZIAMENTO f ON p.Nome = f.Nome_Progetto
+        WHERE p.Email_Creatore = c.Email_Utente
+    )
+    WHERE c.Email_Utente = NEW.Email_Creatore;
 END $$
 DELIMITER ;
 
-DELIMITER $
-CREATE TRIGGER aggiorna_affidabilita_creazione
-AFTER INSERT ON PROGETTO
-FOR EACH ROW
-BEGIN
-    UPDATE CREATORE
-    SET Affidabilità = ROUND(Nr_progetti / (Nr_progetti + 1), 2)
-    WHERE Email_Utente = NEW.Email_Creatore;
-END;
-$
-DELIMITER ;
 
 DELIMITER $
 CREATE TRIGGER aggiorna_affidabilita_finanziamento
@@ -457,3 +456,34 @@ BEGIN
 END;
 $
 DELIMITER ;
+
+
+/* Statistiche tramite viste */
+
+/* affidabilità creatori*/
+CREATE VIEW classifica_affidabilita_creatori AS
+SELECT u.Nickname, c.Affidabilità
+FROM CREATORE c
+JOIN UTENTE u ON c.Email_Utente = u.Email
+ORDER BY c.Affidabilità DESC;
+
+DELIMITER $
+CREATE PROCEDURE OttieniListaAffidabilità ()
+BEGIN
+    SELECT *
+    FROM classifica_affidabilita_creatori;
+END;
+$ DELIMITER ;
+
+/* 
+CREATE VIEW progetti_quasi_completi AS
+SELECT p.Nome,
+       (p.Budget - COALESCE(SUM(f.Importo), 0)) AS Differenza
+FROM PROGETTO p
+LEFT JOIN FINANZIAMENTO f ON p.Nome = f.Nome_Progetto
+WHERE p.Stato = 'Aperto'
+GROUP BY p.Nome, p.Budget
+ORDER BY Differenza ASC
+LIMIT 3;
+*/
+

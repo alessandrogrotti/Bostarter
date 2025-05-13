@@ -6,9 +6,9 @@ INSERT INTO UTENTE (Email, Nickname, Password, Luogo, Anno, Nome, Cognome) VALUE
 
 -- Inserimento nella tabella CREATORE
 INSERT INTO CREATORE (Email_Utente, Nr_progetti, Affidabilità) VALUES
-('mario.rossi@example.com', 0, 4.5),
-('luisa.bianchi@example.com', 0, 4.2),
-('giorgio.verdi@example.com', 0, 4.8);
+('mario.rossi@example.com', 0, 0),
+('luisa.bianchi@example.com', 0, 0),
+('giorgio.verdi@example.com', 0, 0);
 
 -- Inserimento nella tabella PROGETTO -- 
 INSERT INTO PROGETTO (
@@ -39,9 +39,9 @@ INSERT INTO PROGETTO (
     'giorgio.verdi@example.com',
     'Sviluppo di una piattaforma online per corsi e formazione a distanza.',
     '2025-02-28',
-    '2025-08-30',
+    '2025-05-12',
     7500.00,
-    'Aperto',
+    'Chiuso',
     'Software'
 ),
 (
@@ -57,9 +57,27 @@ INSERT INTO PROGETTO (
 
 -- Reward relative a un progetto -- 
 INSERT INTO REWARD (Codice, Descrizione, Foto, Nome_Progetto) VALUES
-('RWD-SDS-1', 'Ringraziamento speciale sul sito web e menzione tra i supporter', 'img/rewards/rwd-sds-1.jpg', 'Sistema Domotico Smart'),
-('RWD-SDS-2', 'Accesso anticipato alla versione beta e demo esclusiva', 'img/rewards/rwd-sds-2.jpg', 'Sistema Domotico Smart'),
-('RWD-SDS-3', 'Installazione gratuita del sistema per i primi 50 finanziatori', 'img/rewards/rwd-sds-3.jpg', 'Sistema Domotico Smart');
+-- Sistema Domotico Smart
+('RWD-SDS-1', 'Ringraziamento speciale sul sito web e menzione tra i supporter', 'uploads/reward.png', 'Sistema Domotico Smart'),
+('RWD-SDS-2', 'Accesso anticipato alla versione beta e demo esclusiva', 'uploads/reward.png', 'Sistema Domotico Smart'),
+('RWD-SDS-3', 'Installazione gratuita del sistema per i primi 50 finanziatori', 'uploads/reward.png', 'Sistema Domotico Smart'),
+
+-- App Gestione Spese
+('RWD-AGS-1', 'Accesso alla versione premium per 6 mesi senza costi', 'uploads/reward.png', 'App Gestione Spese'),
+('RWD-AGS-2', 'Report finanziario personalizzato con analisi avanzata', 'uploads/reward.png', 'App Gestione Spese'),
+('RWD-AGS-3', 'Ringraziamento con nome nella sezione supporter dell’app', 'uploads/reward.png', 'App Gestione Spese'),
+
+-- Piattaforma E-learning
+('RWD-PEL-1', 'Accesso gratuito a un corso premium a scelta', 'uploads/reward.png', 'Piattaforma E-learning'),
+('RWD-PEL-2', 'Certificato digitale di sostenitore ufficiale del progetto', 'uploads/reward.png', 'Piattaforma E-learning'),
+('RWD-PEL-3', 'Webinar esclusivo con i docenti e sviluppatori', 'uploads/reward.png', 'Piattaforma E-learning'),
+
+-- GreenCity Tracker
+('RWD-GCT-1', 'Badge esclusivo “Green Supporter” visibile nel profilo', 'uploads/reward.png', 'GreenCity Tracker'),
+('RWD-GCT-2', 'T-shirt in cotone organico con logo del progetto', 'uploads/reward.png', 'GreenCity Tracker'),
+('RWD-GCT-3', 'Possibilità di testare nuove funzionalità in anteprima', 'uploads/reward.png', 'GreenCity Tracker');
+
+
 
 /*
 
@@ -123,4 +141,6 @@ CALL InserisciCompetenza('SQL');
 CALL InserisciCompetenza('Teamwork');
 
 CALL InserisciProfiloRichiede('Frontend Developer', 'Sistema Domotico Smart', 'mario.rossi@example.com', 3,'Java');
+
+SELECT * FROM classifica_affidabilita_creatori;
 

@@ -1,6 +1,8 @@
 <?php
+include_once 'auth.php';
 include_once 'connection.php';
 include_once 'mongodb.php';
+include_once 'mysql.php';
 
 $mysqlConn = getMySQLConnection();
 $logCollection = getMongoDBConnection();
@@ -26,8 +28,12 @@ try {
   die("Errore durante l'esecuzione della stored procedure: " . $e->getMessage());
 }
 
+$vistaAffidabilità = OttieniListaAffidabilità();
+
+
+ include_once 'navbar.php'; 
+
 ?>
-<?php include_once 'navbar.php'; ?>
 <!DOCTYPE html>
 <html lang="it">
 <head>
@@ -135,25 +141,20 @@ try {
 
   <!-- Classifiche -->
   <div class="row g-4 animate-fadein" style="animation-delay: 0.6s">
+    
     <!-- Classifica Creatori -->
     <div class="col-lg-4 col-md-6">
       <section class="p-4 bg-light rounded-lg">
         <h3 class="h4 mb-4">Classifica Creatori</h3>
         <ol class="list-group list-group-numbered">
-          <li class="list-group-item d-flex justify-content-between align-items-start">
-            <div class="ms-2 me-auto">
-              <div class="fw-bold">Noe</div>
-              <span class="text-muted small">5 progetti</span>
-            </div>
-            <span class="badge bg-accent rounded-pill">1°</span>
-          </li>
-          <li class="list-group-item d-flex justify-content-between align-items-start">
-            <div class="ms-2 me-auto">
-              <div class="fw-bold">Ale</div>
-              <span class="text-muted small">3 progetti</span>
-            </div>
-            <span class="badge bg-primary rounded-pill">2°</span>
-          </li>
+          <?php foreach ($vistaAffidabilità as $creatore): ?>
+            <li class="list-group-item d-flex justify-content-between align-items-start">
+              <div class="ms-2 me-auto">
+                <div class="fw-bold"><?= htmlspecialchars($creatore['Nickname']) ?></div>
+                <span> affidabilità: <?= htmlspecialchars($creatore['Affidabilità']) ?> </span>
+              </div>
+            </li>
+          <?php endforeach; ?>
         </ol>
       </section>
     </div>
