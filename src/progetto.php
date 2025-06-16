@@ -21,6 +21,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['risposta']) && isset(
   $idCommento    = intval($_POST['id_commento']); // Recupera l'ID del commento
 
   try {
+      // Controllo che l'utente sia il creatore del progetto
+      $stmtCheck = $conn->prepare("SELECT Email_Creatore FROM PROGETTO WHERE Nome = :nome_progetto");
+      $stmtCheck->bindParam(':nome_progetto', $nomeProgetto, PDO::PARAM_STR);
+      $stmtCheck->execute();
+
+      $row = $stmtCheck->fetch(PDO::FETCH_ASSOC);
+      if (!$row) {
+          die("Progetto non trovato.");
+      }
+      if ($row['Email_Creatore'] !== $emailUtente) {
+          die("Solo il creatore del progetto può rispondere ai commenti.");
+      }
+
       $stmtR = $conn->prepare("CALL RispostaCommento(:p_Testo, :p_Email_Utente, :p_Nome_Progetto, :p_IdCommento)");
       $stmtR->bindParam(':p_Testo',         $testoRisposta, PDO::PARAM_STR);
       $stmtR->bindParam(':p_Email_Utente',  $emailUtente,   PDO::PARAM_STR);

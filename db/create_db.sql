@@ -471,7 +471,8 @@ DELIMITER $
 CREATE PROCEDURE OttieniListaAffidabilità ()
 BEGIN
     SELECT *
-    FROM classifica_affidabilita_creatori;
+    FROM classifica_affidabilita_creatori
+    ORDER BY Affidabilità DESC LIMIT 3;
 END;
 $ DELIMITER ;
 
@@ -488,7 +489,8 @@ DELIMITER $
 CREATE PROCEDURE OttieniListaProgetti ()
 BEGIN
     SELECT *
-    FROM progetti_quasi_completi;
+    FROM progetti_quasi_completi
+    ORDER BY Completamento DESC LIMIT 3;
 END;
 $ DELIMITER ;
 
@@ -504,6 +506,7 @@ DELIMITER $
 CREATE PROCEDURE OttieniListaFinanziamenti ()
 BEGIN
     SELECT *
-    FROM classifica_finanziatori;
+    FROM classifica_finanziatori
+    ORDER BY Totale DESC LIMIT 3;
 END;
 $ DELIMITER ;
