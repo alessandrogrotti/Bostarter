@@ -198,6 +198,17 @@ END;
 $
 DELIMITER ;
 
+DELIMITER $
+CREATE PROCEDURE EliminaProfilo(
+    IN p_Id_Componente INT
+)
+BEGIN
+    DELETE FROM COMPONENTE
+    WHERE Id = p_Id_Componente;
+END;
+$
+DELIMITER ;
+
 
 DELIMITER $
 CREATE PROCEDURE RegisterUser (IN p_Email VARCHAR(255), IN p_Nickname VARCHAR(100), IN p_Password VARCHAR(255), 
@@ -399,6 +410,17 @@ BEGIN
 END $$
 DELIMITER ;
 
+DELIMITER $
+CREATE TRIGGER aggiorna_affidabilita_creazione
+AFTER INSERT ON PROGETTO
+FOR EACH ROW
+BEGIN
+    UPDATE CREATORE
+    SET Affidabilità = ROUND(Nr_progetti / (Nr_progetti + 1), 2)
+    WHERE Email_Utente = NEW.Email_Creatore;
+END;
+$
+DELIMITER ;
 
 DELIMITER $
 CREATE TRIGGER aggiorna_affidabilita_finanziamento
