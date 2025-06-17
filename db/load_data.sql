@@ -61,7 +61,7 @@ INSERT INTO FOTO (Valore, Nome_Progetto) VALUES
 ('uploads/Sistema_Domotico_Smart_2.png','Sistema Domotico Smart'),
 ('uploads/app_gestione_spese.jpg','App Gestione Spese'),
 ('uploads/Piattaforma_EL.jpg','Piattaforma E-learning'),
-('uploads/GreenCity_Tracker.jpg','GreenCity Tracker');
+('uploads/GreenCity_tracker.jpg','GreenCity Tracker');
 
 
 -- Reward

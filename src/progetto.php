@@ -309,40 +309,6 @@ $componenti = ottieniComponentiPerProgetto($nomeProgetto);
       <?php endif; ?>
     </div>
 
-    <div id="Reward" class="mb-5">
-      <div id="inserimentoReward">
-        <?php if (isLoggedIn() && $_SESSION['id'] === $progetto['Email_Creatore']): ?>
-          <a href="nuovaReward.php?nome=<?= urlencode($progetto['Nome']) ?>" class="btn btn-primary mb-3">Aggiungi nuova reward</a>
-        <?php endif; ?>
-      </div>
-
-      <div id="listaReward">
-        <section class="mb-5">
-          <h4>Lista delle reward:</h4>
-          <?php if ($rewards): ?>
-            <ul class="list-group">
-              <?php foreach ($rewards as $r): ?>
-                <li class="list-group-item d-flex align-items-center">
-                  <div class="me-3">
-                    <?php if (!empty($r['Foto'])): ?>
-                      <img src="<?= htmlspecialchars($r['Foto']) ?>" alt="Immagine reward" class="img-fluid" style="width: 50px; height: auto;">
-                    <?php else: ?>
-                      <span class="text-muted">Nessuna immagine</span>
-                    <?php endif; ?>
-                  </div>
-                  <div>
-                    <strong><?= htmlspecialchars($r['Codice']) ?></strong>: <?= htmlspecialchars($r['Descrizione']) ?>
-                  </div>
-                </li>
-              <?php endforeach; ?>
-            </ul>
-          <?php else: ?>
-            <p>Nessuna reward disponibile.</p>
-          <?php endif; ?>
-        </section>
-      </div>
-    </div>
-
     <section id="commento" class="mb-5">
       <?php if (isLoggedIn()): ?>
         <h4>Aggiungi un commento:</h4>
@@ -433,41 +399,6 @@ $componenti = ottieniComponentiPerProgetto($nomeProgetto);
 
     <?php if (isCreator()): ?>
       <?php if (($progetto['Tipo']) === 'Software'):?>
-        <h4>Aggiungi un nuovo profilo:</h4>
-        <form method="POST" action="" class="mb-4">
-          <div class="mb-3">
-            <label for="profilo" class="form-label">Nome del profilo:</label>
-            <input
-              type="text"
-              id="profilo"
-              name="profilo"
-              class="form-control"
-              required
-              maxlength="1000"
-            >
-          </div>
-          <div class="mb-3">
-            <label for="skills" class="form-label">Seleziona una skill:</label>
-            <select name="skill" id="skills" class="form-select" required>
-              <?php foreach ($availableSkills as $skill): ?>
-                <option value="<?= htmlspecialchars($skill['Competenza'], ENT_QUOTES) ?>">
-                  <?= htmlspecialchars($skill['Competenza']) ?>
-                </option>
-              <?php endforeach; ?>
-            </select>
-          </div>
-          <div class="mb-3">
-            <label for="level" class="form-label">Seleziona il livello:</label>
-            <select name="level" id="level" class="form-select" required>
-              <?php for ($i = 1; $i <= 5; $i++): ?>
-                <option value="<?= $i ?>"><?= $i ?></option>
-              <?php endfor; ?>
-            </select>
-          </div>
-          <button type="submit" class="btn btn-primary">
-            Aggiungi profilo
-          </button>
-        </form>
         <section class="mb-5">
           <h4>Profili richiesti:</h4>
           <?php if ($profili): ?>
@@ -491,55 +422,6 @@ $componenti = ottieniComponentiPerProgetto($nomeProgetto);
           <?php endif; ?>
         </section>
       <?php else: ?>
-        <h4>Aggiungi un nuovo componente:</h4>
-        <form method="POST" action="" class="mb-4">
-            <div class="mb-3">
-                <label for="nomeComponente" class="form-label">Nome del componente:</label>
-                <input
-                    type="text"
-                    id="nomeComponente"
-                    name="nomeComponente"
-                    class="form-control"
-                    required
-                    maxlength="1000"
-                >
-            </div>
-            <div class="mb-3">
-                <label for="descrizioneComponente" class="form-label">Descrizione del componente:</label>
-                <textarea
-                  id="descrizioneComponente"
-                  name="descrizioneComponente"
-                  class="form-control"
-                  required
-                  maxlength="2000"
-                ></textarea>
-            </div>
-            <div class="mb-3">
-                <label for="prezzoComponente" class="form-label">Prezzo del componente:</label>
-                <input
-                  type="number"
-                  id="prezzoComponente"
-                  name="prezzoComponente"
-                  class="form-control"
-                  required
-                  step="0.01"
-                >
-            </div>
-            <div class="mb-3">
-                <label for="quantitaComponente" class="form-label">Quantità del componente:</label>
-                <input
-                    type="number"
-                    id="quantitaComponente"
-                    name="quantitaComponente"
-                    class="form-control"
-                    required
-                    min="1"
-                >
-            </div>
-            <button type="submit" class="btn btn-primary">
-                Aggiungi componente
-            </button>
-        </form>
         <section class="mb-5">
           <h4>Componenti del progetto:</h4>
           <?php if ($componenti): ?>
@@ -551,10 +433,6 @@ $componenti = ottieniComponentiPerProgetto($nomeProgetto);
                     <p><?= htmlspecialchars($componente['Descrizione']) ?></p>
                     <p>Prezzo: €<?= number_format($componente['Prezzo'], 2) ?> - Quantità: <?= number_format($componente['Quantità']) ?></p>
                   </div>
-                  <form method="POST" class="d-inline">
-                    <input type="hidden" name="eliminaComponente" value="<?= htmlspecialchars($componente['Nome']) ?>">
-                    <button type="submit" class="btn btn-danger btn-sm">Elimina</button>
-                  </form>
                 </li>
               <?php endforeach; ?>
             </ul>

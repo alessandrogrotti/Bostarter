@@ -142,7 +142,10 @@ try {
                 </div>
 
                 <div class="card-footer bg-transparent border-0">
-                    <a href="progetto.php?nome=<?= $nomeProgettoUrl ?>" class="btn btn-primary w-100">Modifica progetto</a>
+                    <a href="progetto.php?nome=<?= $nomeProgettoUrl ?>" class="btn btn-primary w-100">Vedi progetto</a>
+                </div>
+                <div class="card-footer bg-transparent border-0">
+                    <a href="progettoCreatore.php?nome=<?= $nomeProgettoUrl ?>" class="btn btn-primary w-100">Modifica progetto</a>
                 </div>
               </div>
             </div>

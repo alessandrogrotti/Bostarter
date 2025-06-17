@@ -198,6 +198,17 @@ END;
 $
 DELIMITER ;
 
+DELIMITER $
+CREATE PROCEDURE EliminaProfilo(
+    IN p_Id_Componente INT
+)
+BEGIN
+    DELETE FROM COMPONENTE
+    WHERE Id = p_Id_Componente;
+END;
+$
+DELIMITER ;
+
 
 DELIMITER $
 CREATE PROCEDURE RegisterUser (IN p_Email VARCHAR(255), IN p_Nickname VARCHAR(100), IN p_Password VARCHAR(255), 

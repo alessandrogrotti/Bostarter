@@ -75,19 +75,16 @@ function eliminaComponente($nome, $nomeProgettoHardware) {
     }
 }
 
-/*
-function eliminaProfilo($nome, $nomeProgettoHardware) {
+function eliminaProfilo($id) {
     try {
         $conn = getMySQLConnection();
-        $stmt = $conn->prepare("CALL EliminaComponente(?, ?)");
+        $stmt = $conn->prepare("CALL EliminaProfilo(?)");
         $stmt->bindParam(1, $nome, PDO::PARAM_STR);
-        $stmt->bindParam(2, $nomeProgettoHardware, PDO::PARAM_STR);
         return $stmt->execute();
     } catch (Exception $e) {
         return false;
     }
 }
-*/
 
 function ottieniProfiliPerProgetto($nomeProgettoSoftware) {
     try {
