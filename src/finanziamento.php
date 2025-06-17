@@ -96,83 +96,76 @@ include 'navbar.php';
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>Finanziamento | Bostarter</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;500;600;700&family=Libre+Baskerville:wght@400;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
   <main class="container mt-5">
     <?php if (!empty($_SESSION['fin_ok'])): ?>
-      <div class="alert alert-success">
+      <div class="alert alert-success mb-4">
         <?= $_SESSION['fin_ok']; unset($_SESSION['fin_ok']); ?>
       </div>
     <?php elseif (!empty($_SESSION['fin_err'])): ?>
-      <div class="alert alert-danger">
+      <div class="alert alert-danger mb-4">
         <?= $_SESSION['fin_err']; unset($_SESSION['fin_err']); ?>
       </div>
     <?php endif; ?>
-
-    <div class="card">
-      <div class="card-header">
-        <h3>Finanzia il progetto “<?= $nome_progetto ?>”</h3>
-      </div>
-      <div class="card-body">
-        <form action="finanziamento.php" method="POST">
-          <div class="mb-3">
-            <label for="importo" class="form-label">Importo (€):</label>
-            <input
-              type="number"
-              step="0.01"
-              min="0.01"
-              class="form-control"
-              id="importo"
-              name="importo"
-              required
-            >
-          </div>
-          <div class="mb-3">
-            <label class="form-label">Scegli una reward:</label>
-            <ul class="list-group">
-              <?php if (count($rewards)): ?>
-                <?php foreach ($rewards as $r): 
-                  $cod = htmlspecialchars($r['Codice'], ENT_QUOTES);
-                  $desc= htmlspecialchars($r['Descrizione'], ENT_QUOTES);
-                ?>
-                  <li class="list-group-item">
-                    <div class="form-check">
-                      <input
-                        class="form-check-input"
-                        type="radio"
-                        name="reward"
-                        id="reward_<?= $cod ?>"
-                        value="<?= $cod ?>"
-                        required
-                      >
-                      <label class="form-check-label" for="reward_<?= $cod ?>">
-                        <?= $desc ?>
-                      </label>
-                    </div>
-                  </li>
-                <?php endforeach; ?>
-              <?php else: ?>
-                <li class="list-group-item text-muted">
-                  Nessuna reward disponibile per questo progetto.
-                </li>
-              <?php endif; ?>
-            </ul>
-          </div>
+      <h2 class="mb-4">Finanzia il progetto "<strong><?= htmlspecialchars($nome_progetto) ?></strong>"</h2>
+      <form action="finanziamento.php" method="POST">
+        <div class="mb-4">
+          <label for="importo" class="form-label">Importo (€):</label>
           <input
-            type="hidden"
-            name="nome_progetto"
-            value="<?= $nome_progetto ?>"
+            type="number"
+            step="0.01"
+            min="0.01"
+            class="form-control"
+            id="importo"
+            name="importo"
+            required
           >
-          <button type="submit" class="btn btn-primary">Conferma finanziamento</button>
-        </form>
-      </div>
+        <div class="mb-4">
+          <label class="form-label">Scegli una reward:</label>
+          <ul class="list-group">
+            <?php if (count($rewards)): ?>
+              <?php foreach ($rewards as $r): 
+                $cod = htmlspecialchars($r['Codice'], ENT_QUOTES);
+                $desc= htmlspecialchars($r['Descrizione'], ENT_QUOTES);
+              ?>
+                <li class="list-group-item">
+                  <div class="form-check">
+                    <input
+                      class="form-check-input"
+                      type="radio"
+                      name="reward"
+                      id="reward_<?= $cod ?>"
+                      value="<?= $cod ?>"
+                      required
+                    >
+                    <label class="form-check-label" for="reward_<?= $cod ?>">
+                      <?= $desc ?>
+                    </label>
+                  </div>
+                </li>
+              <?php endforeach; ?>
+            <?php else: ?>
+              <li class="list-group-item text-muted">
+                Nessuna reward disponibile per questo progetto.
+              </li>
+            <?php endif; ?>
+          </ul>
+        </div>
+        <input
+          type="hidden"
+          name="nome_progetto"
+          value="<?= $nome_progetto ?>"
+        >
+        <button type="submit" class="btn btn-primary">Conferma finanziamento</button>
+      </form>
     </div>
   </main>
   <footer class="text-center mt-5 py-3 bg-light">
     <p>Bostarter &copy; <?= date('Y') ?></p>
   </footer>
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

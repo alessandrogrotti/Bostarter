@@ -145,6 +145,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     </form>
   </main>
 
-  <?php require_once 'footer.php'?>
+  <footer class="text-center mt-5 py-3 bg-light">
+    <p>Bostarter &copy; <?= date('Y') ?></p>
+  </footer>
 </body>
 </html>

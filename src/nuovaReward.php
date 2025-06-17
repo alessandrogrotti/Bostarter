@@ -165,9 +165,10 @@ include_once 'navbar.php';
         <button type="submit" class="btn btn-primary">Salva Reward</button>
       </div>
     </form>
-
   </main>
 
-  <?php require_once 'footer.php' ?>
+  <footer class="text-center mt-5 py-3 bg-light">
+    <p>Bostarter &copy; <?= date('Y') ?></p>
+  </footer>
 </body>
 </html>

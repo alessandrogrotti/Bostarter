@@ -28,10 +28,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['risposta']) && isset(
 
       $row = $stmtCheck->fetch(PDO::FETCH_ASSOC);
       if (!$row) {
-          die("Progetto non trovato.");
+        die("Progetto non trovato.");
       }
       if ($row['Email_Creatore'] !== $emailUtente) {
-          die("Solo il creatore del progetto può rispondere ai commenti.");
+        $_SESSION['error'] = "Solo il creatore del progetto può rispondere ai commenti.";
+        header("Location: progetto.php?nome=" . urlencode($nomeProgetto)); 
+        exit;
       }
 
       $stmtR = $conn->prepare("CALL RispostaCommento(:p_Testo, :p_Email_Utente, :p_Nome_Progetto, :p_IdCommento)");
@@ -285,9 +287,15 @@ $componenti = ottieniComponentiPerProgetto($nomeProgetto);
 </head>
 <body>
   <main class="container mt-5">
+  <?php if (!empty($_SESSION['error'])): ?>
+      <div class="alert alert-danger mt-4">
+        <?= htmlspecialchars($_SESSION['error']) ?>
+      </div>
+      <?php unset($_SESSION['error']); ?>
+    <?php endif; ?>
     <div id="infoProgetto">
       <section class="mb-5">
-        <h2><?= htmlspecialchars($progetto["Nome"]) ?></h2>
+        <h1><?= htmlspecialchars($progetto["Nome"]) ?></h1>
         <p><?= htmlspecialchars($progetto["Descrizione"]) ?></p>
         <?php if (!empty($fotoProgetto)): ?>
         <div class="row mt-4">

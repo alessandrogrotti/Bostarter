@@ -103,9 +103,9 @@ try {
 </head>
 <body>
   <header class="hero">
-    <div class="container text-center">
-      <h1>Benvenuto nel tuo Profilo</h1>
-      <p>Gestisci le tue competenze e skill qui!</p>
+    <div class="container text-center py-5">
+      <h1 class="display-4 text-white mb-4 animate-fadein">Benvenuto nel tuo Profilo</h1>
+      <p class="lead text-white-50 animate-fadein" style="animation-delay: 0.2s">Gestisci le tue competenze e skill qui!</p>
     </div>
   </header>
 

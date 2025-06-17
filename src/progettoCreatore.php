@@ -171,7 +171,7 @@ $componenti = ottieniComponentiPerProgetto($nomeProgetto);
   <main class="container mt-5">
     <div id="infoProgetto">
       <section class="mb-5">
-        <h2><?= htmlspecialchars($progetto["Nome"]) ?></h2>
+        <h1><?= htmlspecialchars($progetto["Nome"]) ?></h1>
         <p><?= htmlspecialchars($progetto["Descrizione"]) ?></p>
         <?php if (!empty($fotoProgetto)): ?>
         <div class="row mt-4">
