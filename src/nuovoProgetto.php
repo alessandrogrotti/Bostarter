@@ -5,6 +5,7 @@ requireCreator();
 
 include_once 'connection.php';
 include_once 'mongodb.php';
+include_once 'navbar.php';
 
 $mysqlConn     = getMySQLConnection();
 $logCollection = getMongoDBConnection();
@@ -96,9 +97,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-  <?php require_once 'navbar.php'?>
   <main class="container py-5">
-    <h1 class="mb-4">Nuovo Progetto</h1>
+    <h2 class="mb-4">Nuovo Progetto</h2>
 
     <?php if ($message): ?>
       <div class="alert alert-success" role="alert">

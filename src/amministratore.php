@@ -47,7 +47,7 @@ $competenze = ottieniCompetenze();
 </head>
 <body>
 
-<header class="hero-section">
+<header class="hero">
   <div class="container text-center py-5">
     <h1 class="display-4 text-white mb-4 animate-fadein">Gestione Competenze</h1>
     <p class="lead text-white-50 animate-fadein" style="animation-delay: 0.2s;">Aggiungi o rimuovi competenze disponibili nel sistema</p>
@@ -66,7 +66,7 @@ $competenze = ottieniCompetenze();
           <input type="text" id="competenza" name="competenza" class="form-control" required />
         </div>
         <div class="text-center">
-          <button type="submit" class="btn btn-custom">Inserisci</button>
+          <button type="submit" class="btn btn-primary">Inserisci</button>
         </div>
       </form>
     </div>

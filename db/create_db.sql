@@ -465,14 +465,13 @@ CREATE VIEW classifica_affidabilita_creatori AS
 SELECT u.Nickname, c.Affidabilità
 FROM CREATORE c
 JOIN UTENTE u ON c.Email_Utente = u.Email
-ORDER BY c.Affidabilità DESC;
+ORDER BY c.Affidabilità DESC LIMIT 3;
 
 DELIMITER $
 CREATE PROCEDURE OttieniListaAffidabilità ()
 BEGIN
     SELECT *
-    FROM classifica_affidabilita_creatori
-    ORDER BY Affidabilità DESC LIMIT 3;
+    FROM classifica_affidabilita_creatori;
 END;
 $ DELIMITER ;
 
@@ -483,14 +482,13 @@ FROM PROGETTO p
 LEFT JOIN FINANZIAMENTO f ON p.Nome = f.Nome_Progetto
 WHERE p.Stato = 'Aperto'
 GROUP BY p.Nome, p.Budget
-ORDER BY Differenza ASC;
+ORDER BY Differenza ASC LIMIT 3;
 
 DELIMITER $
 CREATE PROCEDURE OttieniListaProgetti ()
 BEGIN
     SELECT *
-    FROM progetti_quasi_completi
-    ORDER BY Completamento DESC LIMIT 3;
+    FROM progetti_quasi_completi;
 END;
 $ DELIMITER ;
 
@@ -500,13 +498,12 @@ SELECT u.Nickname,
 FROM FINANZIAMENTO f
 JOIN UTENTE u ON f.Email_Utente = u.Email
 GROUP BY u.Nickname
-ORDER BY Totale DESC;
+ORDER BY Totale DESC LIMIT 3;
 
 DELIMITER $
 CREATE PROCEDURE OttieniListaFinanziamenti ()
 BEGIN
     SELECT *
-    FROM classifica_finanziatori
-    ORDER BY Totale DESC LIMIT 3;
+    FROM classifica_finanziatori;
 END;
 $ DELIMITER ;
