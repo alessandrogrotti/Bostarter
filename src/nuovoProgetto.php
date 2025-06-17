@@ -26,12 +26,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $budget      = floatval($_POST['budget']);
     $dataLimite  = $_POST['dataLimite'];
 
-    if ($software && !$hardware) {
-        $tipo = 'Software';
-    } elseif ($hardware && !$software) {
-        $tipo = 'Hardware';
+    if (isset($_POST['tipo'])) {
+      $tipo = $_POST['tipo']; 
     } else {
-        die('Errore: seleziona esattamente una tipologia (Software O Hardware).');
+        die('Errore: scegli una tipologia (Software o Hardware).');
     }
 
     try {
@@ -99,7 +97,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 </head>
 <body>
   <?php require_once 'navbar.php'?>
-  
   <main class="container py-5">
     <h1 class="mb-4">Nuovo Progetto</h1>
 
@@ -128,11 +125,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       </div>
       <div class="col-md-4 d-flex align-items-center">
         <div class="form-check me-3">
-          <input class="form-check-input" type="checkbox" value="1" id="software" name="software" <?= $software ? 'checked' : '' ?>>
+          <input class="form-check-input" type="radio" id="software" name="tipo" value="Software" <?= $software ? 'checked' : '' ?>>
           <label class="form-check-label" for="software">Software</label>
         </div>
         <div class="form-check">
-          <input class="form-check-input" type="checkbox" value="1" id="hardware" name="hardware" <?= $hardware ? 'checked' : '' ?>>
+          <input class="form-check-input" type="radio" id="hardware" name="tipo" value="Hardware" <?= $hardware ? 'checked' : '' ?>>
           <label class="form-check-label" for="hardware">Hardware</label>
         </div>
       </div>

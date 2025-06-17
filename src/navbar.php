@@ -70,7 +70,7 @@ if ($isLoggedIn) {
           </div>
 
           <!-- Form per il logout -->
-          <form method="POST" action="" class="ms-auto d-flex align-items-center">
+          <form method="POST" action="" class="align-self-center mt-3">
             <button type="submit" name="logout" class="btn btn-outline-danger">
               <i class="bi bi-box-arrow-right"></i> Esci
             </button>

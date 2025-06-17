@@ -176,6 +176,16 @@ $
 DELIMITER ;
 
 DELIMITER $
+CREATE PROCEDURE OttieniProfiliPerProgetto(IN p_Nome_ProgettoSoftware VARCHAR(100))
+BEGIN
+    SELECT * 
+    FROM PROFILO, RICHIEDE
+    WHERE Nome_ProgettoSoftware = p_Nome_ProgettoSoftware AND Id_Profilo = Id;
+END;
+$
+DELIMITER ;
+
+DELIMITER $
 CREATE PROCEDURE EliminaComponente(
     IN p_Nome_Componente VARCHAR(100),
     IN p_Nome_ProgettoHardware VARCHAR(100)
@@ -315,25 +325,34 @@ BEGIN
 END;
 $ DELIMITER ;
 
+
 DELIMITER $
-CREATE PROCEDURE InserisciProfilo(IN Nome VARCHAR(100), Nome_ProgettoSoftware VARCHAR(100), Email_Creatore VARCHAR(255))
+CREATE PROCEDURE InserisciProfiloRichiede(IN Nome VARCHAR(100), IN Nome_ProgettoSoftware VARCHAR(100), IN Email_Creatore VARCHAR(255), IN Livello INT, IN Competenza_Skill VARCHAR(100))
 BEGIN
     DECLARE CreatorePresente INT DEFAULT 0;
     DECLARE ProgettoPresente INT DEFAULT 0;
     DECLARE TipoProgetto VARCHAR(20);
+    DECLARE nuovoIdProfilo INT;
 
     SET CreatorePresente = (SELECT COUNT(*) FROM CREATORE WHERE (Email_Utente = Email_Creatore));
     SET ProgettoPresente = (SELECT COUNT(*) FROM PROGETTO WHERE (Nome = Nome_ProgettoSoftware));
     SET TipoProgetto = (SELECT Tipo FROM PROGETTO WHERE (Nome = Nome_ProgettoSoftware));
-    
-	SELECT CreatorePresente, ProgettoPresente, TipoProgetto;
 
-    IF (CreatorePresente > 0) AND (ProgettoPresente > 0) AND (TipoProgetto = "Software") THEN
+    /*IF (CreatorePresente > 0) AND (ProgettoPresente > 0) AND (TipoProgetto = 'Software') THEN*/
+    
         INSERT INTO PROFILO (Nome, Nome_ProgettoSoftware)
         VALUES (Nome, Nome_ProgettoSoftware);
-    END IF;
+        
+        SET nuovoIdProfilo = LAST_INSERT_ID();
+        
+        INSERT INTO RICHIEDE (Livello, Id_Profilo, Competenza_Skill)
+        VALUES (Livello, nuovoIdProfilo, Competenza_Skill);
+    /*END IF;*/
+    
 END;
 $ DELIMITER ;
+
+
 
 DELIMITER $
 CREATE PROCEDURE GestisciCandidatura(IN Id_Candidatura INT, IN Nuovo_Stato VARCHAR(50), IN Email_Creatore VARCHAR(255))
@@ -358,15 +377,25 @@ BEGIN
 END;
 $ DELIMITER ;
 
--- Trigger per l'aggiornamento automatico del numero dei progetti di un creatore --
 DELIMITER $$
-CREATE TRIGGER aggiorna_nr_progetti
+CREATE TRIGGER aggiorna_profilo_creatore
 AFTER INSERT ON PROGETTO
 FOR EACH ROW
 BEGIN
+    -- Aggiorna il numero di progetti
     UPDATE CREATORE
     SET Nr_progetti = Nr_progetti + 1
     WHERE Email_Utente = NEW.Email_Creatore;
+
+    -- Aggiorna l'affidabilità
+    UPDATE CREATORE c
+    SET Affidabilità = (
+        SELECT ROUND(COUNT(DISTINCT p.Nome) / c.Nr_progetti, 2)
+        FROM PROGETTO p
+        JOIN FINANZIAMENTO f ON p.Nome = f.Nome_Progetto
+        WHERE p.Email_Creatore = c.Email_Utente
+    )
+    WHERE c.Email_Utente = NEW.Email_Creatore;
 END $$
 DELIMITER ;
 
@@ -438,3 +467,57 @@ BEGIN
 END;
 $
 DELIMITER ;
+
+
+/* Statistiche tramite viste */
+
+/* affidabilità creatori*/
+CREATE VIEW classifica_affidabilita_creatori AS
+SELECT u.Nickname, c.Affidabilità
+FROM CREATORE c
+JOIN UTENTE u ON c.Email_Utente = u.Email
+ORDER BY c.Affidabilità DESC;
+
+DELIMITER $
+CREATE PROCEDURE OttieniListaAffidabilità ()
+BEGIN
+    SELECT *
+    FROM classifica_affidabilita_creatori
+    ORDER BY Affidabilità DESC LIMIT 3;
+END;
+$ DELIMITER ;
+
+CREATE VIEW progetti_quasi_completi AS
+SELECT p.Nome,
+       (p.Budget - COALESCE(SUM(f.Importo), 0)) AS Differenza, p.Budget
+FROM PROGETTO p
+LEFT JOIN FINANZIAMENTO f ON p.Nome = f.Nome_Progetto
+WHERE p.Stato = 'Aperto'
+GROUP BY p.Nome, p.Budget
+ORDER BY Differenza ASC;
+
+DELIMITER $
+CREATE PROCEDURE OttieniListaProgetti ()
+BEGIN
+    SELECT *
+    FROM progetti_quasi_completi
+    ORDER BY Completamento DESC LIMIT 3;
+END;
+$ DELIMITER ;
+
+CREATE VIEW classifica_finanziatori AS
+SELECT u.Nickname,
+       SUM(f.Importo) AS Totale
+FROM FINANZIAMENTO f
+JOIN UTENTE u ON f.Email_Utente = u.Email
+GROUP BY u.Nickname
+ORDER BY Totale DESC;
+
+DELIMITER $
+CREATE PROCEDURE OttieniListaFinanziamenti ()
+BEGIN
+    SELECT *
+    FROM classifica_finanziatori
+    ORDER BY Totale DESC LIMIT 3;
+END;
+$ DELIMITER ;
