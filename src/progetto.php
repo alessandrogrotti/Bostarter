@@ -169,36 +169,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['eliminaComponente']))
   $nomeComponenteDaEliminare = trim($_POST['eliminaComponente']);
   if (eliminaComponente($nomeComponenteDaEliminare, $nomeProgetto)) {
       writeLog('Eliminazione componente', "Creatore ha eliminato il componente '$nomeComponenteDaEliminare' dal progetto $nomeProgetto");
-      header("Location: progetto.php?nome=" . urlencode($nomeProgetto));
+      header("Location: progetto.php?nome=" . urlencode($nomeProgetto)); 
       exit;
   } else {
       die("Errore nell'eliminazione del componente.");
   }
 }
 
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['eliminaComponente'])) {
-  requireLogin();
-  if (!isCreator()) {
-      die("Non sei autorizzato a eliminare componenti in questo progetto.");
-  }
-
-  $nomeComponenteDaEliminare = trim($_POST['eliminaComponente']);
-  if (eliminaComponente($nomeComponenteDaEliminare, $nomeProgetto)) {
-      writeLog('Eliminazione componente', "Creatore ha eliminato il componente '$nomeComponenteDaEliminare' dal progetto $nomeProgetto");
-      header("Location: progetto.php?nome=" . urlencode($nomeProgetto));
-      exit;
-  } else {
-      die("Errore nell'eliminazione del componente.");
-  }
-}
-
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['eliminaProfilo'])) {
+/*if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['eliminaProfilo'])) {
   requireLogin();
   if (!isCreator()) {
       die("Non sei autorizzato a eliminare profilo in questo progetto.");
   }
 
-  $nomeComponenteDaEliminare = trim($_POST['eliminaProfilo']);
+  $nomeProfiloDaEliminare = trim($_POST['eliminaProfilo']);
   if (eliminaProfilo($nomeProfiloDaEliminare, $nomeProgetto)) {
       writeLog('Eliminazione profilo', "Creatore ha eliminato il profilo '$nomeProfiloDaEliminare' dal progetto $nomeProgetto");
       header("Location: progetto.php?nome=" . urlencode($nomeProgetto));
@@ -206,7 +190,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['eliminaProfilo'])) {
   } else {
       die("Errore nell'eliminazione del profilo.");
   }
-}
+}*/
 
 try {
     $stmt = $conn->prepare(
@@ -268,11 +252,91 @@ try {
     die("Errore nel recupero dei commenti: " . $e->getMessage());
 }
 
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['inviaCandidatura'])) {
+  requireLogin();
+  $profilo = trim($_POST['inviaCandidatura']);
+  $email = $_SESSION['id'];
+
+  try {
+      // Trova ID profilo
+      $stmt = $conn->prepare("SELECT Id FROM PROFILO WHERE Nome = :nome AND Nome_ProgettoSoftware = :progetto");
+      $stmt->bindParam(':nome', $profilo);
+      $stmt->bindParam(':progetto', $nomeProgetto);
+      $stmt->execute();
+      $profiloRow = $stmt->fetch(PDO::FETCH_ASSOC);
+      $stmt->closeCursor();
+
+      if (!$profiloRow) {
+          die("Profilo non trovato.");
+      }
+
+      $idProfilo = $profiloRow['Id'];
+
+      // Controlla se l'utente possiede tutte le skill richieste con i livelli adeguati
+      $stmt = $conn->prepare("
+          SELECT R.Competenza_Skill, R.Livello AS LivelloRichiesto, P.Livello AS LivelloPosseduto
+          FROM RICHIEDE R
+          LEFT JOIN POSSIEDE P 
+              ON R.Competenza_Skill = P.Competenza_Skill AND P.Email_Utente = :email
+          WHERE R.Id_Profilo = :idProfilo
+      ");
+      $stmt->bindParam(':email', $email);
+      $stmt->bindParam(':idProfilo', $idProfilo, PDO::PARAM_INT);
+      $stmt->execute();
+      $skills = $stmt->fetchAll(PDO::FETCH_ASSOC);
+      $stmt->closeCursor();
+
+      // Verifica che tutte le skill siano soddisfatte
+      $candidaturaValida = true;
+      foreach ($skills as $skill) {
+          if ($skill['LivelloPosseduto'] === null || $skill['LivelloPosseduto'] < $skill['LivelloRichiesto']) {
+              $candidaturaValida = false;
+              break;
+          }
+      }
+
+      if (!$candidaturaValida) {
+        $_SESSION['error'] = "Non possiedi tutte le competenze ed il relativo livello richieste per questo profilo.";
+      } else {
+        $stmt = $conn->prepare("CALL InsertCandidature('In attesa', :email, :idProfilo)");
+        $stmt->bindParam(':email', $email);
+        $stmt->bindParam(':idProfilo', $idProfilo, PDO::PARAM_INT);
+        $stmt->execute();
+        $stmt->closeCursor();
+
+        $_SESSION['success'] = "Candidatura inviata con successo.";
+      }
+
+  } catch (PDOException $e) {
+      die("Errore durante l'invio della candidatura: " . $e->getMessage());
+  }
+}
+
+
 $availableSkillsQuery = "SELECT Competenza FROM SKILL ORDER BY Competenza";
 $stmtAvailableSkills = $conn->prepare($availableSkillsQuery);
 $stmtAvailableSkills->execute();
 $availableSkills = $stmtAvailableSkills->fetchAll(PDO::FETCH_ASSOC);
-$profili = ottieniProfiliPerProgetto($nomeProgetto);
+$profiliRaw = ottieniProfiliPerProgetto($nomeProgetto);
+$profili = []; // profili raggruppati
+
+foreach ($profiliRaw as $row) {
+    $idProfilo = $row['Id'];
+    if (!isset($profili[$idProfilo])) {
+        $profili[$idProfilo] = [
+            'Nome' => $row['Nome'],
+            'Skills' => []
+        ];
+    }
+
+    // Aggiungi la skill solo se esiste
+    if (!empty($row['Competenza_Skill'])) {
+        $profili[$idProfilo]['Skills'][] = [
+            'Competenza_Skill' => $row['Competenza_Skill'],
+            'Livello' => $row['Livello']
+        ];
+    }
+}
 $componenti = ottieniComponentiPerProgetto($nomeProgetto);
 ?>
 
@@ -287,11 +351,17 @@ $componenti = ottieniComponentiPerProgetto($nomeProgetto);
 </head>
 <body>
   <main class="container mt-5">
-  <?php if (!empty($_SESSION['error'])): ?>
+    <?php if (!empty($_SESSION['error'])): ?>
       <div class="alert alert-danger mt-4">
         <?= htmlspecialchars($_SESSION['error']) ?>
       </div>
       <?php unset($_SESSION['error']); ?>
+    <?php endif; ?>
+    <?php if (!empty($_SESSION['success'])): ?>
+      <div class="alert alert-success mt-4">
+        <?= htmlspecialchars($_SESSION['success']) ?>
+      </div>
+      <?php unset($_SESSION['success']); ?>
     <?php endif; ?>
     <div id="infoProgetto">
       <section class="mb-5">
@@ -405,50 +475,67 @@ $componenti = ottieniComponentiPerProgetto($nomeProgetto);
       <?php endif; ?>
     </section>
 
-    <?php if (isCreator()): ?>
-      <?php if (($progetto['Tipo']) === 'Software'):?>
-        <section class="mb-5">
-          <h4>Profili richiesti:</h4>
-          <?php if ($profili): ?>
-            <ul class="list-group">
-              <?php foreach ($profili as $profilo): ?>
-                <li class="list-group-item d-flex justify-content-between align-items-center">
-                  <div>
-                    <strong><?= htmlspecialchars($profilo['Nome']) ?></strong>
-                    <p><?= htmlspecialchars($profilo['Competenza_Skill']) ?></p>
-                    <p>Livello: <?= number_format($profilo['Livello'], 2) ?></p>
-                  </div>
-                  <form method="POST" class="d-inline">
-                    <input type="hidden" name="eliminaComponente" value="<?= htmlspecialchars($profilo['Nome']) ?>">
-                    <button type="submit" class="btn btn-danger btn-sm">Elimina</button>
-                  </form>
-                </li>
-              <?php endforeach; ?>
-            </ul>
-          <?php else: ?>
-            <p>Nessun profilo disponibile per questo progetto.</p>
-          <?php endif; ?>
-        </section>
-      <?php else: ?>
-        <section class="mb-5">
-          <h4>Componenti del progetto:</h4>
-          <?php if ($componenti): ?>
-            <ul class="list-group">
-              <?php foreach ($componenti as $componente): ?>
-                <li class="list-group-item d-flex justify-content-between align-items-center">
-                  <div>
-                    <strong><?= htmlspecialchars($componente['Nome']) ?></strong>
-                    <p><?= htmlspecialchars($componente['Descrizione']) ?></p>
-                    <p>Prezzo: €<?= number_format($componente['Prezzo'], 2) ?> - Quantità: <?= number_format($componente['Quantità']) ?></p>
-                  </div>
-                </li>
-              <?php endforeach; ?>
-            </ul>
-          <?php else: ?>
-            <p>Nessun componente disponibile per questo progetto.</p>
-          <?php endif; ?>
-        </section>
+    <?php if (isset($_SESSION['success'])): ?>
+      <div class="alert alert-success">
+        <?= htmlspecialchars($_SESSION['success']) ?>
+      </div>
+      <?php unset($_SESSION['success']); ?>
     <?php endif; ?>
+
+    <?php if (isset($_SESSION['error'])): ?>
+      <div class="alert alert-danger">
+        <?= htmlspecialchars($_SESSION['error']) ?>
+      </div>
+      <?php unset($_SESSION['error']); ?>
+    <?php endif; ?>
+
+    <?php if (($progetto['Tipo']) === 'Software'):?>
+      <section class="mb-5">
+        <h4>Profili richiesti:</h4>
+        <?php if ($profili): ?>
+          <ul class="list-group">
+          <?php foreach ($profili as $profilo): ?>
+            <li class="list-group-item">
+              <div class="d-flex justify-content-between align-items-center">
+                <div>
+                  <strong><?= htmlspecialchars($profilo['Nome']) ?></strong>
+                  <ul class="mb-0">
+                    <?php foreach ($profilo['Skills'] as $skill): ?>
+                      <li><?= htmlspecialchars($skill['Competenza_Skill']) ?> - Livello: <?= (int)$skill['Livello'] ?></li>
+                    <?php endforeach; ?>
+                  </ul>
+                </div>
+                <form method="POST" class="ms-3">
+                  <input type="hidden" name="inviaCandidatura" value="<?= htmlspecialchars($profilo['Nome']) ?>">
+                  <button type="submit" class="btn btn-primary btn-sm">Invia candidatura</button>
+                </form>
+              </div>
+            </li>
+          <?php endforeach; ?>
+        </ul>
+      <?php else: ?>
+        <p>Nessun profilo disponibile per questo progetto.</p>
+      <?php endif; ?>
+      </section>
+    <?php else: ?>
+      <section class="mb-5">
+        <h4>Componenti del progetto:</h4>
+        <?php if ($componenti): ?>
+          <ul class="list-group">
+            <?php foreach ($componenti as $componente): ?>
+              <li class="list-group-item d-flex justify-content-between align-items-center">
+                <div>
+                  <strong><?= htmlspecialchars($componente['Nome']) ?></strong>
+                  <p><?= htmlspecialchars($componente['Descrizione']) ?></p>
+                  <p>Prezzo: €<?= number_format($componente['Prezzo'], 2) ?> - Quantità: <?= number_format($componente['Quantità']) ?></p>
+                </div>
+              </li>
+            <?php endforeach; ?>
+          </ul>
+        <?php else: ?>
+          <p>Nessun componente disponibile per questo progetto.</p>
+        <?php endif; ?>
+      </section>
   <?php endif; ?>
 </main>
 <?php require_once 'footer.php'?>

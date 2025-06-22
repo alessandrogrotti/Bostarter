@@ -12,49 +12,71 @@ if ($nomeProgetto === '') {
     die("Nome progetto non specificato.");
 }
 
-if ($_SERVER['REQUEST_METHOD'] === 'POST'
-    && isset($_POST['profilo'], $_POST['skill'], $_POST['level'])
+if (
+  $_SERVER['REQUEST_METHOD'] === 'POST' &&
+  isset($_POST['profilo'], $_POST['skill'], $_POST['level'])
 ) {
-    requireLogin();
-    if (! isCreator()) {
-        die("Solo il creatore del progetto può aggiungere profili.");
-    }
+  requireLogin();
 
-    // pulizia dati
-    $nomeProfilo   = trim($_POST['profilo']);
-    $competenza    = $_POST['skill'];
-    $livello       = (int) $_POST['level'];
+  if (!isCreator()) {
+      die("Solo il creatore del progetto può aggiungere profili.");
+  }
 
-    // chiamo la stored procedure
-    try {
-        $stmt = $conn->prepare(
-            "CALL InserisciProfiloRichiede(
-                :p_Nome,
-                :p_Nome_ProgettoSoftware,
-                :p_Email_Creatore,
-                :p_Livello,
-                :p_Competenza_Skill
-            )"
-        );
-        $stmt->bindParam(':p_Nome',                     $nomeProfilo,   PDO::PARAM_STR);
-        $stmt->bindParam(':p_Nome_ProgettoSoftware',    $nomeProgetto,  PDO::PARAM_STR);
-        $stmt->bindParam(':p_Email_Creatore',           $progetto['Email_Creatore'], PDO::PARAM_STR);
-        $stmt->bindParam(':p_Livello',                  $livello,       PDO::PARAM_INT);
-        $stmt->bindParam(':p_Competenza_Skill',         $competenza,    PDO::PARAM_STR);
-        $stmt->execute();
-        $stmt->closeCursor();
+  // Pulizia dati
+  $nomeProfilo = trim($_POST['profilo']);
+  $skills = $_POST['skill'];      // array di skill selezionate
+  $levels = $_POST['level'];      // array dei livelli corrispondenti
 
-        writeLog(
-            'Inserimento profilo',
-            "Creatore {$_SESSION['id']} ha aggiunto profilo '$nomeProfilo' al progetto '$nomeProgetto'"
-        );
+  try {
+      // 1. Inserisci il nuovo profilo nella tabella PROFILO
+      $stmtProfilo = $conn->prepare("
+          INSERT INTO PROFILO (Nome, Nome_ProgettoSoftware)
+          VALUES (:nome, :nome_progetto)
+      ");
+      $stmtProfilo->bindParam(':nome', $nomeProfilo, PDO::PARAM_STR);
+      $stmtProfilo->bindParam(':nome_progetto', $nomeProgetto, PDO::PARAM_STR);
+      $stmtProfilo->execute();
 
-        header("Location: progettoCreatore.php?nome=" . urlencode($nomeProgetto));
-        exit;
-    } catch (PDOException $e) {
-        die("Errore nell'inserimento del profilo: " . $e->getMessage());
-    }
+      // 2. Recupera l'ID del profilo appena inserito
+      $profiloId = $conn->lastInsertId();
+
+      // 3. Prepariamo la query di inserimento competenze
+      $stmtSkill = $conn->prepare("
+          INSERT INTO RICHIEDE (Livello, Id_Profilo, Competenza_Skill)
+          VALUES (:livello, :id_profilo, :skill)
+      ");
+
+      // 4. Inserisci solo le skill con livello valido (1-5)
+      foreach ($skills as $index => $competenza) {
+          if (
+              !isset($levels[$index]) ||
+              !is_numeric($levels[$index]) ||
+              (int)$levels[$index] < 1 ||
+              (int)$levels[$index] > 5
+          ) {
+              continue; // ignora skill senza livello valido
+          }
+
+          $livello = (int)$levels[$index];
+
+          $stmtSkill->bindParam(':livello', $livello, PDO::PARAM_INT);
+          $stmtSkill->bindParam(':id_profilo', $profiloId, PDO::PARAM_INT);
+          $stmtSkill->bindParam(':skill', $competenza, PDO::PARAM_STR);
+          $stmtSkill->execute();
+      }
+
+      writeLog(
+          'Inserimento profilo',
+          "Creatore {$_SESSION['id']} ha aggiunto profilo '$nomeProfilo' al progetto '$nomeProgetto'"
+      );
+
+      header("Location: progettoCreatore.php?nome=" . urlencode($nomeProgetto));
+      exit;
+  } catch (PDOException $e) {
+      die("Errore nell'inserimento del profilo: " . $e->getMessage());
+  }
 }
+
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['nomeComponente'])) {
   requireLogin();
@@ -154,7 +176,26 @@ $availableSkillsQuery = "SELECT Competenza FROM SKILL ORDER BY Competenza";
 $stmtAvailableSkills = $conn->prepare($availableSkillsQuery);
 $stmtAvailableSkills->execute();
 $availableSkills = $stmtAvailableSkills->fetchAll(PDO::FETCH_ASSOC);
-$profili = ottieniProfiliPerProgetto($nomeProgetto);
+$profiliRaw = ottieniProfiliPerProgetto($nomeProgetto);
+$profili = []; // profili raggruppati
+
+foreach ($profiliRaw as $row) {
+    $idProfilo = $row['Id'];
+    if (!isset($profili[$idProfilo])) {
+        $profili[$idProfilo] = [
+            'Nome' => $row['Nome'],
+            'Skills' => []
+        ];
+    }
+
+    // Aggiungi la skill solo se esiste
+    if (!empty($row['Competenza_Skill'])) {
+        $profili[$idProfilo]['Skills'][] = [
+            'Competenza_Skill' => $row['Competenza_Skill'],
+            'Livello' => $row['Livello']
+        ];
+    }
+}
 $componenti = ottieniComponentiPerProgetto($nomeProgetto);
 ?>
 
@@ -230,61 +271,49 @@ $componenti = ottieniComponentiPerProgetto($nomeProgetto);
     <?php if (isCreator()): ?>
       <?php if (($progetto['Tipo']) === 'Software'):?>
         <h4>Aggiungi un nuovo profilo:</h4>
-        <form method="POST" action="" class="mb-4">
+        <form method="POST">
           <div class="mb-3">
             <label for="profilo" class="form-label">Nome del profilo:</label>
-            <input
-              type="text"
-              id="profilo"
-              name="profilo"
-              class="form-control"
-              required
-              maxlength="1000"
-            >
+            <input type="text" id="profilo" name="profilo" class="form-control" required maxlength="1000">
           </div>
-          <div class="mb-3">
-            <label for="skills" class="form-label">Seleziona una skill:</label>
-            <select name="skill" id="skills" class="form-select" required>
-              <?php foreach ($availableSkills as $skill): ?>
-                <option value="<?= htmlspecialchars($skill['Competenza'], ENT_QUOTES) ?>">
-                  <?= htmlspecialchars($skill['Competenza']) ?>
-                </option>
-              <?php endforeach; ?>
-            </select>
-          </div>
-          <div class="mb-3">
-            <label for="level" class="form-label">Seleziona il livello:</label>
-            <select name="level" id="level" class="form-select" required>
-              <?php for ($i = 1; $i <= 5; $i++): ?>
-                <option value="<?= $i ?>"><?= $i ?></option>
-              <?php endfor; ?>
-            </select>
-          </div>
-          <button type="submit" class="btn btn-primary">
-            Aggiungi profilo
-          </button>
+
+          <h5>Seleziona skill e livelli:</h5>
+          <?php foreach ($availableSkills as $index => $skill): ?>
+            <div class="mb-2 row align-items-center">
+              <div class="col-sm-6">
+                <label><?= htmlspecialchars($skill['Competenza']) ?></label>
+                <input type="hidden" name="skill[]" value="<?= htmlspecialchars($skill['Competenza']) ?>">
+              </div>
+              <div class="col-sm-4">
+                <select name="level[]" class="form-select">
+                  <option value="">-- Nessun livello selezionato --</option>
+                  <?php for ($i = 1; $i <= 5; $i++): ?>
+                    <option value="<?= $i ?>"><?= $i ?></option>
+                  <?php endfor; ?>
+                </select>
+              </div>
+            </div>
+          <?php endforeach; ?>
+          <button type="submit" class="btn btn-primary mt-3">Crea profilo</button>
         </form>
         <section class="mb-5">
           <h4>Profili richiesti:</h4>
           <?php if ($profili): ?>
             <ul class="list-group">
               <?php foreach ($profili as $profilo): ?>
-                <li class="list-group-item d-flex justify-content-between align-items-center">
-                  <div>
-                    <strong><?= htmlspecialchars($profilo['Nome']) ?></strong>
-                    <p><?= htmlspecialchars($profilo['Competenza_Skill']) ?></p>
-                    <p>Livello: <?= number_format($profilo['Livello'], 2) ?></p>
-                  </div>
-                  <form method="POST" class="d-inline">
-                    <input type="hidden" name="eliminaProfilo" value="<?= htmlspecialchars($profilo['Id']) ?>">
-                    <button type="submit" class="btn btn-danger btn-sm">Elimina</button>
-                  </form>
-                </li>
-              <?php endforeach; ?>
-            </ul>
-          <?php else: ?>
-            <p>Nessun profilo disponibile per questo progetto.</p>
-          <?php endif; ?>
+                <li class="list-group-item">
+                <strong><?= htmlspecialchars($profilo['Nome']) ?></strong>
+                <ul>
+                  <?php foreach ($profilo['Skills'] as $skill): ?>
+                    <li><?= htmlspecialchars($skill['Competenza_Skill']) ?> - Livello: <?= (int)$skill['Livello'] ?></li>
+                  <?php endforeach; ?>
+                </ul>
+              </li>
+            <?php endforeach; ?>
+          </ul>
+        <?php else: ?>
+          <p>Nessun profilo disponibile per questo progetto.</p>
+        <?php endif; ?>
         </section>
       <?php else: ?>
         <h4>Aggiungi un nuovo componente:</h4>
