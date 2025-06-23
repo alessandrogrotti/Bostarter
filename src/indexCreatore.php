@@ -122,10 +122,7 @@ try {
                     </div>
                     <p class="card-text text-muted mb-4"><?= htmlspecialchars($row["Descrizione"]) ?> </p>
 
-                    <div class="progress mb-3" style="height: 8px">
-                        <div class="progress-bar bg-accent" role="progressbar" style="width: 25%" aria-valuenow="25" aria-valuemin="0" aria-valuemax="100">
-                        </div>
-                    </div>
+                    <hr class="my-4 border-top border-4" />
 
                     <div class="d-flex justify-content-between text-muted small">
                         <span> <?= htmlspecialchars($row["Budget"]) ?> </span>
@@ -141,9 +138,6 @@ try {
                     </div>  
                 </div>
 
-                <div class="card-footer bg-transparent border-0">
-                    <a href="progetto.php?nome=<?= $nomeProgettoUrl ?>" class="btn btn-primary w-100">Vedi progetto</a>
-                </div>
                 <div class="card-footer bg-transparent border-0">
                     <a href="progettoCreatore.php?nome=<?= $nomeProgettoUrl ?>" class="btn btn-primary w-100">Modifica progetto</a>
                 </div>

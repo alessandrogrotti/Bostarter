@@ -12,6 +12,19 @@ if ($nomeProgetto === '') {
     die("Nome progetto non specificato.");
 }
 
+try {
+    $stmt = $conn->prepare("SELECT * FROM PROGETTO WHERE Nome = :nomeProgetto");
+    $stmt->bindParam(':nomeProgetto', $nomeProgetto, PDO::PARAM_STR);
+    $stmt->execute();
+    $dettagliProgetto = $stmt->fetch(PDO::FETCH_ASSOC);
+
+    if (!$dettagliProgetto) {
+        die("Progetto non trovato.");
+    }
+} catch (PDOException $e) {
+    die("Errore nel recupero del progetto: " . $e->getMessage());
+}
+
 // 2.b) Gestione invio risposta a un commento
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['risposta']) && isset($_POST['id_commento'])) {
   requireLogin();
@@ -376,6 +389,11 @@ $componenti = ottieniComponentiPerProgetto($nomeProgetto);
           <?php endforeach; ?>
         </div>
         <?php endif; ?>
+        <ul class="list-group mt-5 pt-2">
+          <li class="list-group-item"><strong>Budget:</strong> <?= htmlspecialchars($dettagliProgetto['Budget']) ?> €</li>
+          <li class="list-group-item"><strong>Data di chiusura:</strong> <?= htmlspecialchars($dettagliProgetto['Data_Limite']) ?></li>
+          <li class="list-group-item"><strong>Stato:</strong> <?= htmlspecialchars($dettagliProgetto['Stato']) ?></li>
+        </ul>
       </section>
     </div>
 

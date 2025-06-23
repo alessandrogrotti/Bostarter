@@ -98,7 +98,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST'
             );
 
             // Redirect alla pagina del progetto
-            header("Location: progetto.php?nome=" . urlencode($nomeProgetto));
+            header("Location: progettoCreatore.php?nome=" . urlencode($nomeProgetto));
             exit;
         } catch (PDOException $e) {
             $errorMessage = "Errore inserimento reward: " . $e->getMessage();
