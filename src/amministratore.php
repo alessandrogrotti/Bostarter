@@ -57,7 +57,7 @@ $competenze = ottieniCompetenze();
 
 <main class="container">
 
-  <section class="mb-5">
+  <section class="mb-5" style="margin-top: 50px;">
     <h2 class="section-title">Aggiungi una competenza</h2>
     <div class="card card-custom p-4">
       <form method="POST" action="amministratore.php">
