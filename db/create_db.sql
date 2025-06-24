@@ -41,7 +41,7 @@ CREATE TABLE FOTO (
     Valore VARCHAR(255),
     Nome_Progetto VARCHAR(100),
     PRIMARY KEY (Valore, Nome_Progetto),
-    FOREIGN KEY (Nome_Progetto) REFERENCES PROGETTO(Nome)
+    FOREIGN KEY (Nome_Progetto) REFERENCES PROGETTO(Nome) ON DELETE CASCADE
 ) ENGINE = "INNODB";
 
 CREATE TABLE COMMENTO (
@@ -50,16 +50,16 @@ CREATE TABLE COMMENTO (
     Testo TEXT,
     Email_Utente VARCHAR(255),
     Nome_Progetto VARCHAR(100),
-    FOREIGN KEY (Email_Utente) REFERENCES UTENTE(Email),
-    FOREIGN KEY (Nome_Progetto) REFERENCES PROGETTO(Nome)
+    FOREIGN KEY (Email_Utente) REFERENCES UTENTE(Email) ON DELETE CASCADE,
+	FOREIGN KEY (Nome_Progetto) REFERENCES PROGETTO(Nome) ON DELETE CASCADE
 ) ENGINE = "INNODB";
 
 CREATE TABLE RISPOSTA (
 	Id_Commento INT,
     Id_Risposta INT,
     PRIMARY KEY (Id_Commento, Id_Risposta),
-    FOREIGN KEY (Id_Commento) REFERENCES COMMENTO(Id),
-    FOREIGN KEY (Id_Risposta) REFERENCES COMMENTO(Id)
+    FOREIGN KEY (Id_Commento) REFERENCES COMMENTO(Id) ON DELETE CASCADE,
+	FOREIGN KEY (Id_Risposta) REFERENCES COMMENTO(Id) ON DELETE CASCADE
 ) ENGINE = "INNODB";
 
 CREATE TABLE REWARD (
@@ -67,7 +67,7 @@ CREATE TABLE REWARD (
     Descrizione TEXT,
     Foto VARCHAR(255),
     Nome_Progetto VARCHAR(100),
-    FOREIGN KEY (Nome_Progetto) REFERENCES PROGETTO(Nome)
+    FOREIGN KEY (Nome_Progetto) REFERENCES PROGETTO(Nome) ON DELETE CASCADE
 ) ENGINE = "INNODB";
 
 CREATE TABLE FINANZIAMENTO (
@@ -77,9 +77,9 @@ CREATE TABLE FINANZIAMENTO (
     Nome_Progetto VARCHAR(100),
     Codice_Reward VARCHAR(50),
     PRIMARY KEY (Data, Email_Utente, Nome_Progetto),
-    FOREIGN KEY (Email_Utente) REFERENCES UTENTE(Email),
-    FOREIGN KEY (Nome_Progetto) REFERENCES PROGETTO(Nome),
-    FOREIGN KEY (Codice_Reward) REFERENCES REWARD(Codice)
+    FOREIGN KEY (Email_Utente) REFERENCES UTENTE(Email) ON DELETE CASCADE,
+	FOREIGN KEY (Nome_Progetto) REFERENCES PROGETTO(Nome) ON DELETE CASCADE,
+	FOREIGN KEY (Codice_Reward) REFERENCES REWARD(Codice) ON DELETE CASCADE
 ) ENGINE = "INNODB";
 
 CREATE TABLE COMPONENTE (
@@ -89,14 +89,14 @@ CREATE TABLE COMPONENTE (
     Prezzo DOUBLE,
     Quantità INT,
     PRIMARY KEY (Nome_ProgettoHardware, Nome),
-    FOREIGN KEY (Nome_ProgettoHardware) REFERENCES PROGETTO(Nome)
+    FOREIGN KEY (Nome_ProgettoHardware) REFERENCES PROGETTO(Nome) ON DELETE CASCADE
 ) ENGINE = "INNODB";
 
 CREATE TABLE PROFILO (
     Id INT PRIMARY KEY AUTO_INCREMENT,
     Nome VARCHAR(100),
     Nome_ProgettoSoftware VARCHAR(100),
-    FOREIGN KEY (Nome_ProgettoSoftware) REFERENCES PROGETTO(Nome)
+    FOREIGN KEY (Nome_ProgettoSoftware) REFERENCES PROGETTO(Nome) ON DELETE CASCADE
 ) ENGINE = "INNODB";
 
 CREATE TABLE RICHIEDE (
@@ -104,7 +104,7 @@ CREATE TABLE RICHIEDE (
     Id_Profilo INT,
     Competenza_Skill VARCHAR(100),
     PRIMARY KEY (Id_Profilo, Competenza_Skill),
-    FOREIGN KEY (Id_Profilo) REFERENCES PROFILO(Id)
+    FOREIGN KEY (Id_Profilo) REFERENCES PROFILO(Id) ON DELETE CASCADE
 ) ENGINE = "INNODB";
 
 CREATE TABLE SKILL (
@@ -116,8 +116,8 @@ CREATE TABLE POSSIEDE (
     Email_Utente VARCHAR(255),
     Competenza_Skill VARCHAR(100),
     PRIMARY KEY (Email_Utente, Competenza_Skill),
-    FOREIGN KEY (Email_Utente) REFERENCES UTENTE(Email),
-    FOREIGN KEY (Competenza_Skill) REFERENCES SKILL(Competenza)
+    FOREIGN KEY (Email_Utente) REFERENCES UTENTE(Email) ON DELETE CASCADE,
+    FOREIGN KEY (Competenza_Skill) REFERENCES SKILL(Competenza) ON DELETE CASCADE
 ) ENGINE = "INNODB";
 
 CREATE TABLE CANDIDATURA (
@@ -125,8 +125,8 @@ CREATE TABLE CANDIDATURA (
     Stato VARCHAR(50),
     Email_Utente VARCHAR(255),
     Id_Profilo INT,
-    FOREIGN KEY (Email_Utente) REFERENCES UTENTE(Email),
-    FOREIGN KEY (Id_Profilo) REFERENCES PROFILO(Id)
+    FOREIGN KEY (Email_Utente) REFERENCES UTENTE(Email) ON DELETE CASCADE,
+	FOREIGN KEY (Id_Profilo) REFERENCES PROFILO(Id) ON DELETE CASCADE
 ) ENGINE = "INNODB";
 
 DELIMITER $
@@ -198,15 +198,21 @@ END;
 $
 DELIMITER ;
 
-DELIMITER $
+DELIMITER $$
+
 CREATE PROCEDURE EliminaProfilo(
-    IN p_Id_Componente INT
+    IN p_Id_Profilo INT
 )
 BEGIN
-    DELETE FROM COMPONENTE
-    WHERE Id = p_Id_Componente;
-END;
-$
+    -- Elimina le relazioni nella tabella RICHIEDE
+    DELETE FROM RICHIEDE
+    WHERE Id_Profilo = p_Id_Profilo;
+
+    -- Elimina il profilo dalla tabella PROFILO
+    DELETE FROM PROFILO
+    WHERE Id = p_Id_Profilo;
+END$$
+
 DELIMITER ;
 
 
@@ -266,10 +272,30 @@ $ DELIMITER ;
 DELIMITER $
 CREATE PROCEDURE InsertCandidature (IN p_Stato VARCHAR(50), IN p_Email_Utente VARCHAR(255), IN p_Id_Profilo INT)
 BEGIN
+    -- Controlla se esiste già una candidatura accettata per il profilo
+    IF EXISTS (
+        SELECT 1
+        FROM CANDIDATURA
+        WHERE Id_Profilo = p_Id_Profilo AND Stato = 'Accettata'
+    ) THEN
+        SIGNAL SQLSTATE '45001' SET MESSAGE_TEXT = 'Accettata';
+    END IF;
+
+    -- Controlla se l'utente ha già inviato una candidatura per lo stesso profilo
+    IF EXISTS (
+        SELECT 1
+        FROM CANDIDATURA
+        WHERE Id_Profilo = p_Id_Profilo AND Email_Utente = p_Email_Utente
+    ) THEN
+        SIGNAL SQLSTATE '45002' SET MESSAGE_TEXT = 'Default';
+    END IF;
+
+    -- Inserisce la nuova candidatura
     INSERT INTO CANDIDATURA (Stato, Email_Utente, Id_Profilo)
     VALUES (p_Stato, p_Email_Utente, p_Id_Profilo);
-END;
-$ DELIMITER ;
+END $$
+
+DELIMITER ;
 
 DELIMITER $
 CREATE PROCEDURE InserisciProgetto(IN Nome VARCHAR(100), IN Email_Creatore VARCHAR(255), IN Descrizione TEXT, 
@@ -366,27 +392,29 @@ $ DELIMITER ;
 
 
 DELIMITER $
-CREATE PROCEDURE GestisciCandidatura(IN Id_Candidatura INT, IN Nuovo_Stato VARCHAR(50), IN Email_Creatore VARCHAR(255))
+CREATE PROCEDURE GestisciCandidatura(IN idCandidatura INT, IN nuovoStato VARCHAR(50))
 BEGIN
-    DECLARE ProgettoCreatore INT DEFAULT 0;
-    DECLARE StatoCandidatura VARCHAR(50);
-    
-    SET ProgettoCreatore = (SELECT COUNT(*) 
-                            FROM CREATORE c
-                            JOIN PROGETTO p ON (p.Email_Creatore = c.Email_Utente)
-                            JOIN PROFILO pr ON (pr.Nome_ProgettoSoftware = p.Nome)
-                            JOIN CANDIDATURA ca ON (ca.Id_Profilo = pr.Id)
-                            WHERE (ca.Id = Id_Candidatura) AND (c.Email_Utente = Email_Creatore));
-    
-    SET StatoCandidatura = (SELECT Stato FROM CANDIDATURA WHERE (Id = Id_Candidatura));
+    DECLARE idProfilo INT;
 
-    IF (ProgettoCreatore > 0) AND (StatoCandidatura = 'In attesa') THEN
+    -- Recupera l'ID del profilo associato alla candidatura
+    SELECT Id_Profilo INTO idProfilo
+    FROM CANDIDATURA
+    WHERE Id = idCandidatura;
+
+    -- Aggiorna lo stato della candidatura specificata
+    UPDATE CANDIDATURA
+    SET Stato = nuovoStato
+    WHERE Id = idCandidatura;
+
+    -- Se la candidatura è accettata, rifiuta tutte le altre candidature per lo stesso profilo
+    IF nuovoStato = 'Accettata' THEN
         UPDATE CANDIDATURA
-        SET Stato = Nuovo_Stato
-        WHERE (Id = Id_Candidatura);
+        SET Stato = 'Rifiutata'
+        WHERE Id_Profilo = idProfilo AND Id != idCandidatura;
     END IF;
-END;
-$ DELIMITER ;
+END $$
+
+DELIMITER ;
 
 DELIMITER $$
 CREATE TRIGGER aggiorna_profilo_creatore
@@ -529,3 +557,15 @@ BEGIN
     FROM classifica_finanziatori;
 END;
 $ DELIMITER ;
+
+DELIMITER $$
+
+CREATE PROCEDURE OttieniCandidaturePerProfilo(IN idProfilo INT)
+BEGIN
+    SELECT C.Id, C.Stato, C.Email_Utente, U.Nickname
+    FROM CANDIDATURA C
+    JOIN UTENTE U ON C.Email_Utente = U.Email
+    WHERE C.Id_Profilo = idProfilo;
+END $$
+
+DELIMITER ;

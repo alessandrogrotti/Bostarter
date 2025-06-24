@@ -266,51 +266,26 @@ try {
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['inviaCandidatura'])) {
-  requireLogin();
-  $profilo = trim($_POST['inviaCandidatura']);
-  $email = $_SESSION['id'];
+    requireLogin();
+    $profilo = trim($_POST['inviaCandidatura']);
+    $email = $_SESSION['id'];
 
-  try {
-      // Trova ID profilo
-      $stmt = $conn->prepare("SELECT Id FROM PROFILO WHERE Nome = :nome AND Nome_ProgettoSoftware = :progetto");
-      $stmt->bindParam(':nome', $profilo);
-      $stmt->bindParam(':progetto', $nomeProgetto);
-      $stmt->execute();
-      $profiloRow = $stmt->fetch(PDO::FETCH_ASSOC);
-      $stmt->closeCursor();
+    try {
+        // Trova ID profilo
+        $stmt = $conn->prepare("SELECT Id FROM PROFILO WHERE Nome = :nome AND Nome_ProgettoSoftware = :progetto");
+        $stmt->bindParam(':nome', $profilo);
+        $stmt->bindParam(':progetto', $nomeProgetto);
+        $stmt->execute();
+        $profiloRow = $stmt->fetch(PDO::FETCH_ASSOC);
+        $stmt->closeCursor();
 
-      if (!$profiloRow) {
-          die("Profilo non trovato.");
-      }
+        if (!$profiloRow) {
+            die("Profilo non trovato.");
+        }
 
-      $idProfilo = $profiloRow['Id'];
+        $idProfilo = $profiloRow['Id'];
 
-      // Controlla se l'utente possiede tutte le skill richieste con i livelli adeguati
-      $stmt = $conn->prepare("
-          SELECT R.Competenza_Skill, R.Livello AS LivelloRichiesto, P.Livello AS LivelloPosseduto
-          FROM RICHIEDE R
-          LEFT JOIN POSSIEDE P 
-              ON R.Competenza_Skill = P.Competenza_Skill AND P.Email_Utente = :email
-          WHERE R.Id_Profilo = :idProfilo
-      ");
-      $stmt->bindParam(':email', $email);
-      $stmt->bindParam(':idProfilo', $idProfilo, PDO::PARAM_INT);
-      $stmt->execute();
-      $skills = $stmt->fetchAll(PDO::FETCH_ASSOC);
-      $stmt->closeCursor();
-
-      // Verifica che tutte le skill siano soddisfatte
-      $candidaturaValida = true;
-      foreach ($skills as $skill) {
-          if ($skill['LivelloPosseduto'] === null || $skill['LivelloPosseduto'] < $skill['LivelloRichiesto']) {
-              $candidaturaValida = false;
-              break;
-          }
-      }
-
-      if (!$candidaturaValida) {
-        $_SESSION['error'] = "Non possiedi tutte le competenze ed il relativo livello richieste per questo profilo.";
-      } else {
+        // Inserisci candidatura
         $stmt = $conn->prepare("CALL InsertCandidature('In attesa', :email, :idProfilo)");
         $stmt->bindParam(':email', $email);
         $stmt->bindParam(':idProfilo', $idProfilo, PDO::PARAM_INT);
@@ -318,11 +293,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['inviaCandidatura'])) 
         $stmt->closeCursor();
 
         $_SESSION['success'] = "Candidatura inviata con successo.";
-      }
+    } catch (PDOException $e) {
+        $errorCode = $e->getCode(); // Ottieni il codice di errore
+        $errorMessage = $e->getMessage(); // Ottieni il messaggio originale
 
-  } catch (PDOException $e) {
-      die("Errore durante l'invio della candidatura: " . $e->getMessage());
-  }
+        // Mappa dei messaggi personalizzati
+        $customMessages = [
+            '45001' => 'Non è possibile inviare candidature per questo profilo. Una candidatura è già stata accettata.',
+            '45002' => 'Non è possibile inviare candidature per questo profilo. Hai già inviato una candidatura per questo profilo.',
+        ];
+
+        // Usa il messaggio personalizzato se disponibile
+        if (isset($customMessages[$errorCode])) {
+            $_SESSION['error'] = $customMessages[$errorCode];
+        } else {
+            $_SESSION['error'] = 'Si è verificato un errore. Riprova più tardi.';
+        }
+    }
+
 }
 
 
@@ -511,29 +499,60 @@ $componenti = ottieniComponentiPerProgetto($nomeProgetto);
       <section class="mb-5">
         <h4>Profili richiesti:</h4>
         <?php if ($profili): ?>
-          <ul class="list-group">
-          <?php foreach ($profili as $profilo): ?>
-            <li class="list-group-item">
-              <div class="d-flex justify-content-between align-items-center">
-                <div>
-                  <strong><?= htmlspecialchars($profilo['Nome']) ?></strong>
-                  <ul class="mb-0">
-                    <?php foreach ($profilo['Skills'] as $skill): ?>
-                      <li><?= htmlspecialchars($skill['Competenza_Skill']) ?> - Livello: <?= (int)$skill['Livello'] ?></li>
-                    <?php endforeach; ?>
-                  </ul>
-                </div>
-                <form method="POST" class="ms-3">
-                  <input type="hidden" name="inviaCandidatura" value="<?= htmlspecialchars($profilo['Nome']) ?>">
-                  <button type="submit" class="btn btn-primary btn-sm">Invia candidatura</button>
-                </form>
-              </div>
-            </li>
-          <?php endforeach; ?>
-        </ul>
-      <?php else: ?>
-        <p>Nessun profilo disponibile per questo progetto.</p>
-      <?php endif; ?>
+            <ul class="list-group">
+                <?php foreach ($profili as $profilo): ?>
+                    <?php
+                        // Controlla se esiste una candidatura accettata o inviata dall'utente
+                        $candidaturaEsistente = false;
+                        $candidaturaAccettata = false;
+
+                        $stmt = $conn->prepare("
+                            SELECT Stato
+                            FROM CANDIDATURA
+                            WHERE Id_Profilo = :idProfilo AND Email_Utente = :email
+                        ");
+                        $stmt->bindParam(':idProfilo', $profilo['Id'], PDO::PARAM_INT);
+                        $stmt->bindParam(':email', $_SESSION['id'], PDO::PARAM_STR);
+                        $stmt->execute();
+                        $candidatura = $stmt->fetch(PDO::FETCH_ASSOC);
+                        $stmt->closeCursor();
+
+                        if ($candidatura) {
+                            $candidaturaEsistente = true;
+                            if ($candidatura['Stato'] === 'Accettata') {
+                                $candidaturaAccettata = true;
+                            }
+                        }
+                    ?>
+                    <li class="list-group-item">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <strong><?= htmlspecialchars($profilo['Nome']) ?></strong>
+                                <ul class="mb-0">
+                                    <?php foreach ($profilo['Skills'] as $skill): ?>
+                                        <li><?= htmlspecialchars($skill['Competenza_Skill']) ?> - Livello: <?= (int)$skill['Livello'] ?></li>
+                                    <?php endforeach; ?>
+                                </ul>
+                            </div>
+                            <form method="POST" class="ms-3">
+                                <input type="hidden" name="inviaCandidatura" value="<?= htmlspecialchars($profilo['Nome']) ?>">
+                                <button type="submit" class="btn btn-primary btn-sm"
+                                    <?= $candidaturaEsistente || $candidaturaAccettata ? 'disabled' : '' ?>>
+                                    Invia candidatura
+                                </button>
+                            </form>
+                        </div>
+                        <?php if ($candidaturaAccettata): ?>
+                            <p class="text-success mt-2">Una candidatura è già stata accettata per questo profilo.</p>
+                        <?php elseif ($candidaturaEsistente): ?>
+                            <p class="text-warning mt-2">Hai già inviato una candidatura per questo profilo.</p>
+                        <?php endif; ?>
+                    </li>
+                <?php endforeach; ?>
+            </ul>
+        <?php else: ?>
+            <p>Nessun profilo disponibile per questo progetto.</p>
+        <?php endif; ?>
       </section>
     <?php else: ?>
       <section class="mb-5">

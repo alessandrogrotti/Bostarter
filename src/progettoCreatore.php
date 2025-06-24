@@ -117,6 +117,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['eliminaComponente']))
   }
 }
 
+// Elimina profilo
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['eliminaProfilo'])) {
   requireLogin();
   if (!isCreator()) {
@@ -130,6 +131,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['eliminaProfilo'])) {
       exit;
   } else {
       die("Errore nell'eliminazione del profilo.");
+  }
+}
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['gestisciCandidatura'])) {
+  $idCandidatura = intval($_POST['idCandidatura']);
+  $stato = $_POST['stato'];
+
+  if (gestisciCandidatura($idCandidatura, $stato)) {
+      writeLog('Gestione candidatura', "Creatore ha aggiornato la candidatura con ID '$idCandidatura' a '$stato'");
+      header("Location: progettoCreatore.php?nome=" . urlencode($nomeProgetto));
+      exit;
+  } else {
+      die("Errore nella gestione della candidatura.");
   }
 }
 
@@ -184,7 +198,8 @@ foreach ($profiliRaw as $row) {
     if (!isset($profili[$idProfilo])) {
         $profili[$idProfilo] = [
             'Nome' => $row['Nome'],
-            'Skills' => []
+            'Skills' => [],
+            'Id' => $idProfilo
         ];
     }
 
@@ -196,6 +211,11 @@ foreach ($profiliRaw as $row) {
         ];
     }
 }
+
+foreach ($profili as $idProfilo => $profilo) {
+    $profili[$idProfilo]['Candidature'] = ottieniCandidaturePerProfilo($idProfilo);
+}
+
 $componenti = ottieniComponentiPerProgetto($nomeProgetto);
 ?>
 
@@ -299,21 +319,83 @@ $componenti = ottieniComponentiPerProgetto($nomeProgetto);
         <section class="mb-5">
           <h4>Profili richiesti:</h4>
           <?php if ($profili): ?>
-            <ul class="list-group">
-              <?php foreach ($profili as $profilo): ?>
-                <li class="list-group-item">
-                <strong><?= htmlspecialchars($profilo['Nome']) ?></strong>
-                <ul>
-                  <?php foreach ($profilo['Skills'] as $skill): ?>
-                    <li><?= htmlspecialchars($skill['Competenza_Skill']) ?> - Livello: <?= (int)$skill['Livello'] ?></li>
-                  <?php endforeach; ?>
-                </ul>
-              </li>
-            <?php endforeach; ?>
-          </ul>
-        <?php else: ?>
-          <p>Nessun profilo disponibile per questo progetto.</p>
-        <?php endif; ?>
+              <div class="card">
+                  <div class="card-body">
+                      <h5 class="card-title">Lista dei profili</h5>
+                      <div class="row">
+                          <?php foreach ($profili as $profilo): ?>
+                              <div class="col-md-6 mb-4">
+                                  <div class="card profile-card">
+                                      <div class="card-body">
+                                          <div class="d-flex justify-content-between align-items-center">
+                                              <div>
+                                                  <h5 class="card-title"><?= htmlspecialchars($profilo['Nome']) ?></h5>
+                                                  <ul class="list-unstyled mb-0">
+                                                      <?php foreach ($profilo['Skills'] as $skill): ?>
+                                                          <li><?= htmlspecialchars($skill['Competenza_Skill']) ?> - Livello: <?= (int)$skill['Livello'] ?></li>
+                                                      <?php endforeach; ?>
+                                                  </ul>
+                                              </div>
+                                              <form method="POST" class="ms-3">
+                                                  <input type="hidden" name="eliminaProfilo" value="<?= htmlspecialchars($profilo['Id']) ?>">
+                                                  <button type="submit" class="btn btn-danger btn-sm">Rimuovi</button>
+                                              </form>
+                                          </div>
+                                          <!-- Sezione candidature -->
+                                          <?php if (!empty($profilo['Candidature'])): ?>
+                                              <?php 
+                                                  $candidaturaAccettata = false;
+                                                  foreach ($profilo['Candidature'] as $candidatura) {
+                                                      if ($candidatura['Stato'] === 'Accettata') {
+                                                          $candidaturaAccettata = true;
+                                                          break;
+                                                      }
+                                                  }
+                                              ?>
+                                              <?php if ($candidaturaAccettata): ?>
+                                                  <p class="text-success">Una candidatura è già stata accettata per questo profilo. Non è possibile accettare altre candidature.</p>
+                                              <?php else: ?>
+                                                  <table class="table mt-3">
+                                                      <thead>
+                                                          <tr>
+                                                              <th>Utente</th>
+                                                              <th>Stato</th>
+                                                              <th>Azioni</th>
+                                                          </tr>
+                                                      </thead>
+                                                      <tbody>
+                                                          <?php foreach ($profilo['Candidature'] as $candidatura): ?>
+                                                              <tr>
+                                                                  <td><?= htmlspecialchars($candidatura['Nickname']) ?></td>
+                                                                  <td><?= htmlspecialchars($candidatura['Stato']) ?></td>
+                                                                  <td>
+                                                                      <?php if ($candidatura['Stato'] === 'In attesa'): ?>
+                                                                          <form method="POST" class="d-inline">
+                                                                              <input type="hidden" name="gestisciCandidatura" value="1">
+                                                                              <input type="hidden" name="idCandidatura" value="<?= htmlspecialchars($candidatura['Id']) ?>">
+                                                                              <button type="submit" name="stato" value="Accettata" class="btn btn-success btn-sm">Accetta</button>
+                                                                              <button type="submit" name="stato" value="Rifiutata" class="btn btn-danger btn-sm">Rifiuta</button>
+                                                                          </form>
+                                                                      <?php endif; ?>
+                                                                  </td>
+                                                              </tr>
+                                                          <?php endforeach; ?>
+                                                      </tbody>
+                                                  </table>
+                                              <?php endif; ?>
+                                          <?php else: ?>
+                                              <p class="mt-3">Nessuna candidatura per questo profilo.</p>
+                                          <?php endif; ?>
+                                      </div>
+                                  </div>
+                              </div>
+                          <?php endforeach; ?>
+                      </div>
+                  </div>
+              </div>
+          <?php else: ?>
+              <p>Nessun profilo disponibile per questo progetto.</p>
+          <?php endif; ?>
         </section>
       <?php else: ?>
         <h4>Aggiungi un nuovo componente:</h4>
@@ -389,7 +471,9 @@ $componenti = ottieniComponentiPerProgetto($nomeProgetto);
         </section>
     <?php endif; ?>
   <?php endif; ?>
+
 </main>
 <?php require_once 'footer.php'?>
 </body>
 </html>
+

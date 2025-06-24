@@ -79,7 +79,7 @@ function eliminaProfilo($id) {
     try {
         $conn = getMySQLConnection();
         $stmt = $conn->prepare("CALL EliminaProfilo(?)");
-        $stmt->bindParam(1, $nome, PDO::PARAM_STR);
+        $stmt->bindParam(1, $id, PDO::PARAM_INT);
         return $stmt->execute();
     } catch (Exception $e) {
         return false;
@@ -130,6 +130,30 @@ function OttieniListaFinanziatori() {
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     } catch (Exception $e) {
         return [];
+    }
+}
+
+function ottieniCandidaturePerProfilo($idProfilo) {
+    try {
+        $conn = getMySQLConnection();
+        $stmt = $conn->prepare("CALL OttieniCandidaturePerProfilo(?)");
+        $stmt->bindParam(1, $idProfilo, PDO::PARAM_INT);
+        $stmt->execute();
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    } catch (Exception $e) {
+        return [];
+    }
+}
+
+function gestisciCandidatura($idCandidatura, $stato) {
+    try {
+        $conn = getMySQLConnection();
+        $stmt = $conn->prepare("CALL GestisciCandidatura(?, ?)");
+        $stmt->bindParam(1, $idCandidatura, PDO::PARAM_INT);
+        $stmt->bindParam(2, $stato, PDO::PARAM_STR); // Stato: "Accettata" o "Rifiutata"
+        return $stmt->execute();
+    } catch (Exception $e) {
+        return false;
     }
 }
 ?>

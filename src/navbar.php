@@ -13,13 +13,6 @@ $isLoggedIn = isLoggedIn();
 $isAdmin = isAdmin();  // Funzione per verificare se l'utente è un Admin
 $isCreator = isCreator();  // Funzione per verificare se l'utente è un Creatore
 $errorMessage = null;
-
-// Se l'utente non ha i permessi, mostra il messaggio di errore
-if ($isLoggedIn) {
-    if (!$isAdmin && !$isCreator) {
-        $errorMessage = "Non hai i permessi per accedere a tutte le aree riservate.";
-    }
-}
 ?>
 
 <nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm">
