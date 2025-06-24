@@ -36,22 +36,21 @@ main {
 
 /* ===== Hero Section ===== */
 .hero {
-  background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+  background: linear-gradient(var(--primary-color), var(--secondary-color)); /*135deg*/
   color: white;
   padding: 120px 0;
   text-align: center;
   position: relative;
-  clip-path: polygon(0 0, 100% 0, 100% 85%, 0 100%);
 }
 
-.hero-section {
-  background: linear-gradient(135deg, #28a745, #20c997); /* Verde, ma stesso angolo 135deg */
+/*.hero-section {
+  background: linear-gradient(135deg, #28a745, #20c997); 
   color: white;
-  padding: 120px 0; /* Uguale alla .hero */
+  padding: 120px 0; 
   text-align: center;
   position: relative;
   clip-path: polygon(0 0, 100% 0, 100% 85%, 0 100%);
-}
+}*/
 
 
 /* ===== Card, Moduli e Pulsanti ===== */

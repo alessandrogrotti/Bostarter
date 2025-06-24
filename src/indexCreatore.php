@@ -71,7 +71,7 @@ try {
     <?php endif; ?>
 
     <!-- Bottone nuovo progetto -->
-    <div class="text-center mb-5">
+    <div class="text-center mb-5" style="margin-top: 50px;">
       <a href="nuovoProgetto.php" class="btn btn-primary">Crea Nuovo Progetto</a>
     </div>
 
