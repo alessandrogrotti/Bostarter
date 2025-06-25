@@ -3,22 +3,15 @@ session_start();
 
 include_once 'connection.php';
 include_once 'mongodb.php';
+include_once 'mysql.php';
 
 function login($email, $password) {
     try {
-        $mysqlConn = getMySQLConnection();
-        $stmt = $mysqlConn->prepare("SELECT * FROM UTENTE WHERE Email = :email");
-        $stmt->execute([':email' => $email]);
-        $user = $stmt->fetch(PDO::FETCH_ASSOC);
+        $user = ottieniUtente($email);
 
         if ($user && md5($password) === $user['Password']) {
-            $stmtCreator = $mysqlConn->prepare("SELECT 1 FROM CREATORE WHERE Email_Utente = :email LIMIT 1");
-            $stmtCreator->execute([':email' => $email]);
-            $is_creator = (bool)$stmtCreator->fetch();
-
-            $stmtAdmin = $mysqlConn->prepare("SELECT 1 FROM AMMINISTRATORE WHERE Email_Utente = :email LIMIT 1");
-            $stmtAdmin->execute([':email' => $email]);
-            $is_admin = (bool)$stmtAdmin->fetch();
+            $is_creator = verificaCreatore($email);
+            $is_admin = verificaAdmin($email);
 
             session_regenerate_id(true);
             $_SESSION = [
@@ -38,7 +31,7 @@ function login($email, $password) {
         writeLog('Login fallito', "Tentativo di login fallito con email: $email");
         return false;
 
-    } catch (PDOException $e) {
+    } catch (Exception $e) {
         error_log("Login error: " . $e->getMessage());
         return false;
     }
@@ -70,12 +63,9 @@ function verifyAdminCode($code) {
     $email = $_SESSION['id'];
 
     try {
-        $mysqlConn = getMySQLConnection();
-        $stmt = $mysqlConn->prepare("SELECT Codice_Sicurezza FROM AMMINISTRATORE WHERE Email_Utente = :email");
-        $stmt->execute([':email' => $email]);
-        $admin = $stmt->fetch(PDO::FETCH_ASSOC);
+        $adminCode = ottieniCodiceAdmin($email);
 
-        if ($admin && md5($code) === $admin['Codice_Sicurezza']) {
+        if ($adminCode && md5($code) === $adminCode) {
             $_SESSION['is_admin'] = true;
             writeLog('Accesso Admin', "Utente {$_SESSION['nickname']} ($email) ha effettuato il login come admin");
             return true;
@@ -84,7 +74,7 @@ function verifyAdminCode($code) {
         writeLog('Login Admin fallito', "Codice errato per l'utente $email");
         return false;
 
-    } catch (PDOException $e) {
+    } catch (Exception $e) {
         error_log("Errore verifica codice admin: " . $e->getMessage());
         return false;
     }

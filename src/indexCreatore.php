@@ -1,37 +1,28 @@
 <?php
 include_once 'auth.php';
 include_once 'connection.php';
+include_once 'mongodb.php';
+include_once 'mysql.php';
 include_once 'navbar.php';
 
-// Connessioni ai database
 $mysqlConn = getMySQLConnection();
 $logCollection = getMongoDBConnection();
 
 $emailCreatore = $_SESSION['id'];
 
-// Query per recuperare i progetti del creatore loggato
+writeLog('Visita area creatore', ['email' => $emailCreatore]);
+
 try {
-  $sql = "SELECT * FROM PROGETTO WHERE Email_Creatore = :emailCreatore";
-  $stmt = $mysqlConn->prepare($sql);
-  $stmt->execute(['emailCreatore' => $emailCreatore]);
-  $progetti = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    $progetti = ottieniProgettiCreatore($emailCreatore);
 
-  // Carico le foto per ogni progetto
-  foreach ($progetti as &$progetto) {
-      $nomeProgetto = $progetto['Nome'];
-      $fotoStmt = $mysqlConn->prepare("SELECT Valore FROM FOTO WHERE Nome_Progetto = :nomeProgetto");
-
-      $fotoStmt->bindParam(':nomeProgetto', $nomeProgetto, PDO::PARAM_STR);
-      $fotoStmt->execute();
-
-      $progetto['Foto'] = $fotoStmt->fetchAll(PDO::FETCH_COLUMN);
-      $fotoStmt->closeCursor();
-  }
-  unset($progetto);
+    foreach ($progetti as &$progetto) {
+        $progetto['Foto'] = ottieniFotoProgetto($progetto['Nome']);
+    }
+    unset($progetto);
 } catch (PDOException $e) {
-  die("Errore durante il caricamento dei progetti: " . $e->getMessage()); 
+    writeLog('Errore caricamento progetti creatore', ['email' => $emailCreatore, 'errore' => $e->getMessage()]);
+    die("Errore durante il caricamento dei progetti: " . $e->getMessage());
 }
-
 ?>
 
 <!DOCTYPE html>
@@ -39,20 +30,12 @@ try {
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-
   <title>Area creatore | Bostarter</title>
-
-  <!-- Bootstrap CSS -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
-
-  <!-- Google Fonts -->
   <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;500;600;700&family=Libre+Baskerville:wght@400;700&display=swap" rel="stylesheet">
-
-  <!-- Custom CSS -->
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-
 <header class="hero">
   <div class="container text-center py-5">
     <h1 class="display-4 text-white mb-4 animate-fadein">Area creatore</h1>
@@ -62,20 +45,16 @@ try {
 
 <main>
   <div class="container">
-
-    <!-- Messaggio di errore -->
     <?php if (!empty($errorMessage)): ?>
       <div class="alert alert-danger mt-3" role="alert">
         <?= htmlspecialchars($errorMessage) ?>
       </div>
     <?php endif; ?>
 
-    <!-- Bottone nuovo progetto -->
     <div class="text-center mb-5" style="margin-top: 50px;">
       <a href="nuovoProgetto.php" class="btn btn-primary">Crea Nuovo Progetto</a>
     </div>
 
-    <!-- Progetti del creatore -->
     <section class="mb-5">
       <h2 class="section-title">Tutti i progetti</h2>
 
@@ -85,8 +64,6 @@ try {
             <?php $nomeProgettoUrl = urlencode($row["Nome"]); ?>
             <div class="col-lg-4 col-md-6">
               <div class="card shadow-hover h-100">
-
-                <!-- Carosello delle foto -->
                 <?php if (!empty($row['Foto'])): ?>
                     <div id="carousel-<?= $index ?>" class="carousel slide" data-bs-ride="carousel">
                         <div class="carousel-inner">

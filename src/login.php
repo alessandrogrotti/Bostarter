@@ -1,18 +1,23 @@
 <?php
 include_once 'auth.php';
+include_once 'mongodb.php';
 
 $message = "";
 
 if ($_SERVER["REQUEST_METHOD"] === "POST") {
-  $email = trim($_POST['email']);
-  $password = trim($_POST['password']);
+    $email = trim($_POST['email']);
+    $password = trim($_POST['password']);
 
-  if (login($email, $password)) {
-    header("Location: utente.php");
-    exit();
-  } else {
-    $message = "Credenziali non valide";
-  }
+    writeLog('Tentativo di login', ['email' => $email]);
+
+    if (login($email, $password)) {
+        writeLog('Login riuscito', ['email' => $email]);
+        header("Location: utente.php");
+        exit();
+    } else {
+        writeLog('Login fallito', ['email' => $email]);
+        $message = "Credenziali non valide";
+    }
 }
 ?>
 
@@ -23,16 +28,12 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Login</title>
-  <!-- Bootstrap CSS -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
-  <!-- Google Fonts -->
   <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;500;600;700&family=Libre+Baskerville:wght@400;700&display=swap" rel="stylesheet">
-  <!-- Custom CSS -->
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
 
-<!-- Hero Section -->
 <header class="hero">
   <div class="container text-center py-5">
     <h1 class="display-5 text-white mb-3 animate-fadein">Login Utente</h1>
@@ -46,7 +47,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 
       <?php if (!empty($message)): ?>
         <div class="alert alert-danger animate-fadein" role="alert" style="animation-delay: 0.4s;">
-          <?php echo htmlspecialchars($message); ?>
+          <?= htmlspecialchars($message); ?>
         </div>
       <?php endif; ?>
 
@@ -69,7 +70,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
         </div>
       </div>
 
-      <p class="mt-3 text-center">Non hai un account? <a href="registrazione.php">Registrati</a></p>
+      <p class="mt-3 text-center">Non hai un account? <a href="register.php">Registrati</a></p>
 
     </div>
   </div>

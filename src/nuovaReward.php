@@ -1,45 +1,24 @@
 <?php
 include_once 'connection.php';
-include_once 'mongodb.php';      
-include_once 'auth.php';         
+include_once 'mongodb.php';
+include_once 'auth.php';
+include_once 'mysql.php';
 
-$conn          = getMySQLConnection();
-$logCollection = getMongoDBConnection();
-
-// 2) Verifica che l’utente sia loggato
 requireLogin();
 
-// 3) prendi il nome del progetto da GET e controlla che esista
 $nomeProgetto = isset($_GET['nome']) ? trim($_GET['nome']) : '';
 if ($nomeProgetto === '') {
     die("Nome progetto non specificato.");
 }
-try {
-    $stmt = $conn->prepare(
-        "SELECT Email_Creatore
-         FROM PROGETTO
-         WHERE Nome = :nome"
-    );
-    $stmt->bindParam(':nome', $nomeProgetto, PDO::PARAM_STR);
-    $stmt->execute();
-    $progetto = $stmt->fetch(PDO::FETCH_ASSOC);
-    $stmt->closeCursor();
-} catch (PDOException $e) {
-    die("Errore recupero progetto: " . $e->getMessage());
-}
-if (! $progetto) {
-    die("Progetto non trovato.");
+
+if (!verificaProgettoCreatore($nomeProgetto, $_SESSION['id'])) {
+    die("Progetto non trovato o non autorizzato.");
 }
 
-// 5) gestione form POST
-if ($_SERVER['REQUEST_METHOD'] === 'POST' 
-    && isset($_POST['codice'], $_POST['descrizione'])
-) {
-    $codice      = trim($_POST['codice']);
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['descrizione'])) {
     $descrizione = trim($_POST['descrizione']);
-    $fotoPath    = ''; // Variabile per il percorso della foto
+    $fotoPath = '';
 
-    // Gestione dell'upload dell'immagine
     if (isset($_FILES['foto']) && $_FILES['foto']['error'] === UPLOAD_ERR_OK) {
         $uploadDir = 'uploads/';
         if (!file_exists($uploadDir)) {
@@ -49,14 +28,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST'
         $originalName = basename($_FILES['foto']['name']);
         $extension = strtolower(pathinfo($originalName, PATHINFO_EXTENSION));
 
-        // Verifica l'estensione del file (solo immagini)
         if (in_array($extension, ['jpg', 'jpeg', 'png', 'gif'])) {
             $newFileName = uniqid('reward_', true) . '.' . $extension;
             $destinationPath = $uploadDir . $newFileName;
 
-            // Salvataggio dell'immagine
             if (move_uploaded_file($_FILES['foto']['tmp_name'], $destinationPath)) {
-                $fotoPath = $destinationPath; // Salvo il percorso della foto
+                $fotoPath = $destinationPath;
             } else {
                 $errorMessage = "Errore durante il salvataggio dell'immagine.";
             }
@@ -65,50 +42,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST'
         }
     }
 
-    // Controlla che i campi obbligatori siano compilati
-    if ($codice === '' || $descrizione === '') {
+    if ($descrizione === '') {
         $errorMessage = "Compila tutti i campi obbligatori.";
     } else {
-        // Prendi l'email dell'utente loggato
-        $emailCreatore = $_SESSION['id'];  // oppure modifica se usi un altro nome per l'email nella sessione
-
         try {
-            // Esegui la chiamata alla stored procedure
-            $stmtI = $conn->prepare(
-                "CALL InserisciReward(
-                    :codice,
-                    :descrizione,
-                    :foto,
-                    :nome_progetto,
-                    :email_creatore
-                )"
-            );
-            $stmtI->bindParam(':codice',         $codice,        PDO::PARAM_STR);
-            $stmtI->bindParam(':descrizione',    $descrizione,   PDO::PARAM_STR);
-            $stmtI->bindParam(':foto',           $fotoPath,      PDO::PARAM_STR);  // Passa il percorso della foto
-            $stmtI->bindParam(':nome_progetto',  $nomeProgetto,  PDO::PARAM_STR);
-            $stmtI->bindParam(':email_creatore', $emailCreatore, PDO::PARAM_STR);
-            $stmtI->execute();
-            $stmtI->closeCursor();
-
-            // Log su MongoDB
+            inserisciReward($descrizione, $fotoPath, $nomeProgetto, $_SESSION['id']);
             writeLog(
                 'Inserimento reward',
-                "Creatore $emailCreatore ha aggiunto reward '$codice' al progetto $nomeProgetto"
+                "Creatore {$_SESSION['id']} ha aggiunto reward al progetto $nomeProgetto"
             );
-
-            // Redirect alla pagina del progetto
             header("Location: progettoCreatore.php?nome=" . urlencode($nomeProgetto));
             exit;
-        } catch (PDOException $e) {
+        } catch (Exception $e) {
             $errorMessage = "Errore inserimento reward: " . $e->getMessage();
         }
     }
 }
 
-// 6) include navbar (dopo eventuale redirect)
 include_once 'navbar.php';
-
 ?>
 <!DOCTYPE html>
 <html lang="it">
@@ -121,7 +72,6 @@ include_once 'navbar.php';
 </head>
 <body>
   <main class="container mt-5">
-
     <h2 class="mb-4">Nuova reward per "<strong><?= htmlspecialchars($nomeProgetto) ?></strong>"</h2>
 
     <?php if (!empty($errorMessage)): ?>
@@ -129,18 +79,6 @@ include_once 'navbar.php';
     <?php endif; ?>
 
     <form method="POST" class="row g-3" enctype="multipart/form-data">
-      <div class="col-md-6">
-        <label for="codice" class="form-label">Codice reward:</label>
-        <input
-          type="text"
-          id="codice"
-          name="codice"
-          class="form-control"
-          maxlength="50"
-          required
-          value="<?= isset($codice) ? htmlspecialchars($codice) : '' ?>"
-        >
-      </div>
       <div class="col-12">
         <label for="descrizione" class="form-label">Descrizione:</label>
         <textarea

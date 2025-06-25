@@ -12,211 +12,102 @@ if ($nomeProgetto === '') {
     die("Nome progetto non specificato.");
 }
 
-if (
-  $_SERVER['REQUEST_METHOD'] === 'POST' &&
-  isset($_POST['profilo'], $_POST['skill'], $_POST['level'])
-) {
-  requireLogin();
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['profilo'], $_POST['skill'], $_POST['level'])) {
+    requireLogin();
+    if (!isCreator()) {
+        die("Solo il creatore del progetto può aggiungere profili.");
+    }
 
-  if (!isCreator()) {
-      die("Solo il creatore del progetto può aggiungere profili.");
-  }
+    $nomeProfilo = trim($_POST['profilo']);
+    $skills = $_POST['skill'];
+    $levels = $_POST['level'];
 
-  // Pulizia dati
-  $nomeProfilo = trim($_POST['profilo']);
-  $skills = $_POST['skill'];      // array di skill selezionate
-  $levels = $_POST['level'];      // array dei livelli corrispondenti
+    if (!inserisciProfiloConCompetenze($nomeProfilo, $nomeProgetto, $skills, $levels)) {
+        die("Errore nell'inserimento del profilo.");
+    }
 
-  try {
-      // 1. Inserisci il nuovo profilo nella tabella PROFILO
-      $stmtProfilo = $conn->prepare("
-          INSERT INTO PROFILO (Nome, Nome_ProgettoSoftware)
-          VALUES (:nome, :nome_progetto)
-      ");
-      $stmtProfilo->bindParam(':nome', $nomeProfilo, PDO::PARAM_STR);
-      $stmtProfilo->bindParam(':nome_progetto', $nomeProgetto, PDO::PARAM_STR);
-      $stmtProfilo->execute();
-
-      // 2. Recupera l'ID del profilo appena inserito
-      $profiloId = $conn->lastInsertId();
-
-      // 3. Prepariamo la query di inserimento competenze
-      $stmtSkill = $conn->prepare("
-          INSERT INTO RICHIEDE (Livello, Id_Profilo, Competenza_Skill)
-          VALUES (:livello, :id_profilo, :skill)
-      ");
-
-      // 4. Inserisci solo le skill con livello valido (1-5)
-      foreach ($skills as $index => $competenza) {
-          if (
-              !isset($levels[$index]) ||
-              !is_numeric($levels[$index]) ||
-              (int)$levels[$index] < 1 ||
-              (int)$levels[$index] > 5
-          ) {
-              continue; // ignora skill senza livello valido
-          }
-
-          $livello = (int)$levels[$index];
-
-          $stmtSkill->bindParam(':livello', $livello, PDO::PARAM_INT);
-          $stmtSkill->bindParam(':id_profilo', $profiloId, PDO::PARAM_INT);
-          $stmtSkill->bindParam(':skill', $competenza, PDO::PARAM_STR);
-          $stmtSkill->execute();
-      }
-
-      writeLog(
-          'Inserimento profilo',
-          "Creatore {$_SESSION['id']} ha aggiunto profilo '$nomeProfilo' al progetto '$nomeProgetto'"
-      );
-
-      header("Location: progettoCreatore.php?nome=" . urlencode($nomeProgetto));
-      exit;
-  } catch (PDOException $e) {
-      die("Errore nell'inserimento del profilo: " . $e->getMessage());
-  }
+    writeLog('Inserimento profilo', "Creatore {$_SESSION['id']} ha aggiunto profilo '$nomeProfilo' al progetto '$nomeProgetto'");
+    header("Location: progettoCreatore.php?nome=" . urlencode($nomeProgetto));
+    exit;
 }
-
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['nomeComponente'])) {
-  requireLogin();
-  if (!isCreator()) {
-      die("Non sei autorizzato a inserire componenti in questo progetto.");
-  }
+    requireLogin();
+    if (!isCreator()) {
+        die("Non sei autorizzato a inserire componenti in questo progetto.");
+    }
 
-  $nomeComponente = trim($_POST['nomeComponente']);
-  $descrizioneComponente = trim($_POST['descrizioneComponente']);
-  $prezzoComponente = floatval($_POST['prezzoComponente']);
-  $quantitaComponente = intval($_POST['quantitaComponente']);
-  $nomeProgettoHardware = $nomeProgetto; // stesso nome del progetto
+    $nomeComponente = trim($_POST['nomeComponente']);
+    $descrizioneComponente = trim($_POST['descrizioneComponente']);
+    $prezzoComponente = floatval($_POST['prezzoComponente']);
+    $quantitaComponente = intval($_POST['quantitaComponente']);
 
-  // Chiama la funzione per inserire il componente
-  if (inserisciComponente($nomeComponente, $nomeProgettoHardware, $descrizioneComponente, $prezzoComponente, $quantitaComponente)) {
-      writeLog('Aggiunta componente', "Creatore ha aggiunto il componente '$nomeComponente' al progetto $nomeProgetto");
-      header("Location: progettoCreatore.php?nome=" . urlencode($nomeProgetto));
-      exit;
-  } else {
-      die("Errore nell'inserimento del componente.");
-  }
+    if (!inserisciComponente($nomeComponente, $nomeProgetto, $descrizioneComponente, $prezzoComponente, $quantitaComponente)) {
+        die("Errore nell'inserimento del componente.");
+    }
+
+    writeLog('Aggiunta componente', "Creatore ha aggiunto il componente '$nomeComponente' al progetto $nomeProgetto");
+    header("Location: progettoCreatore.php?nome=" . urlencode($nomeProgetto));
+    exit;
 }
 
-// Elimina componente
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['eliminaComponente'])) {
-  requireLogin();
-  if (!isCreator()) {
-      die("Non sei autorizzato a eliminare componenti in questo progetto.");
-  }
+    requireLogin();
+    if (!isCreator()) {
+        die("Non sei autorizzato a eliminare componenti in questo progetto.");
+    }
 
-  $nomeComponenteDaEliminare = trim($_POST['eliminaComponente']);
-  if (eliminaComponente($nomeComponenteDaEliminare, $nomeProgetto)) {
-      writeLog('Eliminazione componente', "Creatore ha eliminato il componente '$nomeComponenteDaEliminare' dal progetto $nomeProgetto");
-      header("Location: progettoCreatore.php?nome=" . urlencode($nomeProgetto));
-      exit;
-  } else {
-      die("Errore nell'eliminazione del componente.");
-  }
+    $nomeComponenteDaEliminare = trim($_POST['eliminaComponente']);
+    if (!eliminaComponente($nomeComponenteDaEliminare, $nomeProgetto)) {
+        die("Errore nell'eliminazione del componente.");
+    }
+
+    writeLog('Eliminazione componente', "Creatore ha eliminato il componente '$nomeComponenteDaEliminare' dal progetto $nomeProgetto");
+    header("Location: progettoCreatore.php?nome=" . urlencode($nomeProgetto));
+    exit;
 }
 
-// Elimina profilo
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['eliminaProfilo'])) {
-  requireLogin();
-  if (!isCreator()) {
-      die("Non sei autorizzato a eliminare profilo in questo progetto.");
-  }
+    requireLogin();
+    if (!isCreator()) {
+        die("Non sei autorizzato a eliminare profilo in questo progetto.");
+    }
 
-  $IdProfiloDaEliminare = trim($_POST['eliminaProfilo']);
-  if (eliminaProfilo($IdProfiloDaEliminare)) {
-      writeLog('Eliminazione profilo', "Creatore ha eliminato il profilo con id '$IdProfiloDaEliminare'");
-      header("Location: progettoCreatore.php?nome=" . urlencode($nomeProgetto));
-      exit;
-  } else {
-      die("Errore nell'eliminazione del profilo.");
-  }
+    $IdProfiloDaEliminare = trim($_POST['eliminaProfilo']);
+    if (!eliminaProfilo($IdProfiloDaEliminare)) {
+        die("Errore nell'eliminazione del profilo.");
+    }
+
+    writeLog('Eliminazione profilo', "Creatore ha eliminato il profilo con id '$IdProfiloDaEliminare'");
+    header("Location: progettoCreatore.php?nome=" . urlencode($nomeProgetto));
+    exit;
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['gestisciCandidatura'])) {
-  $idCandidatura = intval($_POST['idCandidatura']);
-  $stato = $_POST['stato'];
+    $idCandidatura = intval($_POST['idCandidatura']);
+    $stato = $_POST['stato'];
 
-  if (gestisciCandidatura($idCandidatura, $stato)) {
-      writeLog('Gestione candidatura', "Creatore ha aggiornato la candidatura con ID '$idCandidatura' a '$stato'");
-      header("Location: progettoCreatore.php?nome=" . urlencode($nomeProgetto));
-      exit;
-  } else {
-      die("Errore nella gestione della candidatura.");
-  }
+    if (!gestisciCandidatura($idCandidatura, $stato)) {
+        die("Errore nella gestione della candidatura.");
+    }
+
+    writeLog('Gestione candidatura', "Creatore ha aggiornato la candidatura con ID '$idCandidatura' a '$stato'");
+    header("Location: progettoCreatore.php?nome=" . urlencode($nomeProgetto));
+    exit;
 }
 
-try {
-    $stmt = $conn->prepare(
-        "SELECT Nome, Descrizione, Email_Creatore, Tipo, Stato FROM PROGETTO WHERE Nome = :nome"
-    );
-    $stmt->bindParam(':nome', $nomeProgetto, PDO::PARAM_STR);
-    $stmt->execute();
-    $progetto = $stmt->fetch(PDO::FETCH_ASSOC);
-    $stmt->closeCursor();
-} catch (PDOException $e) {
-    die("Errore nel recupero del progetto: " . $e->getMessage());
-}
+$progetto = ottieniDettagliProgetto($nomeProgetto);
 if (!$progetto) {
     die("Progetto non trovato o non più aperto.");
 }
 
-try {
-    $stmtF = $conn->prepare("SELECT Valore FROM FOTO WHERE Nome_Progetto = :nome");
-    $stmtF->bindParam(':nome', $nomeProgetto, PDO::PARAM_STR);
-    $stmtF->execute();
-    $fotoProgetto = $stmtF->fetchAll(PDO::FETCH_ASSOC);
-    $stmtF->closeCursor();
-} catch (PDOException $e) {
-    die("Errore nel recupero delle immagini del progetto: " . $e->getMessage());
-}
+$fotoProgetto = ottieniFotoProgetto($nomeProgetto);
+$rewards = ottieniRewardPerProgetto($nomeProgetto);
+$availableSkills = ottieniCompetenze();
+$profili = ottieniProfiliConCandidature($nomeProgetto);
+$componenti = ottieniComponentiPerProgetto($nomeProgetto);
 
 include_once 'navbar.php';
-
-try {
-    $stmtR = $conn->prepare(
-        "SELECT Codice, Descrizione, Foto FROM REWARD WHERE Nome_Progetto = :nome"
-    );
-    $stmtR->bindParam(':nome', $nomeProgetto, PDO::PARAM_STR);
-    $stmtR->execute();
-    $rewards = $stmtR->fetchAll(PDO::FETCH_ASSOC);
-    $stmtR->closeCursor();
-} catch (PDOException $e) {
-    die("Errore nella query delle reward: " . $e->getMessage());
-}
-
-$availableSkillsQuery = "SELECT Competenza FROM SKILL ORDER BY Competenza";
-$stmtAvailableSkills = $conn->prepare($availableSkillsQuery);
-$stmtAvailableSkills->execute();
-$availableSkills = $stmtAvailableSkills->fetchAll(PDO::FETCH_ASSOC);
-$profiliRaw = ottieniProfiliPerProgetto($nomeProgetto);
-$profili = []; // profili raggruppati
-
-foreach ($profiliRaw as $row) {
-    $idProfilo = $row['Id'];
-    if (!isset($profili[$idProfilo])) {
-        $profili[$idProfilo] = [
-            'Nome' => $row['Nome'],
-            'Skills' => [],
-            'Id' => $idProfilo
-        ];
-    }
-
-    // Aggiungi la skill solo se esiste
-    if (!empty($row['Competenza_Skill'])) {
-        $profili[$idProfilo]['Skills'][] = [
-            'Competenza_Skill' => $row['Competenza_Skill'],
-            'Livello' => $row['Livello']
-        ];
-    }
-}
-
-foreach ($profili as $idProfilo => $profilo) {
-    $profili[$idProfilo]['Candidature'] = ottieniCandidaturePerProfilo($idProfilo);
-}
-
-$componenti = ottieniComponentiPerProgetto($nomeProgetto);
 ?>
 
 <!DOCTYPE html>

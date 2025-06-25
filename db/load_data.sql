@@ -65,26 +65,27 @@ INSERT INTO FOTO (Valore, Nome_Progetto) VALUES
 
 
 -- Reward
-INSERT INTO REWARD (Codice, Descrizione, Foto, Nome_Progetto) VALUES
+INSERT INTO REWARD (Descrizione, Foto, Nome_Progetto) VALUES
 -- Sistema Domotico Smart
-('RWD-SDS-1', 'Ringraziamento speciale sul sito web e menzione tra i supporter', 'uploads/reward.png', 'Sistema Domotico Smart'),
-('RWD-SDS-2', 'Accesso anticipato alla versione beta e demo esclusiva', 'uploads/reward.png', 'Sistema Domotico Smart'),
-('RWD-SDS-3', 'Installazione gratuita del sistema per i primi 50 finanziatori', 'uploads/reward.png', 'Sistema Domotico Smart'),
+('Ringraziamento speciale sul sito web e menzione tra i supporter', 'uploads/reward.png', 'Sistema Domotico Smart'),
+('Accesso anticipato alla versione beta e demo esclusiva', 'uploads/reward.png', 'Sistema Domotico Smart'),
+('Installazione gratuita del sistema per i primi 50 finanziatori', 'uploads/reward.png', 'Sistema Domotico Smart'),
 
 -- App Gestione Spese
-('RWD-AGS-1', 'Accesso alla versione premium per 6 mesi senza costi', 'uploads/reward.png', 'App Gestione Spese'),
-('RWD-AGS-2', 'Report finanziario personalizzato con analisi avanzata', 'uploads/reward.png', 'App Gestione Spese'),
-('RWD-AGS-3', 'Ringraziamento con nome nella sezione supporter dell’app', 'uploads/reward.png', 'App Gestione Spese'),
+('Accesso alla versione premium per 6 mesi senza costi', 'uploads/reward.png', 'App Gestione Spese'),
+('Report finanziario personalizzato con analisi avanzata', 'uploads/reward.png', 'App Gestione Spese'),
+('Ringraziamento con nome nella sezione supporter dell’app', 'uploads/reward.png', 'App Gestione Spese'),
 
 -- Piattaforma E-learning
-('RWD-PEL-1', 'Accesso gratuito a un corso premium a scelta', 'uploads/reward.png', 'Piattaforma E-learning'),
-('RWD-PEL-2', 'Certificato digitale di sostenitore ufficiale del progetto', 'uploads/reward.png', 'Piattaforma E-learning'),
-('RWD-PEL-3', 'Webinar esclusivo con i docenti e sviluppatori', 'uploads/reward.png', 'Piattaforma E-learning'),
+('Accesso gratuito a un corso premium a scelta', 'uploads/reward.png', 'Piattaforma E-learning'),
+('Certificato digitale di sostenitore ufficiale del progetto', 'uploads/reward.png', 'Piattaforma E-learning'),
+('Webinar esclusivo con i docenti e sviluppatori', 'uploads/reward.png', 'Piattaforma E-learning'),
 
 -- GreenCity Tracker
-('RWD-GCT-1', 'Badge esclusivo “Green Supporter” visibile nel profilo', 'uploads/reward.png', 'GreenCity Tracker'),
-('RWD-GCT-2', 'T-shirt in cotone organico con logo del progetto', 'uploads/reward.png', 'GreenCity Tracker'),
-('RWD-GCT-3', 'Possibilità di testare nuove funzionalità in anteprima', 'uploads/reward.png', 'GreenCity Tracker');
+('Badge esclusivo “Green Supporter” visibile nel profilo', 'uploads/reward.png', 'GreenCity Tracker'),
+('T-shirt in cotone organico con logo del progetto', 'uploads/reward.png', 'GreenCity Tracker'),
+('Possibilità di testare nuove funzionalità in anteprima', 'uploads/reward.png', 'GreenCity Tracker');
+
 
 -- Competenza
 INSERT INTO SKILL (Competenza) VALUES ('Java'), ('SQL'), ('Teamwork'), ('Python'), ('HTML');

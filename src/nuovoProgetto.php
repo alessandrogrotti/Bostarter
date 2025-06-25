@@ -1,14 +1,13 @@
 <?php
-include_once 'auth.php';   
+include_once 'auth.php';
 requireLogin();
 requireCreator();
 
 include_once 'connection.php';
 include_once 'mongodb.php';
+include_once 'mysql.php';
 include_once 'navbar.php';
 
-$mysqlConn     = getMySQLConnection();
-$logCollection = getMongoDBConnection();
 writeLog('Visita pagina inserimento progetto', 'Accesso alla pagina');
 
 $message = '';
@@ -18,74 +17,51 @@ if (!file_exists($uploadDir)) {
     mkdir($uploadDir, 0777, true);
 }
 
-$software = isset($_POST['software']) && $_POST['software'] == 1;
-$hardware = isset($_POST['hardware']) && $_POST['hardware'] == 1;
-
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $nome        = trim($_POST['nome']);
+    $nome = trim($_POST['nome']);
     $descrizione = trim($_POST['descrizione']);
-    $budget      = floatval($_POST['budget']);
-    $dataLimite  = $_POST['dataLimite'];
+    $budget = floatval($_POST['budget']);
+    $dataLimite = $_POST['dataLimite'];
+    $tipo = isset($_POST['tipo']) ? $_POST['tipo'] : null;
 
-    if (isset($_POST['tipo'])) {
-      $tipo = $_POST['tipo']; 
-    } else {
+    if (!$tipo) {
         die('Errore: scegli una tipologia (Software o Hardware).');
     }
 
     try {
-        $stmt = $mysqlConn->prepare("
-            CALL InserisciProgetto(
-                :inNome,
-                :inEmailCreatore,
-                :inDescrizione,
-                :inDataLimite,
-                :inBudget,
-                :inTipo
-            )
-        ");
-        $stmt->bindParam(':inNome',          $nome,          PDO::PARAM_STR);
-        $stmt->bindParam(':inEmailCreatore', $_SESSION['id'], PDO::PARAM_STR);
-        $stmt->bindParam(':inDescrizione',   $descrizione,   PDO::PARAM_STR);
-        $stmt->bindParam(':inDataLimite',    $dataLimite,    PDO::PARAM_STR);
-        $stmt->bindParam(':inBudget',        $budget);
-        $stmt->bindParam(':inTipo',          $tipo,          PDO::PARAM_STR);
-        $stmt->execute();
+        inserisciProgetto($nome, $_SESSION['id'], $descrizione, $dataLimite, $budget, $tipo);
 
-        if ($stmt->rowCount() > 0) {
-            writeLog('Inserimento progetto', "Progetto \"$nome\" inserito con successo");
+        if (isset($_FILES['foto']) && count($_FILES['foto']['name']) > 0) {
+            foreach ($_FILES['foto']['tmp_name'] as $index => $tmpName) {
+                if ($_FILES['foto']['error'][$index] === UPLOAD_ERR_OK) {
+                    $originalName = basename($_FILES['foto']['name'][$index]);
+                    $extension = strtolower(pathinfo($originalName, PATHINFO_EXTENSION));
 
-            if (isset($_FILES['foto']) && count($_FILES['foto']['name']) > 0) {
-                foreach ($_FILES['foto']['tmp_name'] as $index => $tmpName) {
-                    if ($_FILES['foto']['error'][$index] === UPLOAD_ERR_OK) {
-                        $originalName = basename($_FILES['foto']['name'][$index]);
-                        $extension = strtolower(pathinfo($originalName, PATHINFO_EXTENSION));
+                    if (in_array($extension, ['jpg', 'jpeg', 'png', 'gif'])) {
+                        $newFileName = uniqid('img_', true) . '.' . $extension;
+                        $destinationPath = $uploadDir . $newFileName;
 
-                        if (in_array($extension, ['jpg', 'jpeg', 'png', 'gif'])) {
-                            $newFileName = uniqid('img_', true) . '.' . $extension;
-                            $destinationPath = $uploadDir . $newFileName;
-
-                            if (move_uploaded_file($tmpName, $destinationPath)) {
-                                $insertFoto = $mysqlConn->prepare("INSERT INTO FOTO (Valore, Nome_Progetto) VALUES (:valore, :nomeProgetto)");
-                                $insertFoto->bindParam(':valore', $destinationPath, PDO::PARAM_STR);
-                                $insertFoto->bindParam(':nomeProgetto', $nome, PDO::PARAM_STR);
-                                $insertFoto->execute();
-                            }
+                        if (move_uploaded_file($tmpName, $destinationPath)) {
+                            inserisciFotoProgetto($destinationPath, $nome);
                         }
                     }
                 }
             }
-
-            $message = 'Progetto inserito con successo!';
-        } else {
-            $message = 'Attenzione: nessun progetto è stato inserito. Controlla i dati.';
         }
+
+        writeLog('Inserimento progetto', "Progetto \"$nome\" inserito con successo");
+        $message = 'Progetto inserito con successo!';
+    } catch (Exception $e) {
+        $message = "Errore durante l'inserimento" ;
     } catch (PDOException $e) {
-        die("Errore durante l'inserimento: " . $e->getMessage());
-    }
+      if (isset($e->errorInfo[1]) && $e->errorInfo[1] == 1644) {
+          $message = "Errore durante l'inserimento: Dati non validi: controlla Email_Creatore, Tipo o Budget > 0";
+      } else {
+          $message = "Errore!";
+      }
+  }
 }
 ?>
-
 <!DOCTYPE html>
 <html lang="it">
 <head>
@@ -121,15 +97,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       </div>
       <div class="col-md-4">
         <label for="dataLimite" class="form-label">Data Limite</label>
-        <input type="date" class="form-control" id="dataLimite" name="dataLimite" required>
+        <?php $domani = date('Y-m-d', strtotime('+1 day')); ?>
+        <input type="date" class="form-control" id="dataLimite" name="dataLimite" required min="<?= $domani ?>">
       </div>
       <div class="col-md-4 d-flex align-items-center">
         <div class="form-check me-3">
-          <input class="form-check-input" type="radio" id="software" name="tipo" value="Software" <?= $software ? 'checked' : '' ?>>
+          <input class="form-check-input" type="radio" id="software" name="tipo" value="Software">
           <label class="form-check-label" for="software">Software</label>
         </div>
         <div class="form-check">
-          <input class="form-check-input" type="radio" id="hardware" name="tipo" value="Hardware" <?= $hardware ? 'checked' : '' ?>>
+          <input class="form-check-input" type="radio" id="hardware" name="tipo" value="Hardware">
           <label class="form-check-label" for="hardware">Hardware</label>
         </div>
       </div>

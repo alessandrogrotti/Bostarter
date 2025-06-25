@@ -7,338 +7,85 @@ include_once 'mysql.php';
 $conn = getMySQLConnection();
 $logCollection = getMongoDBConnection();
 
-$nomeProgetto = isset($_GET['nome']) ? trim($_GET['nome']) : '';
+$nomeProgetto = isset($_GET['nome']) ? urldecode(trim($_GET['nome'])) : '';
 if ($nomeProgetto === '') {
     die("Nome progetto non specificato.");
 }
 
-try {
-    $stmt = $conn->prepare("SELECT * FROM PROGETTO WHERE Nome = :nomeProgetto");
-    $stmt->bindParam(':nomeProgetto', $nomeProgetto, PDO::PARAM_STR);
-    $stmt->execute();
-    $dettagliProgetto = $stmt->fetch(PDO::FETCH_ASSOC);
-
-    if (!$dettagliProgetto) {
-        die("Progetto non trovato.");
-    }
-} catch (PDOException $e) {
-    die("Errore nel recupero del progetto: " . $e->getMessage());
+$dettagliProgetto = getDettagliProgetto($nomeProgetto);
+if (!$dettagliProgetto) {
+    die("Progetto non trovato.");
 }
 
-// 2.b) Gestione invio risposta a un commento
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['risposta']) && isset($_POST['id_commento'])) {
+    requireLogin();
+
+    $testoRisposta = trim($_POST['risposta']);
+    $emailUtente = $_SESSION['id'];
+    $idCommento = intval($_POST['id_commento']);
+
+    $emailCreatore = getEmailCreatoreProgetto($nomeProgetto);
+    if ($emailCreatore !== $emailUtente) {
+        $_SESSION['error'] = "Solo il creatore del progetto può rispondere ai commenti.";
+        header("Location: progetto.php?nome=" . urlencode($nomeProgetto));
+        exit;
+    }
+
+    try {
+        inviaRispostaCommento($testoRisposta, $emailUtente, $nomeProgetto, $idCommento);
+        writeLog('Risposta commento', "Utente $emailUtente ha risposto al commento $idCommento nel progetto $nomeProgetto");
+        header("Location: progetto.php?nome=" . urlencode($nomeProgetto));
+        exit;
+    } catch (Exception $e) {
+        die("Errore nell'inserimento della risposta: " . $e->getMessage());
+    }
+}
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['inviaCandidatura'])) {
   requireLogin();
 
-  $testoRisposta = trim($_POST['risposta']);
-  $emailUtente   = $_SESSION['id'];
-  $idCommento    = intval($_POST['id_commento']); // Recupera l'ID del commento
+  $emailUtente = $_SESSION['id'];
+  $idProfilo = trim($_POST['inviaCandidatura']);
 
   try {
-      // Controllo che l'utente sia il creatore del progetto
-      $stmtCheck = $conn->prepare("SELECT Email_Creatore FROM PROGETTO WHERE Nome = :nome_progetto");
-      $stmtCheck->bindParam(':nome_progetto', $nomeProgetto, PDO::PARAM_STR);
-      $stmtCheck->execute();
-
-      $row = $stmtCheck->fetch(PDO::FETCH_ASSOC);
-      if (!$row) {
-        die("Progetto non trovato.");
-      }
-      if ($row['Email_Creatore'] !== $emailUtente) {
-        $_SESSION['error'] = "Solo il creatore del progetto può rispondere ai commenti.";
-        header("Location: progetto.php?nome=" . urlencode($nomeProgetto)); 
-        exit;
-      }
-
-      $stmtR = $conn->prepare("CALL RispostaCommento(:p_Testo, :p_Email_Utente, :p_Nome_Progetto, :p_IdCommento)");
-      $stmtR->bindParam(':p_Testo',         $testoRisposta, PDO::PARAM_STR);
-      $stmtR->bindParam(':p_Email_Utente',  $emailUtente,   PDO::PARAM_STR);
-      $stmtR->bindParam(':p_Nome_Progetto', $nomeProgetto,  PDO::PARAM_STR);
-      $stmtR->bindParam(':p_IdCommento',    $idCommento,    PDO::PARAM_INT);
-      $stmtR->execute();
-      $stmtR->closeCursor();
-
-      writeLog('Risposta commento', "Utente $emailUtente ha risposto al commento $idCommento nel progetto $nomeProgetto");
-
+      inviaCandidatura($emailUtente, $idProfilo);
+      $_SESSION['success'] = "Candidatura inviata con successo.";
       header("Location: progetto.php?nome=" . urlencode($nomeProgetto));
       exit;
-  } catch (PDOException $e) {
-      die("Errore nell'inserimento della risposta: " . $e->getMessage());
+  } catch (Exception $e) {
+      $_SESSION['error'] = $e->getMessage();
+      header("Location: progetto.php?nome=" . urlencode($nomeProgetto));
+      exit;
   }
 }
 
-// 3) Gestione invio commento (POST)
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['commento'])) {
     requireLogin();
     $testoCommento = trim($_POST['commento']);
     $emailUtente = $_SESSION['id'];
 
-    $stmtP = $conn->prepare(
-        "SELECT Email_Creatore FROM PROGETTO WHERE Nome = :nome"
-    );
-    $stmtP->bindParam(':nome', $nomeProgetto, PDO::PARAM_STR);
-    $stmtP->execute();
-    $rowP = $stmtP->fetch(PDO::FETCH_ASSOC);
-    $stmtP->closeCursor();
-
-    if (!$rowP) {
-        die("Progetto non trovato.");
-    }
-    $emailCreatore = $rowP['Email_Creatore'];
-
     try {
-        $stmtI = $conn->prepare(
-            "CALL InsertComment(
-                :p_Testo,
-                :p_Email_Utente,
-                :p_Nome_Progetto
-            )"
-        );
-        $stmtI->bindParam(':p_Testo',          $testoCommento, PDO::PARAM_STR);
-        $stmtI->bindParam(':p_Email_Utente',   $emailUtente,   PDO::PARAM_STR);
-        $stmtI->bindParam(':p_Nome_Progetto',  $nomeProgetto,  PDO::PARAM_STR);
-        $stmtI->execute();
-        $stmtI->closeCursor();
+        inviaCommento($testoCommento, $emailUtente, $nomeProgetto);
         writeLog('Inserimento commento', "Utente $emailUtente ha commentato progetto $nomeProgetto");
         header("Location: progetto.php?nome=" . urlencode($nomeProgetto));
         exit;
-    } catch (PDOException $e) {
+    } catch (Exception $e) {
         die("Errore nell'inserimento del commento: " . $e->getMessage());
     }
 }
 
-if ($_SERVER['REQUEST_METHOD'] === 'POST'
-    && isset($_POST['profilo'], $_POST['skill'], $_POST['level'])
-) {
-    requireLogin();
-    if (! isCreator()) {
-        die("Solo il creatore del progetto può aggiungere profili.");
-    }
-
-    // pulizia dati
-    $nomeProfilo   = trim($_POST['profilo']);
-    $competenza    = $_POST['skill'];
-    $livello       = (int) $_POST['level'];
-
-    // chiamo la stored procedure
-    try {
-        $stmt = $conn->prepare(
-            "CALL InserisciProfiloRichiede(
-                :p_Nome,
-                :p_Nome_ProgettoSoftware,
-                :p_Email_Creatore,
-                :p_Livello,
-                :p_Competenza_Skill
-            )"
-        );
-        $stmt->bindParam(':p_Nome',                     $nomeProfilo,   PDO::PARAM_STR);
-        $stmt->bindParam(':p_Nome_ProgettoSoftware',    $nomeProgetto,  PDO::PARAM_STR);
-        $stmt->bindParam(':p_Email_Creatore',           $progetto['Email_Creatore'], PDO::PARAM_STR);
-        $stmt->bindParam(':p_Livello',                  $livello,       PDO::PARAM_INT);
-        $stmt->bindParam(':p_Competenza_Skill',         $competenza,    PDO::PARAM_STR);
-        $stmt->execute();
-        $stmt->closeCursor();
-
-        writeLog(
-            'Inserimento profilo',
-            "Creatore {$_SESSION['id']} ha aggiunto profilo '$nomeProfilo' al progetto '$nomeProgetto'"
-        );
-
-        header("Location: progetto.php?nome=" . urlencode($nomeProgetto));
-        exit;
-    } catch (PDOException $e) {
-        die("Errore nell'inserimento del profilo: " . $e->getMessage());
-    }
-}
-
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['nomeComponente'])) {
-  requireLogin();
-  if (!isCreator()) {
-      die("Non sei autorizzato a inserire componenti in questo progetto.");
-  }
-
-  $nomeComponente = trim($_POST['nomeComponente']);
-  $descrizioneComponente = trim($_POST['descrizioneComponente']);
-  $prezzoComponente = floatval($_POST['prezzoComponente']);
-  $quantitaComponente = intval($_POST['quantitaComponente']);
-  $nomeProgettoHardware = $nomeProgetto; // stesso nome del progetto
-
-  // Chiama la funzione per inserire il componente
-  if (inserisciComponente($nomeComponente, $nomeProgettoHardware, $descrizioneComponente, $prezzoComponente, $quantitaComponente)) {
-      writeLog('Aggiunta componente', "Creatore ha aggiunto il componente '$nomeComponente' al progetto $nomeProgetto");
-      header("Location: progetto.php?nome=" . urlencode($nomeProgetto));
-      exit;
-  } else {
-      die("Errore nell'inserimento del componente.");
-  }
-}
-
-// Elimina componente
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['eliminaComponente'])) {
-  requireLogin();
-  if (!isCreator()) {
-      die("Non sei autorizzato a eliminare componenti in questo progetto.");
-  }
-
-  $nomeComponenteDaEliminare = trim($_POST['eliminaComponente']);
-  if (eliminaComponente($nomeComponenteDaEliminare, $nomeProgetto)) {
-      writeLog('Eliminazione componente', "Creatore ha eliminato il componente '$nomeComponenteDaEliminare' dal progetto $nomeProgetto");
-      header("Location: progetto.php?nome=" . urlencode($nomeProgetto)); 
-      exit;
-  } else {
-      die("Errore nell'eliminazione del componente.");
-  }
-}
-
-/*if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['eliminaProfilo'])) {
-  requireLogin();
-  if (!isCreator()) {
-      die("Non sei autorizzato a eliminare profilo in questo progetto.");
-  }
-
-  $nomeProfiloDaEliminare = trim($_POST['eliminaProfilo']);
-  if (eliminaProfilo($nomeProfiloDaEliminare, $nomeProgetto)) {
-      writeLog('Eliminazione profilo', "Creatore ha eliminato il profilo '$nomeProfiloDaEliminare' dal progetto $nomeProgetto");
-      header("Location: progetto.php?nome=" . urlencode($nomeProgetto));
-      exit;
-  } else {
-      die("Errore nell'eliminazione del profilo.");
-  }
-}*/
-
-try {
-    $stmt = $conn->prepare(
-        "SELECT Nome, Descrizione, Email_Creatore, Tipo, Stato FROM PROGETTO WHERE Nome = :nome"
-    );
-    $stmt->bindParam(':nome', $nomeProgetto, PDO::PARAM_STR);
-    $stmt->execute();
-    $progetto = $stmt->fetch(PDO::FETCH_ASSOC);
-    $stmt->closeCursor();
-} catch (PDOException $e) {
-    die("Errore nel recupero del progetto: " . $e->getMessage());
-}
+$progetto = getDettagliProgetto($nomeProgetto);
 if (!$progetto) {
     die("Progetto non trovato o non più aperto.");
 }
 
-try {
-    $stmtF = $conn->prepare("SELECT Valore FROM FOTO WHERE Nome_Progetto = :nome");
-    $stmtF->bindParam(':nome', $nomeProgetto, PDO::PARAM_STR);
-    $stmtF->execute();
-    $fotoProgetto = $stmtF->fetchAll(PDO::FETCH_ASSOC);
-    $stmtF->closeCursor();
-} catch (PDOException $e) {
-    die("Errore nel recupero delle immagini del progetto: " . $e->getMessage());
-}
+$fotoProgetto = getFotoProgetto($nomeProgetto);
+$rewards = getRewardsProgetto($nomeProgetto);
+$comments = getCommentiProgetto($nomeProgetto);
+$profili = ottieniProfiliConCandidature($nomeProgetto);
+$componenti = ottieniComponentiPerProgetto($nomeProgetto);
 
 include_once 'navbar.php';
-
-try {
-    $stmtR = $conn->prepare(
-        "SELECT Codice, Descrizione, Foto FROM REWARD WHERE Nome_Progetto = :nome"
-    );
-    $stmtR->bindParam(':nome', $nomeProgetto, PDO::PARAM_STR);
-    $stmtR->execute();
-    $rewards = $stmtR->fetchAll(PDO::FETCH_ASSOC);
-    $stmtR->closeCursor();
-} catch (PDOException $e) {
-    die("Errore nella query delle reward: " . $e->getMessage());
-}
-
-try {
-  $stmtC = $conn->prepare(
-    "SELECT c.Id, c.Data, c.Testo, c.Email_Utente
-     FROM COMMENTO c
-     WHERE c.Nome_Progetto = :nome
-      AND NOT EXISTS (
-         SELECT 1
-         FROM RISPOSTA r
-         WHERE Id_Risposta = c.Id
-       )
-     ORDER BY c.Data DESC"
-  );
-
-    $stmtC->bindParam(':nome', $nomeProgetto, PDO::PARAM_STR);
-    $stmtC->execute();
-    $comments = $stmtC->fetchAll(PDO::FETCH_ASSOC);
-    $stmtC->closeCursor();
-} catch (PDOException $e) {
-    die("Errore nel recupero dei commenti: " . $e->getMessage());
-}
-
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['inviaCandidatura'])) {
-    requireLogin();
-    $profilo = trim($_POST['inviaCandidatura']);
-    $email = $_SESSION['id'];
-
-    try {
-        // Trova ID profilo
-        $stmt = $conn->prepare("SELECT Id FROM PROFILO WHERE Nome = :nome AND Nome_ProgettoSoftware = :progetto");
-        $stmt->bindParam(':nome', $profilo);
-        $stmt->bindParam(':progetto', $nomeProgetto);
-        $stmt->execute();
-        $profiloRow = $stmt->fetch(PDO::FETCH_ASSOC);
-        $stmt->closeCursor();
-
-        if (!$profiloRow) {
-            die("Profilo non trovato.");
-        }
-
-        $idProfilo = $profiloRow['Id'];
-
-        // Inserisci candidatura
-        $stmt = $conn->prepare("CALL InsertCandidature('In attesa', :email, :idProfilo)");
-        $stmt->bindParam(':email', $email);
-        $stmt->bindParam(':idProfilo', $idProfilo, PDO::PARAM_INT);
-        $stmt->execute();
-        $stmt->closeCursor();
-
-        $_SESSION['success'] = "Candidatura inviata con successo.";
-    } catch (PDOException $e) {
-        $errorCode = $e->getCode(); // Ottieni il codice di errore
-        $errorMessage = $e->getMessage(); // Ottieni il messaggio originale
-
-        // Mappa dei messaggi personalizzati
-        $customMessages = [
-            '45001' => 'Non è possibile inviare candidature per questo profilo. Una candidatura è già stata accettata.',
-            '45002' => 'Non è possibile inviare candidature per questo profilo. Hai già inviato una candidatura per questo profilo.',
-        ];
-
-        // Usa il messaggio personalizzato se disponibile
-        if (isset($customMessages[$errorCode])) {
-            $_SESSION['error'] = $customMessages[$errorCode];
-        } else {
-            $_SESSION['error'] = 'Si è verificato un errore. Riprova più tardi.';
-        }
-    }
-
-}
-
-
-$availableSkillsQuery = "SELECT Competenza FROM SKILL ORDER BY Competenza";
-$stmtAvailableSkills = $conn->prepare($availableSkillsQuery);
-$stmtAvailableSkills->execute();
-$availableSkills = $stmtAvailableSkills->fetchAll(PDO::FETCH_ASSOC);
-$profiliRaw = ottieniProfiliPerProgetto($nomeProgetto);
-$profili = []; // profili raggruppati
-
-foreach ($profiliRaw as $row) {
-    $idProfilo = $row['Id'];
-    if (!isset($profili[$idProfilo])) {
-        $profili[$idProfilo] = [
-            'Nome' => $row['Nome'],
-            'Skills' => []
-        ];
-    }
-
-    // Aggiungi la skill solo se esiste
-    if (!empty($row['Competenza_Skill'])) {
-        $profili[$idProfilo]['Skills'][] = [
-            'Competenza_Skill' => $row['Competenza_Skill'],
-            'Livello' => $row['Livello']
-        ];
-    }
-}
-$componenti = ottieniComponentiPerProgetto($nomeProgetto);
 ?>
 
 <!DOCTYPE html>
@@ -364,6 +111,7 @@ $componenti = ottieniComponentiPerProgetto($nomeProgetto);
       </div>
       <?php unset($_SESSION['success']); ?>
     <?php endif; ?>
+
     <div id="infoProgetto">
       <section class="mb-5">
         <h1><?= htmlspecialchars($progetto["Nome"]) ?></h1>
@@ -431,18 +179,7 @@ $componenti = ottieniComponentiPerProgetto($nomeProgetto);
                 <p class="mb-1 fw-bold">Commento:</p>
                 <p class="mb-0"><?= nl2br(htmlspecialchars($c['Testo'])) ?></p>
 
-                <?php
-                    $stmtR = $conn->prepare(
-                        "SELECT c.Testo, c.Data, c.Email_Utente
-                        FROM COMMENTO c
-                        INNER JOIN RISPOSTA r ON c.Id = r.Id_Risposta
-                        WHERE r.Id_Commento = :id_commento"
-                    );
-                    $stmtR->bindParam(':id_commento', $c['Id'], PDO::PARAM_INT);
-                    $stmtR->execute();
-                    $response = $stmtR->fetch(PDO::FETCH_ASSOC);
-                    $stmtR->closeCursor();
-                ?>
+                <?php $response = getRispostaCommento($c['Id']); ?>
 
                 <?php if ($response): ?>
                     <div class="mt-3">
@@ -481,49 +218,12 @@ $componenti = ottieniComponentiPerProgetto($nomeProgetto);
       <?php endif; ?>
     </section>
 
-    <?php if (isset($_SESSION['success'])): ?>
-      <div class="alert alert-success">
-        <?= htmlspecialchars($_SESSION['success']) ?>
-      </div>
-      <?php unset($_SESSION['success']); ?>
-    <?php endif; ?>
-
-    <?php if (isset($_SESSION['error'])): ?>
-      <div class="alert alert-danger">
-        <?= htmlspecialchars($_SESSION['error']) ?>
-      </div>
-      <?php unset($_SESSION['error']); ?>
-    <?php endif; ?>
-
     <?php if (($progetto['Tipo']) === 'Software'):?>
       <section class="mb-5">
         <h4>Profili richiesti:</h4>
         <?php if ($profili): ?>
             <ul class="list-group">
                 <?php foreach ($profili as $profilo): ?>
-                    <?php
-                        // Controlla se esiste una candidatura accettata o inviata dall'utente
-                        $candidaturaEsistente = false;
-                        $candidaturaAccettata = false;
-
-                        $stmt = $conn->prepare("
-                            SELECT Stato
-                            FROM CANDIDATURA
-                            WHERE Id_Profilo = :idProfilo AND Email_Utente = :email
-                        ");
-                        $stmt->bindParam(':idProfilo', $profilo['Id'], PDO::PARAM_INT);
-                        $stmt->bindParam(':email', $_SESSION['id'], PDO::PARAM_STR);
-                        $stmt->execute();
-                        $candidatura = $stmt->fetch(PDO::FETCH_ASSOC);
-                        $stmt->closeCursor();
-
-                        if ($candidatura) {
-                            $candidaturaEsistente = true;
-                            if ($candidatura['Stato'] === 'Accettata') {
-                                $candidaturaAccettata = true;
-                            }
-                        }
-                    ?>
                     <li class="list-group-item">
                         <div class="d-flex justify-content-between align-items-center">
                             <div>
@@ -535,18 +235,12 @@ $componenti = ottieniComponentiPerProgetto($nomeProgetto);
                                 </ul>
                             </div>
                             <form method="POST" class="ms-3">
-                                <input type="hidden" name="inviaCandidatura" value="<?= htmlspecialchars($profilo['Nome']) ?>">
-                                <button type="submit" class="btn btn-primary btn-sm"
-                                    <?= $candidaturaEsistente || $candidaturaAccettata ? 'disabled' : '' ?>>
+                                <input type="hidden" name="inviaCandidatura" value="<?= htmlspecialchars($profilo['Id']) ?>">
+                                <button type="submit" class="btn btn-primary btn-sm">
                                     Invia candidatura
                                 </button>
                             </form>
                         </div>
-                        <?php if ($candidaturaAccettata): ?>
-                            <p class="text-success mt-2">Una candidatura è già stata accettata per questo profilo.</p>
-                        <?php elseif ($candidaturaEsistente): ?>
-                            <p class="text-warning mt-2">Hai già inviato una candidatura per questo profilo.</p>
-                        <?php endif; ?>
                     </li>
                 <?php endforeach; ?>
             </ul>

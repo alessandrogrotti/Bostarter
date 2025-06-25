@@ -1,73 +1,34 @@
 <?php
 include_once 'connection.php';
-
-$mysqlConn = getMySQLConnection();
+include_once 'mysql.php';
 
 $message = "";
 $codiceSicurezzaChiaro = "";
 
 if ($_SERVER["REQUEST_METHOD"] === "POST") {
-  $email        = trim($_POST['email']);
-  $nickname     = trim($_POST['nickname']);
-  $password     = trim($_POST['password']);
-  $nome         = trim($_POST['nome']);
-  $cognome      = trim($_POST['cognome']);
-  $luogoNascita = trim($_POST['luogoNascita']);
-  $annoNascita  = trim($_POST['annoNascita']);
+    $email = trim($_POST['email']);
+    $nickname = trim($_POST['nickname']);
+    $password = trim($_POST['password']);
+    $nome = trim($_POST['nome']);
+    $cognome = trim($_POST['cognome']);
+    $luogoNascita = trim($_POST['luogoNascita']);
+    $annoNascita = trim($_POST['annoNascita']);
+    $isCreator = isset($_POST['creator']) && $_POST['creator'] == 1;
+    $isAdministrator = isset($_POST['administrator']) && $_POST['administrator'] == 1;
 
-  $isAdministrator = isset($_POST['administrator']) && $_POST['administrator'] == 1;
-  $isCreator       = isset($_POST['creator'])       && $_POST['creator'] == 1;
-
-  $passwordHash = md5($password);
-
-  $stmtCheck = $mysqlConn->prepare("SELECT * FROM UTENTE WHERE Email = :email OR Nickname = :nickname");
-  $stmtCheck->execute([
-    ':email'    => $email,
-    ':nickname' => $nickname
-  ]);
-
-  if ($stmtCheck->rowCount() > 0) {
-    $message = "Email o Nickname già esistente. Utilizza altri dati.";
-  } else {
     try {
-      $stmtRegister = $mysqlConn->prepare("CALL RegisterUser(:email, :nickname, :password, :luogo, :anno, :nome, :cognome)");
-      $stmtRegister->execute([
-        ':email'    => $email,
-        ':nickname' => $nickname,
-        ':password' => $passwordHash,
-        ':luogo'    => $luogoNascita,
-        ':anno'     => $annoNascita,
-        ':nome'     => $nome,
-        ':cognome'  => $cognome
-      ]);
+        registraUtente($email, $nickname, $password, $nome, $cognome, $luogoNascita, $annoNascita, $isCreator, $isAdministrator, $codiceSicurezzaChiaro);
 
-      if ($isCreator) {
-        $stmtCreator = $mysqlConn->prepare("INSERT INTO CREATORE (Email_Utente, Nr_progetti, Affidabilità) VALUES (:email, 0, 0.00)");
-        $stmtCreator->execute([':email' => $email]);
-      }
-
-      if ($isAdministrator) {
-        $codiceSicurezzaChiaro = isset($_POST['codiceSicurezza']) ? trim($_POST['codiceSicurezza']) : "SEC" . rand(1000, 9999);
-        $codiceSicurezzaHash = md5($codiceSicurezzaChiaro);
-
-        $stmtAdmin = $mysqlConn->prepare("INSERT INTO AMMINISTRATORE (Email_Utente, Codice_Sicurezza) VALUES (:email, :codice)");
-        $stmtAdmin->execute([
-          ':email'  => $email,
-          ':codice' => $codiceSicurezzaHash
-        ]);
-      }
-
-      if (!$isAdministrator) {
-        header("Location: login.php");
-        exit();
-      }
-    } catch (PDOException $e) {
-      $message = "Errore nella registrazione: " . $e->getMessage();
+        if (!$isAdministrator) {
+            header("Location: login.php");
+            exit;
+        }
+    } catch (Exception $e) {
+        $message = "Errore nella registrazione: " . $e->getMessage();
     }
-  }
 }
 
-include 'navbar.php';
+include_once 'navbar.php';
 ?>
 
 <!DOCTYPE html>
@@ -75,17 +36,13 @@ include 'navbar.php';
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Registrazione</title>
-  <!-- Bootstrap CSS -->
+  <title>Registrazione | Bostarter</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
-  <!-- Google Fonts -->
   <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;500;600;700&family=Libre+Baskerville:wght@400;700&display=swap" rel="stylesheet">
-  <!-- Custom CSS -->
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
 
-<!-- Hero Section -->
 <header class="hero">
   <div class="container text-center py-5">
     <h1 class="display-5 text-white mb-3 animate-fadein">Registrazione Utente</h1>
@@ -184,7 +141,7 @@ include 'navbar.php';
   </div>
 </main>
 
-<?php include 'footer.php'; ?>
+<?php include_once 'footer.php'; ?>
 
 </body>
 </html>

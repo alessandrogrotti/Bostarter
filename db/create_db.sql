@@ -51,19 +51,19 @@ CREATE TABLE COMMENTO (
     Email_Utente VARCHAR(255),
     Nome_Progetto VARCHAR(100),
     FOREIGN KEY (Email_Utente) REFERENCES UTENTE(Email) ON DELETE CASCADE,
-	FOREIGN KEY (Nome_Progetto) REFERENCES PROGETTO(Nome) ON DELETE CASCADE
+    FOREIGN KEY (Nome_Progetto) REFERENCES PROGETTO(Nome) ON DELETE CASCADE
 ) ENGINE = "INNODB";
 
 CREATE TABLE RISPOSTA (
-	Id_Commento INT,
+    Id_Commento INT,
     Id_Risposta INT,
     PRIMARY KEY (Id_Commento, Id_Risposta),
     FOREIGN KEY (Id_Commento) REFERENCES COMMENTO(Id) ON DELETE CASCADE,
-	FOREIGN KEY (Id_Risposta) REFERENCES COMMENTO(Id) ON DELETE CASCADE
+    FOREIGN KEY (Id_Risposta) REFERENCES COMMENTO(Id) ON DELETE CASCADE
 ) ENGINE = "INNODB";
 
 CREATE TABLE REWARD (
-    Codice VARCHAR(50) PRIMARY KEY,
+    Codice INT PRIMARY KEY AUTO_INCREMENT,
     Descrizione TEXT,
     Foto VARCHAR(255),
     Nome_Progetto VARCHAR(100),
@@ -75,16 +75,16 @@ CREATE TABLE FINANZIAMENTO (
     Importo DECIMAL(10, 2),
     Email_Utente VARCHAR(255),
     Nome_Progetto VARCHAR(100),
-    Codice_Reward VARCHAR(50),
+    Codice_Reward INT,
     PRIMARY KEY (Data, Email_Utente, Nome_Progetto),
     FOREIGN KEY (Email_Utente) REFERENCES UTENTE(Email) ON DELETE CASCADE,
-	FOREIGN KEY (Nome_Progetto) REFERENCES PROGETTO(Nome) ON DELETE CASCADE,
-	FOREIGN KEY (Codice_Reward) REFERENCES REWARD(Codice) ON DELETE CASCADE
+    FOREIGN KEY (Nome_Progetto) REFERENCES PROGETTO(Nome) ON DELETE CASCADE,
+    FOREIGN KEY (Codice_Reward) REFERENCES REWARD(Codice) ON DELETE CASCADE
 ) ENGINE = "INNODB";
 
 CREATE TABLE COMPONENTE (
-	Nome VARCHAR(100),
-	Nome_ProgettoHardware VARCHAR(100),
+    Nome VARCHAR(100),
+    Nome_ProgettoHardware VARCHAR(100),
     Descrizione VARCHAR(100),
     Prezzo DOUBLE,
     Quantità INT,
@@ -126,7 +126,7 @@ CREATE TABLE CANDIDATURA (
     Email_Utente VARCHAR(255),
     Id_Profilo INT,
     FOREIGN KEY (Email_Utente) REFERENCES UTENTE(Email) ON DELETE CASCADE,
-	FOREIGN KEY (Id_Profilo) REFERENCES PROFILO(Id) ON DELETE CASCADE
+    FOREIGN KEY (Id_Profilo) REFERENCES PROFILO(Id) ON DELETE CASCADE
 ) ENGINE = "INNODB";
 
 DELIMITER $
@@ -159,11 +159,17 @@ CREATE PROCEDURE InserisciComponente(
     IN p_Quantita INT
 )
 BEGIN
-    INSERT INTO COMPONENTE (Nome, Nome_ProgettoHardware, Descrizione, Prezzo, Quantità)
-    VALUES (p_Nome, p_Nome_ProgettoHardware, p_Descrizione, p_Prezzo, p_Quantita);
+    IF p_Quantita > 0 THEN
+        INSERT INTO COMPONENTE (Nome, Nome_ProgettoHardware, Descrizione, Prezzo, Quantità)
+        VALUES (p_Nome, p_Nome_ProgettoHardware, p_Descrizione, p_Prezzo, p_Quantita);
+    ELSE
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'Quantità deve essere un intero maggiore di 0';
+    END IF;
 END;
 $
 DELIMITER ;
+
 
 DELIMITER $
 CREATE PROCEDURE OttieniComponentiPerProgetto(IN p_Nome_ProgettoHardware VARCHAR(100))
@@ -172,8 +178,7 @@ BEGIN
     FROM COMPONENTE
     WHERE Nome_ProgettoHardware = p_Nome_ProgettoHardware;
 END;
-$
-DELIMITER ;
+$ DELIMITER ;
 
 DELIMITER $
 CREATE PROCEDURE OttieniProfiliPerProgetto(IN p_Nome_ProgettoSoftware VARCHAR(100))
@@ -182,8 +187,7 @@ BEGIN
     FROM PROFILO, RICHIEDE
     WHERE Nome_ProgettoSoftware = p_Nome_ProgettoSoftware AND Id_Profilo = Id;
 END;
-$
-DELIMITER ;
+$ DELIMITER ;
 
 DELIMITER $
 CREATE PROCEDURE EliminaComponente(
@@ -195,30 +199,28 @@ BEGIN
     WHERE Nome_ProgettoHardware = p_Nome_ProgettoHardware
     AND Nome = p_Nome_Componente;
 END;
-$
-DELIMITER ;
+$ DELIMITER ;
 
-DELIMITER $$
-
+DELIMITER $
 CREATE PROCEDURE EliminaProfilo(
     IN p_Id_Profilo INT
 )
 BEGIN
-    -- Elimina le relazioni nella tabella RICHIEDE
-    DELETE FROM RICHIEDE
-    WHERE Id_Profilo = p_Id_Profilo;
-
-    -- Elimina il profilo dalla tabella PROFILO
-    DELETE FROM PROFILO
-    WHERE Id = p_Id_Profilo;
-END$$
-
-DELIMITER ;
-
+    DELETE FROM RICHIEDE WHERE Id_Profilo = p_Id_Profilo;
+    DELETE FROM PROFILO WHERE Id = p_Id_Profilo;
+END;
+$ DELIMITER ;
 
 DELIMITER $
-CREATE PROCEDURE RegisterUser (IN p_Email VARCHAR(255), IN p_Nickname VARCHAR(100), IN p_Password VARCHAR(255), 
-                               IN p_Luogo VARCHAR(100), IN p_Anno YEAR, IN p_Nome VARCHAR(100), IN p_Cognome VARCHAR(100))
+CREATE PROCEDURE RegisterUser (
+    IN p_Email VARCHAR(255), 
+    IN p_Nickname VARCHAR(100), 
+    IN p_Password VARCHAR(255), 
+    IN p_Luogo VARCHAR(100), 
+    IN p_Anno YEAR, 
+    IN p_Nome VARCHAR(100), 
+    IN p_Cognome VARCHAR(100)
+)
 BEGIN
     INSERT INTO UTENTE (Email, Nickname, Password, Luogo, Anno, Nome, Cognome)
     VALUES (p_Email, p_Nickname, p_Password, p_Luogo, p_Anno, p_Nome, p_Cognome);
@@ -270,69 +272,59 @@ END;
 $ DELIMITER ;
 
 DELIMITER $
-CREATE PROCEDURE InsertCandidature (IN p_Stato VARCHAR(50), IN p_Email_Utente VARCHAR(255), IN p_Id_Profilo INT)
+CREATE PROCEDURE InserisciProgetto(
+    IN Nome VARCHAR(100), 
+    IN Email_Creatore VARCHAR(255), 
+    IN Descrizione TEXT, 
+    IN Data_Limite DATE, 
+    IN Budget DECIMAL(10,2), 
+    IN Tipo VARCHAR(20)
+)
 BEGIN
-    -- Controlla se esiste già una candidatura accettata per il profilo
     IF EXISTS (
-        SELECT 1
-        FROM CANDIDATURA
-        WHERE Id_Profilo = p_Id_Profilo AND Stato = 'Accettata'
-    ) THEN
-        SIGNAL SQLSTATE '45001' SET MESSAGE_TEXT = 'Accettata';
+        SELECT 1 
+        FROM CREATORE 
+        WHERE Email_Utente = Email_Creatore
+    ) AND (Tipo = 'Hardware' OR Tipo = 'Software') AND Budget > 0 THEN
+        INSERT INTO PROGETTO (Nome, Email_Creatore, Descrizione, Data_Inserimento, Data_Limite, Budget, Stato, Tipo)
+        VALUES (Nome, Email_Creatore, Descrizione, CURDATE(), Data_Limite, Budget, 'Aperto', Tipo);
+    ELSE
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'Dati non validi: controlla Email_Creatore, Tipo o Budget > 0';
     END IF;
-
-    -- Controlla se l'utente ha già inviato una candidatura per lo stesso profilo
-    IF EXISTS (
-        SELECT 1
-        FROM CANDIDATURA
-        WHERE Id_Profilo = p_Id_Profilo AND Email_Utente = p_Email_Utente
-    ) THEN
-        SIGNAL SQLSTATE '45002' SET MESSAGE_TEXT = 'Default';
-    END IF;
-
-    -- Inserisce la nuova candidatura
-    INSERT INTO CANDIDATURA (Stato, Email_Utente, Id_Profilo)
-    VALUES (p_Stato, p_Email_Utente, p_Id_Profilo);
-END $$
-
+END;
+$
 DELIMITER ;
 
-DELIMITER $
-CREATE PROCEDURE InserisciProgetto(IN Nome VARCHAR(100), IN Email_Creatore VARCHAR(255), IN Descrizione TEXT, 
-                                   IN Data_Limite DATE, IN Budget DECIMAL(10,2), IN Tipo VARCHAR(20))
-BEGIN
-    DECLARE CreatorePresente INT DEFAULT 0;
-    
-    SET CreatorePresente = (SELECT COUNT(*) FROM CREATORE WHERE (Email_Utente = Email_Creatore));
 
-    IF (CreatorePresente > 0) AND (Tipo = "Hardware" OR Tipo = "Software") THEN
-        INSERT INTO PROGETTO (Nome, Email_Creatore, Descrizione, Data_Inserimento, Data_Limite, Budget, Stato, Tipo)
-        VALUES (Nome, Email_Creatore, Descrizione, CURDATE(), Data_Limite, Budget, "Aperto", Tipo);
-        
+DELIMITER $
+CREATE PROCEDURE InserisciReward(
+    IN Descrizione TEXT, 
+    IN Foto VARCHAR(255), 
+    IN Nome_Progetto VARCHAR(100), 
+    IN Email_UtenteCreatore VARCHAR(255)
+)
+BEGIN
+    IF EXISTS (
+        SELECT 1 
+        FROM PROGETTO 
+        WHERE Nome = Nome_Progetto AND Email_Creatore = Email_UtenteCreatore
+    ) THEN
+        INSERT INTO REWARD (Descrizione, Foto, Nome_Progetto)
+        VALUES (Descrizione, Foto, Nome_Progetto);
     END IF;
 END;
 $ DELIMITER ;
 
 DELIMITER $
-CREATE PROCEDURE InserisciReward(IN Codice VARCHAR(50), IN Descrizione TEXT, IN Foto VARCHAR(255), IN Nome_Progetto VARCHAR(100), IN Email_UtenteCreatore VARCHAR(255))
+CREATE PROCEDURE RispostaCommento (
+    IN p_Testo TEXT, 
+    IN p_Email_Utente VARCHAR(255), 
+    IN p_Nome_Progetto VARCHAR(100), 
+    IN p_IdCommento INT
+)
 BEGIN
-    DECLARE CreatoreProgetto INT DEFAULT 0;
-
-    SET CreatoreProgetto = (SELECT COUNT(*) FROM PROGETTO WHERE (Nome = Nome_Progetto) AND (Email_Creatore = Email_UtenteCreatore));
-
-    IF (CreatoreProgetto > 0) THEN
-        INSERT INTO REWARD (Codice, Descrizione, Foto, Nome_Progetto)
-        VALUES (Codice, Descrizione, Foto, Nome_Progetto);
-    END IF;
-END;
-$ DELIMITER ;
-
-DELIMITER $
-CREATE PROCEDURE RispostaCommento (IN p_Testo TEXT, IN p_Email_Utente VARCHAR(255), IN p_Nome_Progetto VARCHAR(100), IN p_IdCommento INT)
-BEGIN
-    DECLARE nuovoId INT;
-
-    -- Controlla che il commento appartenga al progetto
+	DECLARE nuovoId INT;
     IF NOT EXISTS (
         SELECT 1
         FROM COMMENTO
@@ -341,7 +333,6 @@ BEGIN
         SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Commento non valido o non appartiene al progetto.';
     END IF;
 
-    -- Controlla che non abbia già una risposta
     IF EXISTS (
         SELECT 1
         FROM RISPOSTA
@@ -350,13 +341,11 @@ BEGIN
         SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Questo commento ha già una risposta.';
     END IF;
 
-    -- Inserisci nuovo commento come risposta
     INSERT INTO COMMENTO (Data, Testo, Email_Utente, Nome_Progetto)
     VALUES (CURDATE(), p_Testo, p_Email_Utente, p_Nome_Progetto);
 
     SET nuovoId = LAST_INSERT_ID();
 
-    -- Inserisci nella tabella RISPOSTA
     INSERT INTO RISPOSTA (Id_Commento, Id_Risposta)
     VALUES (p_IdCommento, nuovoId);
 END;
@@ -364,19 +353,24 @@ $ DELIMITER ;
 
 
 DELIMITER $
-CREATE PROCEDURE InserisciProfiloRichiede(IN Nome VARCHAR(100), IN Nome_ProgettoSoftware VARCHAR(100), IN Email_Creatore VARCHAR(255), IN Livello INT, IN Competenza_Skill VARCHAR(100))
+CREATE PROCEDURE InserisciProfiloRichiede(
+    IN Nome VARCHAR(100), 
+    IN Nome_ProgettoSoftware VARCHAR(100), 
+    IN Email_Creatore VARCHAR(255), 
+    IN Livello INT, 
+    IN Competenza_Skill VARCHAR(100)
+)
 BEGIN
     DECLARE CreatorePresente INT DEFAULT 0;
     DECLARE ProgettoPresente INT DEFAULT 0;
     DECLARE TipoProgetto VARCHAR(20);
     DECLARE nuovoIdProfilo INT;
 
-    SET CreatorePresente = (SELECT COUNT(*) FROM CREATORE WHERE (Email_Utente = Email_Creatore));
-    SET ProgettoPresente = (SELECT COUNT(*) FROM PROGETTO WHERE (Nome = Nome_ProgettoSoftware));
-    SET TipoProgetto = (SELECT Tipo FROM PROGETTO WHERE (Nome = Nome_ProgettoSoftware));
+    SET CreatorePresente = (SELECT COUNT(*) FROM CREATORE WHERE Email_Utente = Email_Creatore);
+    SET ProgettoPresente = (SELECT COUNT(*) FROM PROGETTO WHERE Nome = Nome_ProgettoSoftware);
+    SET TipoProgetto = (SELECT Tipo FROM PROGETTO WHERE Nome = Nome_ProgettoSoftware);
 
     /*IF (CreatorePresente > 0) AND (ProgettoPresente > 0) AND (TipoProgetto = 'Software') THEN*/
-    
         INSERT INTO PROFILO (Nome, Nome_ProgettoSoftware)
         VALUES (Nome, Nome_ProgettoSoftware);
         
@@ -385,7 +379,6 @@ BEGIN
         INSERT INTO RICHIEDE (Livello, Id_Profilo, Competenza_Skill)
         VALUES (Livello, nuovoIdProfilo, Competenza_Skill);
     /*END IF;*/
-    
 END;
 $ DELIMITER ;
 
@@ -406,27 +399,23 @@ BEGIN
     SET Stato = nuovoStato
     WHERE Id = idCandidatura;
 
-    -- Se la candidatura è accettata, rifiuta tutte le altre candidature per lo stesso profilo
     IF nuovoStato = 'Accettata' THEN
         UPDATE CANDIDATURA
         SET Stato = 'Rifiutata'
-        WHERE Id_Profilo = idProfilo AND Id != idCandidatura;
+        WHERE Id_Profilo = (SELECT Id_Profilo FROM CANDIDATURA WHERE Id = idCandidatura) AND Id != idCandidatura;
     END IF;
-END $$
+END;
+$ DELIMITER ;
 
-DELIMITER ;
-
-DELIMITER $$
+DELIMITER $
 CREATE TRIGGER aggiorna_profilo_creatore
 AFTER INSERT ON PROGETTO
 FOR EACH ROW
 BEGIN
-    -- Aggiorna il numero di progetti
     UPDATE CREATORE
     SET Nr_progetti = Nr_progetti + 1
     WHERE Email_Utente = NEW.Email_Creatore;
 
-    -- Aggiorna l'affidabilità
     UPDATE CREATORE c
     SET Affidabilità = (
         SELECT ROUND(COUNT(DISTINCT p.Nome) / c.Nr_progetti, 2)
@@ -435,8 +424,8 @@ BEGIN
         WHERE p.Email_Creatore = c.Email_Utente
     )
     WHERE c.Email_Utente = NEW.Email_Creatore;
-END $$
-DELIMITER ;
+END;
+$ DELIMITER ;
 
 DELIMITER $
 CREATE TRIGGER aggiorna_affidabilita_creazione
@@ -447,8 +436,7 @@ BEGIN
     SET Affidabilità = ROUND(Nr_progetti / (Nr_progetti + 1), 2)
     WHERE Email_Utente = NEW.Email_Creatore;
 END;
-$
-DELIMITER ;
+$ DELIMITER ;
 
 DELIMITER $
 CREATE TRIGGER aggiorna_affidabilita_finanziamento
@@ -471,27 +459,28 @@ BEGIN
     SET Affidabilità = ROUND(totaleFinanziamenti / totaleProgetti, 2)
     WHERE Email_Utente = (SELECT Email_Creatore FROM PROGETTO WHERE Nome = NEW.Nome_Progetto LIMIT 1);
 END;
-$
-DELIMITER ;
+$ DELIMITER ;
 
 DELIMITER $
 CREATE TRIGGER chiudi_progetto_per_budget
 AFTER INSERT ON FINANZIAMENTO
 FOR EACH ROW
 BEGIN
-    DECLARE totale DECIMAL(10,2);
-
-    SELECT SUM(Importo) INTO totale
-    FROM FINANZIAMENTO
-    WHERE Nome_Progetto = NEW.Nome_Progetto;
-
-    UPDATE PROGETTO
-    SET Stato = 'Chiuso'
-    WHERE Nome = NEW.Nome_Progetto
-    AND totale >= Budget;
+    IF (
+        SELECT SUM(Importo)
+        FROM FINANZIAMENTO
+        WHERE Nome_Progetto = NEW.Nome_Progetto
+    ) >= (
+        SELECT Budget
+        FROM PROGETTO
+        WHERE Nome = NEW.Nome_Progetto
+    ) THEN
+        UPDATE PROGETTO
+        SET Stato = 'Chiuso'
+        WHERE Nome = NEW.Nome_Progetto;
+    END IF;
 END;
-$
-DELIMITER ;
+$ DELIMITER ;
 
 SET GLOBAL event_scheduler = ON;
 
@@ -504,13 +493,9 @@ BEGIN
     SET Stato = 'Chiuso'
     WHERE Data_Limite < CURDATE() AND Stato != 'Chiuso';
 END;
-$
-DELIMITER ;
+$ DELIMITER ;
 
 
-/* Statistiche tramite viste */
-
-/* affidabilità creatori*/
 CREATE VIEW classifica_affidabilita_creatori AS
 SELECT u.Nickname, c.Affidabilità
 FROM CREATORE c
@@ -558,14 +543,142 @@ BEGIN
 END;
 $ DELIMITER ;
 
-DELIMITER $$
-
+DELIMITER $
 CREATE PROCEDURE OttieniCandidaturePerProfilo(IN idProfilo INT)
 BEGIN
     SELECT C.Id, C.Stato, C.Email_Utente, U.Nickname
     FROM CANDIDATURA C
     JOIN UTENTE U ON C.Email_Utente = U.Email
     WHERE C.Id_Profilo = idProfilo;
-END $$
+END;
+$ DELIMITER ;
 
-DELIMITER ;
+DELIMITER $
+CREATE PROCEDURE OttieniProgettiDisponibili()
+BEGIN
+    SELECT Nome, Descrizione, Budget, Data_Limite, Tipo, Stato
+    FROM PROGETTO
+    WHERE Stato = 'Aperto'
+    ORDER BY Data_Inserimento DESC;
+END;
+$ DELIMITER ;
+
+DELIMITER $
+CREATE PROCEDURE RimuoviSkillUtente(
+    IN p_Email VARCHAR(255),
+    IN p_Competenza VARCHAR(100)
+)
+BEGIN
+    DELETE FROM POSSIEDE
+    WHERE Email_Utente = p_Email AND Competenza_Skill = p_Competenza;
+END;
+$ DELIMITER ;
+
+DELIMITER $
+CREATE PROCEDURE AggiungiSkillUtente(
+    IN p_Email VARCHAR(255),
+    IN p_Competenza VARCHAR(100),
+    IN p_Livello INT
+)
+BEGIN
+    IF EXISTS (
+        SELECT 1
+        FROM SKILL
+        WHERE Competenza = p_Competenza
+    ) THEN
+        INSERT INTO POSSIEDE (Email_Utente, Competenza_Skill, Livello)
+        VALUES (p_Email, p_Competenza, p_Livello)
+        ON DUPLICATE KEY UPDATE Livello = p_Livello;
+    ELSE
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'La competenza non esiste.';
+    END IF;
+END;
+$ DELIMITER ;
+
+DELIMITER $
+CREATE PROCEDURE GetCommentiProgetto(IN p_Nome_Progetto VARCHAR(100))
+BEGIN
+    SELECT c.Id, c.Data, c.Testo, c.Email_Utente
+    FROM COMMENTO c
+    WHERE c.Nome_Progetto = p_Nome_Progetto
+      AND NOT EXISTS (
+         SELECT 1
+         FROM RISPOSTA r
+         WHERE Id_Risposta = c.Id
+       )
+    ORDER BY c.Data DESC;
+END;
+$ DELIMITER ;
+
+DELIMITER $
+CREATE PROCEDURE GetRispostaCommento(IN p_Id_Commento INT)
+BEGIN
+    SELECT c.Testo, c.Data, c.Email_Utente
+    FROM COMMENTO c
+    INNER JOIN RISPOSTA r ON c.Id = r.Id_Risposta
+    WHERE r.Id_Commento = p_Id_Commento;
+END;
+$ DELIMITER ;
+
+DELIMITER $
+CREATE PROCEDURE GetRewardsProgetto(IN p_Nome_Progetto VARCHAR(100))
+BEGIN
+    SELECT Codice, Descrizione, Foto
+    FROM REWARD
+    WHERE Nome_Progetto = p_Nome_Progetto;
+END;
+$ DELIMITER ;
+
+DELIMITER $
+CREATE PROCEDURE GetFotoProgetto(IN p_Nome_Progetto VARCHAR(100))
+BEGIN
+    SELECT Valore
+    FROM FOTO
+    WHERE Nome_Progetto = p_Nome_Progetto;
+END;
+$ DELIMITER ;
+
+DELIMITER $
+
+CREATE PROCEDURE InsertCandidature (
+    IN p_Email_Utente VARCHAR(255),
+    IN p_Id_Profilo INT
+)
+BEGIN
+    IF EXISTS (
+        SELECT 1
+        FROM CANDIDATURA
+        WHERE Id_Profilo = p_Id_Profilo AND Stato = 'Accettata'
+    ) THEN
+        SIGNAL SQLSTATE '45001'
+        SET MESSAGE_TEXT = 'Un\'altra candidatura è già stata accettata per questo profilo.';
+    END IF;
+
+    IF EXISTS (
+        SELECT 1
+        FROM CANDIDATURA
+        WHERE Id_Profilo = p_Id_Profilo AND Email_Utente = p_Email_Utente
+    ) THEN
+        SIGNAL SQLSTATE '45002'
+        SET MESSAGE_TEXT = 'Hai già inviato una candidatura per questo profilo.';
+    END IF;
+
+    IF EXISTS (
+        SELECT 1
+        FROM RICHIEDE r
+        LEFT JOIN POSSIEDE p
+        ON r.Competenza_Skill = p.Competenza_Skill AND p.Email_Utente = p_Email_Utente
+        WHERE r.Id_Profilo = p_Id_Profilo
+        AND (p.Livello IS NULL OR p.Livello < r.Livello)
+    ) THEN
+        SIGNAL SQLSTATE '45003'
+        SET MESSAGE_TEXT = 'Non possiedi le competenze richieste o il livello minimo per candidarti a questo profilo.';
+    END IF;
+
+    INSERT INTO CANDIDATURA (Stato, Email_Utente, Id_Profilo)
+    VALUES ("In attesa", p_Email_Utente, p_Id_Profilo);
+END
+$ DELIMITER ;
+
+
+

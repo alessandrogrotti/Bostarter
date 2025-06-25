@@ -1,21 +1,26 @@
 <?php
 include_once 'auth.php';
+include_once 'mongodb.php';
 
-// Se il form viene inviato
-if ($_SERVER['REQUEST_METHOD'] == 'POST') {
-  $code = $_POST['password']; // Codice di sicurezza inserito dall'utente
+$message = "";
 
-  // Verifica il codice di sicurezza
-  if (verifyAdminCode($code)) {
-    // Se il codice è corretto, aggiorna la sessione e reindirizza
-    $_SESSION['is_admin_verified'] = true;
-    header("Location: amministratore.php");
-    exit;
-  } else {
-    $message = "Codice di sicurezza errato.";
-  }
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $code = trim($_POST['password']);
+
+    writeLog('Tentativo di accesso amministratore', ['codice' => $code]);
+
+    if (verifyAdminCode($code)) {
+        writeLog('Accesso amministratore riuscito', ['codice' => $code]);
+        $_SESSION['is_admin_verified'] = true;
+        header("Location: amministratore.php");
+        exit();
+    } else {
+        writeLog('Accesso amministratore fallito', ['codice' => $code]);
+        $message = "Codice di sicurezza errato.";
+    }
 }
 ?>
+
 <?php include_once 'navbar.php'; ?>
 <!DOCTYPE html>
 <html lang="it">
@@ -23,16 +28,12 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Login Admin | Bostarter</title>
-  <!-- Bootstrap CSS -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
-  <!-- Google Fonts -->
   <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;500;600;700&family=Libre+Baskerville:wght@400;700&display=swap" rel="stylesheet">
-  <!-- Custom CSS -->
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
 
-<!-- Hero Section (più semplice per login) -->
 <header class="hero">
   <div class="container text-center py-5">
     <h1 class="display-5 text-white mb-3 animate-fadein">Accesso Amministratore</h1>
@@ -46,7 +47,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 
       <?php if (!empty($message)): ?>
         <div class="alert alert-danger animate-fadein" role="alert" style="animation-delay: 0.4s;">
-          <?php echo htmlspecialchars($message); ?>
+          <?= htmlspecialchars($message); ?>
         </div>
       <?php endif; ?>
 

@@ -1,93 +1,88 @@
 <?php
-include_once 'auth.php';         // requireLogin(), requireCreator()
-include_once 'connection.php';   // getMySQLConnection()
-include_once 'mongodb.php';// writeLog()
-//include_once 'navbar.php';
+include_once 'auth.php';
+include_once 'connection.php';
+include_once 'mongodb.php';
+include_once 'mysql.php';
+
 requireLogin();
 
+$nome_progetto = isset($_GET['nome']) 
+    ? htmlspecialchars(trim(urldecode($_GET['nome'])), ENT_QUOTES) 
+    : 'Progetto Sconosciuto';
 
-$mysqlConn     = getMySQLConnection();
-$logCollection= getMongoDBConnection();
+$rewards = [];
+$finanziamentoEffettuato = false;
+$message = "";
 
-
-// Recupera e pulisce il nome progetto da GET o POST (in POST il redirect avrà già settato)
-// usiamo trim + htmlspecialchars
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $nome_progetto = isset($_POST['nome_progetto']) 
-        ? htmlspecialchars(trim($_POST['nome_progetto']), ENT_QUOTES) 
-        : null;
-} else {
-    $nome_progetto = isset($_GET['nome']) 
-        ? htmlspecialchars(trim($_GET['nome']), ENT_QUOTES) 
-        : 'Progetto Sconosciuto';
-}
-
-// Se GET: carica le reward
 if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     try {
-        $stmt = $mysqlConn->prepare(
-            "SELECT Codice, Descrizione 
-             FROM REWARD 
-             WHERE Nome_Progetto = :nome"
-        );
-        $stmt->execute([':nome' => $nome_progetto]);
-        $rewards = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        $rewards = ottieniRewardPerProgetto($nome_progetto);
+
+        $email_utente = $_SESSION['id'];
+        $finanziamentoEffettuato = verificaFinanziamentoOggi($email_utente, $nome_progetto);
+
+        if (empty($rewards)) {
+            $message = "Questo progetto non ha reward disponibili. Non è possibile effettuare finanziamenti.";
+        } elseif ($finanziamentoEffettuato) {
+            $message = "Hai già registrato un finanziamento per “{$nome_progetto}” oggi. Torna domani!";
+        }
     } catch (PDOException $e) {
+        writeLog('Errore query reward', ['progetto' => $nome_progetto, 'errore' => $e->getMessage()]);
         die("Errore query reward: " . $e->getMessage());
     }
 }
 
-// Se POST: gestisci il finanziamento
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $importo      = isset($_POST['importo']) ? floatval($_POST['importo']) : 0;
-    $codice_reward= isset($_POST['reward'])   ? htmlspecialchars(trim($_POST['reward']), ENT_QUOTES) : null;
+    $nome_progetto = isset($_POST['nome_progetto']) 
+        ? htmlspecialchars(trim($_POST['nome_progetto']), ENT_QUOTES) 
+        : $nome_progetto; 
+
+    $importo = isset($_POST['importo']) ? floatval($_POST['importo']) : 0;
+    $codice_reward = isset($_POST['reward']) ? htmlspecialchars(trim($_POST['reward']), ENT_QUOTES) : null;
     $email_utente = $_SESSION['id'];
 
-    // Basic validation
     if ($importo <= 0 || !$nome_progetto || !$codice_reward) {
-        $_SESSION['fin_err'] = "Dati mancanti o non validi.";
+        $message = "Dati mancanti o non validi.";
         header("Location: finanziamento.php?nome=" . urlencode($nome_progetto));
         exit;
     }
 
-    // Log su MongoDB
-    writeLog(
-        'Finanziamento',
-        [
-          'utente'   => $email_utente,
-          'progetto' => $nome_progetto,
-          'reward'   => $codice_reward,
-          'importo'  => $importo
-        ]
-    );
+    writeLog('Tentativo finanziamento', [
+        'utente' => $email_utente,
+        'progetto' => $nome_progetto,
+        'reward' => $codice_reward,
+        'importo' => $importo
+    ]);
 
-    // Chiamata alla SP
     try {
-        $sql = "CALL FinanceProject(:p_Email_Utente, :p_Importo, :p_Nome_Progetto, :p_Codice_Reward)";
-        $stmt = $mysqlConn->prepare($sql);
-        $stmt->bindParam(':p_Email_Utente', $email_utente);
-        $stmt->bindParam(':p_Importo',      $importo);
-        $stmt->bindParam(':p_Nome_Progetto',$nome_progetto);
-        $stmt->bindParam(':p_Codice_Reward',$codice_reward);
-        $stmt->execute();
-
-        $_SESSION['fin_ok'] = "Grazie! Il tuo finanziamento da €{$importo} è andato a buon fine.";
+        eseguiFinanziamento($email_utente, $importo, $nome_progetto, $codice_reward);
+        $message = "Finanziamento di €" . number_format($importo, 2) . " per “{$nome_progetto}” con reward “{$codice_reward}” registrato con successo.";
     } catch (PDOException $e) {
-      // Se è un errore di chiave duplicata (1062), mostriamo un messaggio dedicato
-      if ($e->errorInfo[1] === 1062) {
-          $_SESSION['fin_err'] = 
-              "Hai già registrato un finanziamento per “{$nome_progetto}” oggi. Torna domani!";
-      } else {
-          $_SESSION['fin_err'] = "Errore durante il finanziamento: " . $e->getMessage();
-      }
-  }
+        if ($e->errorInfo[1] === 1062) {
+            $message = "Hai già registrato un finanziamento per “{$nome_progetto}” oggi. Torna domani!";
+        } else {
+            $message = "Errore durante il finanziamento";
+        }
+        writeLog('Errore finanziamento', [
+            'utente' => $email_utente,
+            'progetto' => $nome_progetto,
+            'reward' => $codice_reward,
+            'importo' => $importo,
+            'errore' => $e->getMessage()
+        ]);
+    }
 
-    // Redirect per Post/Redirect/Get
-    header("Location: finanziamento.php?nome=" . urlencode($nome_progetto));
+    header("Location: progetto.php?nome=" . urlencode($nome_progetto));
     exit;
 }
-include 'navbar.php';
 
+$progetto = getDettagliProgetto($nome_progetto);
+if (!$progetto) {
+    die("Progetto non trovato o non più aperto.");
+}
+?>
+<?php
+include 'navbar.php';
 ?>
 <!DOCTYPE html>
 <html lang="it">
@@ -100,18 +95,16 @@ include 'navbar.php';
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-
   <main class="container mt-5">
-    <?php if (!empty($_SESSION['fin_ok'])): ?>
+    <?php if ($finanziamentoEffettuato): ?>
       <div class="alert alert-success mb-4">
-        <?= $_SESSION['fin_ok']; unset($_SESSION['fin_ok']); ?>
-      </div>
-    <?php elseif (!empty($_SESSION['fin_err'])): ?>
-      <div class="alert alert-danger mb-4">
-        <?= $_SESSION['fin_err']; unset($_SESSION['fin_err']); ?>
-      </div>
+        <?= $message ?>
+      </div>      
     <?php endif; ?>
-      <h2 class="mb-4">Finanzia il progetto "<strong><?= htmlspecialchars($nome_progetto) ?></strong>"</h2>
+
+    <h2 class="mb-4">Finanzia il progetto "<strong><?= htmlspecialchars($nome_progetto) ?></strong>"</h2>
+
+    <?php if (!empty($rewards) && !$finanziamentoEffettuato): ?>
       <form action="finanziamento.php" method="POST">
         <div class="mb-4">
           <label for="importo" class="form-label">Importo (€):</label>
@@ -124,45 +117,42 @@ include 'navbar.php';
             name="importo"
             required
           >
+        </div>
         <div class="mb-4">
           <label class="form-label">Scegli una reward:</label>
           <ul class="list-group">
-            <?php if (count($rewards)): ?>
-              <?php foreach ($rewards as $r): 
-                $cod = htmlspecialchars($r['Codice'], ENT_QUOTES);
-                $desc= htmlspecialchars($r['Descrizione'], ENT_QUOTES);
-              ?>
-                <li class="list-group-item">
-                  <div class="form-check">
-                    <input
-                      class="form-check-input"
-                      type="radio"
-                      name="reward"
-                      id="reward_<?= $cod ?>"
-                      value="<?= $cod ?>"
-                      required
-                    >
-                    <label class="form-check-label" for="reward_<?= $cod ?>">
-                      <?= $desc ?>
-                    </label>
-                  </div>
-                </li>
-              <?php endforeach; ?>
-            <?php else: ?>
-              <li class="list-group-item text-muted">
-                Nessuna reward disponibile per questo progetto.
+            <?php foreach ($rewards as $r): 
+              $cod = htmlspecialchars($r['Codice'], ENT_QUOTES);
+              $desc= htmlspecialchars($r['Descrizione'], ENT_QUOTES);
+            ?>
+              <li class="list-group-item">
+                <div class="form-check">
+                  <input
+                    class="form-check-input"
+                    type="radio"
+                    name="reward"
+                    id="reward_<?= $cod ?>"
+                    value="<?= $cod ?>"
+                    required
+                  >
+                  <label class="form-check-label" for="reward_<?= $cod ?>">
+                    <?= $desc ?>
+                  </label>
+                </div>
               </li>
-            <?php endif; ?>
+            <?php endforeach; ?>
           </ul>
         </div>
         <input
           type="hidden"
           name="nome_progetto"
-          value="<?= $nome_progetto ?>"
+          value="<?= htmlspecialchars($nome_progetto, ENT_QUOTES) ?>"
         >
         <button type="submit" class="btn btn-primary">Conferma finanziamento</button>
       </form>
-    </div>
+    <?php else: ?>
+      <p class="text-danger">Non è possibile finanziare questo progetto.</p>
+    <?php endif; ?>
   </main>
   <footer class="text-center mt-5 py-3 bg-light">
     <p>Bostarter &copy; <?= date('Y') ?></p>

@@ -1,17 +1,15 @@
 <?php
 require_once 'auth.php';
 
-// Gestione del logout
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['logout'])) {
     logout();
     header("Location: index.php");
     exit();
 }
 
-// Verifica se l'utente è loggato e se ha i permessi
 $isLoggedIn = isLoggedIn();
-$isAdmin = isAdmin();  // Funzione per verificare se l'utente è un Admin
-$isCreator = isCreator();  // Funzione per verificare se l'utente è un Creatore
+$isAdmin = isAdmin();
+$isCreator = isCreator();
 $errorMessage = null;
 ?>
 
@@ -40,7 +38,6 @@ $errorMessage = null;
             Registrati
           </a>
         <?php else: ?>
-          <!-- Se ci sono permessi, visualizza il menu a discesa -->
           <?php if ($errorMessage): ?>
             <div class="alert alert-danger mt-3" role="alert">
               <?= htmlspecialchars($errorMessage) ?>
@@ -62,7 +59,6 @@ $errorMessage = null;
             </ul>
           </div>
 
-          <!-- Form per il logout -->
           <form method="POST" action="" class="align-self-center mt-3">
             <button type="submit" name="logout" class="btn btn-outline-danger">
               <i class="bi bi-box-arrow-right"></i> Esci
@@ -75,5 +71,4 @@ $errorMessage = null;
   </div>
 </nav>
 
-<!-- Bootstrap Bundle (include anche Popper) -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>

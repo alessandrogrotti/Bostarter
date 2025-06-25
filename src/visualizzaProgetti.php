@@ -2,28 +2,15 @@
 include_once 'connection.php';
 include_once 'navbar.php';
 include_once 'mongodb.php';
+include_once 'mysql.php';
 
-$mysqlConn = getMySQLConnection();
 $logCollection = getMongoDBConnection();
-
 writeLog('Visita pagina progetti', 'Accesso alla pagina dei progetti da parte di un utente');
 
 try {
-    $stmt = $mysqlConn->query("CALL GetAvailableProjects()");
-    $progetti = $stmt->fetchAll(PDO::FETCH_ASSOC);
-    $stmt->closeCursor();
-
-    foreach ($progetti as &$progetto) {
-        $nomeProgetto = $progetto['Nome'];
-        $fotoStmt = $mysqlConn->prepare("SELECT Valore FROM FOTO WHERE Nome_Progetto = :nomeProgetto");
-        $fotoStmt->bindParam(':nomeProgetto', $nomeProgetto, PDO::PARAM_STR);
-        $fotoStmt->execute();
-        $progetto['Foto'] = $fotoStmt->fetchAll(PDO::FETCH_COLUMN);
-        $fotoStmt->closeCursor();
-    }
-    unset($progetto);
+    $progetti = ottieniProgettiConFoto();
 } catch (PDOException $e) {
-    die("Errore durante l'esecuzione della stored procedure: " . $e->getMessage());
+    die("Errore durante l'esecuzione della query: " . $e->getMessage());
 }
 ?>
 <!DOCTYPE html>
@@ -56,7 +43,6 @@ try {
           <div class="col-lg-4 col-md-6">
             <div class="card shadow-hover h-100">
 
-              <!-- Carosello -->
               <?php if (!empty($row['Foto'])): ?>
                 <div id="carousel-<?= $index ?>" class="carousel slide" data-bs-ride="carousel">
                   <div class="carousel-inner">
@@ -118,21 +104,6 @@ try {
       </div>
     <?php endif; ?>
   </section>
-
-  <!-- Paginazione -->
-  <nav aria-label="Page navigation">
-    <ul class="pagination justify-content-center">
-      <li class="page-item disabled">
-        <a class="page-link" href="#" tabindex="-1" aria-disabled="true">Precedente</a>
-      </li>
-      <li class="page-item active"><a class="page-link" href="#">1</a></li>
-      <li class="page-item"><a class="page-link" href="#">2</a></li>
-      <li class="page-item"><a class="page-link" href="#">3</a></li>
-      <li class="page-item">
-        <a class="page-link" href="#">Successivo</a>
-      </li>
-    </ul>
-  </nav>
 </main>
 
 <?php include_once 'footer.php'; ?>
