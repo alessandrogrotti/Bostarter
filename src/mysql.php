@@ -124,7 +124,7 @@ function OttieniListaProgetti() {
 function OttieniListaFinanziatori() {
     try {
         $conn = getMySQLConnection();
-        $stmt = $conn->prepare("CALL OttieniListaFinanziamenti()");
+        $stmt = $conn->prepare("CALL OttieniListaFinanziatori()");
         $stmt->execute();
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     } catch (Exception $e) {
@@ -171,7 +171,7 @@ function ottieniRewardPerProgetto($nomeProgetto) {
 function eseguiFinanziamento($emailUtente, $importo, $nomeProgetto, $codiceReward) {
     try {
         $conn = getMySQLConnection();
-        $stmt = $conn->prepare("CALL FinanceProject(?, ?, ?, ?)");
+        $stmt = $conn->prepare("CALL FinanziaProgetto(?, ?, ?, ?)");
         $stmt->bindParam(1, $emailUtente, PDO::PARAM_STR);
         $stmt->bindParam(2, $importo, PDO::PARAM_STR);
         $stmt->bindParam(3, $nomeProgetto, PDO::PARAM_STR);
@@ -233,10 +233,10 @@ function inserisciReward($descrizione, $foto, $nomeProgetto, $emailCreatore) {
     try {
         $conn = getMySQLConnection();
         $stmt = $conn->prepare("CALL InserisciReward(?, ?, ?, ?)");
-        $stmt->bindParam(2, $descrizione, PDO::PARAM_STR);
-        $stmt->bindParam(3, $foto, PDO::PARAM_STR);
-        $stmt->bindParam(4, $nomeProgetto, PDO::PARAM_STR);
-        $stmt->bindParam(5, $emailCreatore, PDO::PARAM_STR);
+        $stmt->bindParam(1, $descrizione, PDO::PARAM_STR);
+        $stmt->bindParam(2, $foto, PDO::PARAM_STR);
+        $stmt->bindParam(3, $nomeProgetto, PDO::PARAM_STR);
+        $stmt->bindParam(4, $emailCreatore, PDO::PARAM_STR);
         $stmt->execute();
     } catch (Exception $e) {
         throw $e;
@@ -300,7 +300,7 @@ function rispondiACommento($testo, $email, $nomeProgetto, $idCommento) {
 function inserisciCommento($testo, $email, $nomeProgetto) {
     try {
         $conn = getMySQLConnection();
-        $stmt = $conn->prepare("CALL InsertComment(?, ?, ?)");
+        $stmt = $conn->prepare("CALL InserisciCommento(?, ?, ?)");
         $stmt->bindParam(1, $testo, PDO::PARAM_STR);
         $stmt->bindParam(2, $email, PDO::PARAM_STR);
         $stmt->bindParam(3, $nomeProgetto, PDO::PARAM_STR);
@@ -313,7 +313,7 @@ function inserisciCommento($testo, $email, $nomeProgetto) {
 function inviaCandidatura($emailUtente, $idProfilo) {
     try {
         $conn = getMySQLConnection();
-        $stmt = $conn->prepare("CALL InsertCandidature(:emailUtente, :idProfilo)");
+        $stmt = $conn->prepare("CALL InserisciCandidatura(?, ?)");
         $stmt->bindParam(':emailUtente', $emailUtente, PDO::PARAM_STR);
         $stmt->bindParam(':idProfilo', $idProfilo, PDO::PARAM_INT);
         $stmt->execute();
@@ -399,7 +399,7 @@ function registraUtente($email, $nickname, $password, $nome, $cognome, $luogoNas
 
         $passwordHash = md5($password);
 
-        $stmt = $conn->prepare("CALL RegisterUser(:email, :nickname, :password, :luogo, :anno, :nome, :cognome)");
+        $stmt = $conn->prepare("CALL RegistraUtente(?, ?, ?, :luogo, :anno, :nome, :cognome)");
         $stmt->execute([
             ':email' => $email,
             ':nickname' => $nickname,
@@ -557,7 +557,7 @@ function ottieniProfiliConCandidature($nomeProgetto) {
 function ottieniProgettiConFoto() {
     try {
         $conn = getMySQLConnection();
-        $stmt = $conn->query("CALL GetAvailableProjects()");
+        $stmt = $conn->query("CALL OttieniProgettiDisponibili()");
         $progetti = $stmt->fetchAll(PDO::FETCH_ASSOC);
         $stmt->closeCursor();
 
@@ -590,17 +590,7 @@ function getDettagliProgetto($nomeProgetto) {
 function getCommentiProgetto($nomeProgetto) {
     try {
         $conn = getMySQLConnection();
-        $stmt = $conn->prepare(
-            "SELECT c.Id, c.Data, c.Testo, c.Email_Utente
-             FROM COMMENTO c
-             WHERE c.Nome_Progetto = ?
-              AND NOT EXISTS (
-                 SELECT 1
-                 FROM RISPOSTA r
-                 WHERE Id_Risposta = c.Id
-               )
-             ORDER BY c.Data DESC"
-        );
+        $stmt = $conn->prepare("CALL OttieniCommentiProgetto(?)");
         $stmt->bindParam(1, $nomeProgetto, PDO::PARAM_STR);
         $stmt->execute();
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -612,7 +602,7 @@ function getCommentiProgetto($nomeProgetto) {
 function getRispostaCommento($idCommento) {
     try {
         $conn = getMySQLConnection();
-        $stmt = $conn->prepare("CALL GetRispostaCommento(?)");
+        $stmt = $conn->prepare("CALL OttieniRispostaCommento(?)");
         $stmt->bindParam(1, $idCommento, PDO::PARAM_INT);
         $stmt->execute();
         return $stmt->fetch(PDO::FETCH_ASSOC);
@@ -624,7 +614,7 @@ function getRispostaCommento($idCommento) {
 function getFotoProgetto($nomeProgetto) {
     try {
         $conn = getMySQLConnection();
-        $stmt = $conn->prepare("SELECT Valore FROM FOTO WHERE Nome_Progetto = ?");
+        $stmt = $conn->prepare("CALL OttieniFotoProgetto(?)");
         $stmt->bindParam(1, $nomeProgetto, PDO::PARAM_STR);
         $stmt->execute();
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -636,9 +626,7 @@ function getFotoProgetto($nomeProgetto) {
 function getRewardsProgetto($nomeProgetto) {
     try {
         $conn = getMySQLConnection();
-        $stmt = $conn->prepare(
-            "SELECT Codice, Descrizione, Foto FROM REWARD WHERE Nome_Progetto = ?"
-        );
+        $stmt = $conn->prepare("CALL OttieniRewardProgetto(?)");
         $stmt->bindParam(1, $nomeProgetto, PDO::PARAM_STR);
         $stmt->execute();
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -676,7 +664,7 @@ function getEmailCreatoreProgetto($nomeProgetto) {
 function inviaCommento($testo, $email, $nomeProgetto) {
     try {
         $conn = getMySQLConnection();
-        $stmt = $conn->prepare("CALL InsertComment(?, ?, ?)");
+        $stmt = $conn->prepare("CALL InserisciCommento(?, ?, ?)");
         $stmt->bindParam(1, $testo, PDO::PARAM_STR);
         $stmt->bindParam(2, $email, PDO::PARAM_STR);
         $stmt->bindParam(3, $nomeProgetto, PDO::PARAM_STR);
