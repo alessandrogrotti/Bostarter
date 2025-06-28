@@ -227,18 +227,18 @@ $ DELIMITER;
 DELIMITER $
 CREATE PROCEDURE AggiungiSkillUtente(
     IN Email VARCHAR(255),
-    IN CompetenzaSkill VARCHAR(100),
-    IN LivelloSkill INT
+    IN Competenza_Skill VARCHAR(100),
+    IN Livello_Skill INT
 )
 BEGIN
     IF EXISTS (
         SELECT 1
         FROM SKILL
-        WHERE Competenza = CompetenzaS
+        WHERE Competenza = Competenza_Skill
     ) THEN
-        INSERT INTO POSSIEDE (Email_Utente, Competenza_Skill, Livello)
-        VALUES (Email, CompetenzaSkill, LivelloSkill)
-        ON DUPLICATE KEY UPDATE Livello = LivelloSkill;
+        INSERT INTO POSSIEDE (Email_Utente, Competenza, Livello)
+        VALUES (Email, Competenza_Skill, Livello_Skill)
+        ON DUPLICATE KEY UPDATE Livello = Livello_Skill;
     ELSE
         SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'La competenza non esiste';
     END IF;
@@ -251,6 +251,24 @@ BEGIN
     SELECT *
     FROM PROGETTO
     ORDER BY Data_Inserimento DESC;
+END;
+$ DELIMITER;
+
+DELIMITER $
+CREATE PROCEDURE OttieniEmailCreatoreProgetto(IN Nome_Progetto VARCHAR(100))
+BEGIN
+    SELECT Email_Creatore
+    FROM PROGETTO
+    WHERE Nome = Nome_Progetto;
+END;
+$ DELIMITER;
+
+DELIMITER $
+CREATE PROCEDURE VerificaFinanziamentoOggi(IN EmailUtente VARCHAR(100), IN NomeProgetto VARCHAR(100))
+BEGIN
+    SELECT COUNT(*)
+    FROM FINANZIAMENTO
+    WHERE Email_Utente = EmailUtente AND Nome_Progetto = NomeProgetto AND Data = CURDATE(); 
 END;
 $ DELIMITER;
 
@@ -323,6 +341,15 @@ END;
 $ DELIMITER;
 
 DELIMITER $
+CREATE PROCEDURE InserisciFotoProgetto(IN FotoPath VARCHAR(255), IN NomeProgetto VARCHAR(100))
+BEGIN
+    INSERT INTO FOTO (Valore, Nome_Progetto) VALUES (FotoPath, NomeProgetto);
+END;
+$ DELIMITER;
+
+
+
+DELIMITER $
 CREATE PROCEDURE RispostaCommento(
     IN Testo TEXT, 
     IN Email_Utente VARCHAR(255), 
@@ -363,6 +390,87 @@ BEGIN
     SELECT Id, Stato, Email_Utente, Nickname
     FROM CANDIDATURA, UTENTE
     WHERE Id_Profilo = IdProfilo AND Email_Utente = Email;
+END;
+$ DELIMITER;
+
+DELIMITER $
+CREATE PROCEDURE OttieniDettagliProgetto(IN Nome_Progetto VARCHAR(100))
+BEGIN
+    SELECT *
+    FROM PROGETTO
+    WHERE Nome = Nome_Progetto;
+END;
+$ DELIMITER;
+
+DELIMITER $
+CREATE PROCEDURE OttieniUtente(IN Email_Utente VARCHAR(100))
+BEGIN
+    SELECT *
+    FROM UTENTE
+    WHERE Email = Email_Utente;
+END;
+$ DELIMITER;
+
+DELIMITER $
+CREATE PROCEDURE VerificaCreatore(IN Email_Creatore VARCHAR(100))
+BEGIN
+    SELECT 1
+    FROM CREATORE
+    WHERE Email_Utente = Email_Creatore;
+END;
+$ DELIMITER;
+
+DELIMITER $
+CREATE PROCEDURE VerificaAdmin(IN Email_Admin VARCHAR(100))
+BEGIN
+    SELECT 1
+    FROM AMMINISTRATORE
+    WHERE Email_Utente = Email_Admin;
+END;
+$ DELIMITER;
+
+DELIMITER $
+CREATE PROCEDURE OttieniCodiceAdmin(IN Email_Admin VARCHAR(100))
+BEGIN
+    SELECT Codice_Sicurezza
+    FROM AMMINISTRATORE
+    WHERE Email_Utente = Email_Admin;
+END;
+$ DELIMITER;
+
+DELIMITER $
+CREATE PROCEDURE OttieniDatiUtente(IN Email_Utente VARCHAR(100))
+BEGIN
+    SELECT *
+    FROM UTENTE
+    WHERE Email = Email_Utente;
+END;
+$ DELIMITER;
+
+DELIMITER $
+CREATE PROCEDURE OttieniSkillUtente(IN EmailUtente VARCHAR(100))
+BEGIN
+    SELECT Competenza_Skill, Livello
+    FROM POSSIEDE
+    WHERE Email_Utente = EmailUtente;
+END;
+$ DELIMITER;
+
+DELIMITER $
+CREATE PROCEDURE OttieniCompetenzeDisponibili(IN EmailUtente VARCHAR(100))
+BEGIN
+    SELECT Competenza
+    FROM SKILL
+    WHERE Competenza NOT IN (SELECT Competenza_Skill FROM POSSIEDE WHERE Email_Utente = EmailUtente);
+END;
+$ DELIMITER;
+
+DELIMITER $
+CREATE PROCEDURE OttieniCandidatureUtente(IN EmailUtente VARCHAR(100))
+BEGIN
+    SELECT C.Id, Stato, Nome, Nome_ProgettoSoftware 
+    FROM CANDIDATURA as C, PROFILO as P 
+    WHERE C.Id = P.Id AND Email_Utente = EmailUtente;
 END;
 $ DELIMITER;
 
@@ -413,6 +521,26 @@ BEGIN
     WHERE Nome_Progetto = NomeProgetto;
 END;
 $ DELIMITER;
+
+DELIMITER $
+CREATE PROCEDURE OttieniProgettiCreatore(IN EmailCreatore VARCHAR(100))
+BEGIN
+    SELECT *
+    FROM PROGETTO
+    WHERE Email_Creatore = EmailCreatore;
+END;
+$ DELIMITER;
+
+DELIMITER $
+CREATE PROCEDURE VerificaProgettoCreatore(IN NomeProgetto VARCHAR(100), IN EmailCreatore VARCHAR(100))
+BEGIN
+    SELECT COUNT(*)
+    FROM PROGETTO
+    WHERE Email_Creatore = EmailCreatore AND Nome = NomeProgetto;
+END;
+$ DELIMITER;
+
+
 
 DELIMITER $
 CREATE PROCEDURE InserisciCandidatura (
