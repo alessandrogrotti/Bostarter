@@ -97,11 +97,11 @@ INSERT INTO COMPONENTE (Nome, Nome_ProgettoHardware, Descrizione, Prezzo, Quanti
 ('Display OLED 0.96"', 'App Gestione Spese', 'Schermo per la visualizzazione di notifiche o spese', 7.80, 15);
 
 -- Profili
-CALL InserisciProfiloRichiede('Frontend Developer', 'Sistema Domotico Smart', 'mario.rossi@example.com', 3,'HTML');
-CALL InserisciProfiloRichiede('Database Managment', 'Sistema Domotico Smart', 'mario.rossi@example.com', 3,'SQL');
-CALL InserisciProfiloRichiede('Collaborazione', 'App Gestione Spese', 'luisa.bianchi@example.com', 2, 'Teamwork');
-CALL InserisciProfiloRichiede('Programmazione', 'GreenCity Tracker', 'giorgio.verdi@example.com', 2, 'Java');
-CALL InserisciProfiloRichiede('Programmazione', 'Piattaforma E-learning','giorgio.verdi@example.com', 2, 'Java');
+CALL InserisciProfiloRichiede('Frontend Developer', 'Sistema Domotico Smart', 3,'HTML');
+CALL InserisciProfiloRichiede('Database Managment', 'Sistema Domotico Smart', 3,'SQL');
+CALL InserisciProfiloRichiede('Collaborazione', 'App Gestione Spese', 2, 'Teamwork');
+CALL InserisciProfiloRichiede('Programmazione', 'GreenCity Tracker', 2, 'Java');
+CALL InserisciProfiloRichiede('Programmazione', 'Piattaforma E-learning', 2, 'Java');
 
 
 

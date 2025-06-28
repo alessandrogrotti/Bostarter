@@ -149,7 +149,7 @@ function gestisciCandidatura($idCandidatura, $stato) {
         $conn = getMySQLConnection();
         $stmt = $conn->prepare("CALL GestisciCandidatura(?, ?)");
         $stmt->bindParam(1, $idCandidatura, PDO::PARAM_INT);
-        $stmt->bindParam(2, $stato, PDO::PARAM_STR); // Stato: "Accettata" o "Rifiutata"
+        $stmt->bindParam(2, $stato, PDO::PARAM_STR); 
         return $stmt->execute();
     } catch (Exception $e) {
         return false;
@@ -314,8 +314,8 @@ function inviaCandidatura($emailUtente, $idProfilo) {
     try {
         $conn = getMySQLConnection();
         $stmt = $conn->prepare("CALL InserisciCandidatura(?, ?)");
-        $stmt->bindParam(':emailUtente', $emailUtente, PDO::PARAM_STR);
-        $stmt->bindParam(':idProfilo', $idProfilo, PDO::PARAM_INT);
+        $stmt->bindParam(1, $emailUtente, PDO::PARAM_STR);
+        $stmt->bindParam(2, $idProfilo, PDO::PARAM_INT);
         $stmt->execute();
     } catch (PDOException $e) {
         if ($e->getCode() === '45001') {
@@ -335,7 +335,7 @@ function inviaCandidatura($emailUtente, $idProfilo) {
 function ottieniCommentiProgetto($nomeProgetto) {
     try {
         $conn = getMySQLConnection();
-        $stmt = $conn->prepare("SELECT * FROM COMMENTO WHERE Nome_Progetto = ?");
+        $stmt = $conn->prepare("CALL OttieniCommentiProgetto(?)");
         $stmt->bindParam(1, $nomeProgetto, PDO::PARAM_STR);
         $stmt->execute();
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -399,16 +399,15 @@ function registraUtente($email, $nickname, $password, $nome, $cognome, $luogoNas
 
         $passwordHash = md5($password);
 
-        $stmt = $conn->prepare("CALL RegistraUtente(?, ?, ?, :luogo, :anno, :nome, :cognome)");
-        $stmt->execute([
-            ':email' => $email,
-            ':nickname' => $nickname,
-            ':password' => $passwordHash,
-            ':luogo' => $luogoNascita,
-            ':anno' => $annoNascita,
-            ':nome' => $nome,
-            ':cognome' => $cognome
-        ]);
+        $stmt = $conn->prepare("CALL RegistraUtente(?, ?, ?, ?, ?, ?, ?)");
+        $stmt->bindParam(1, $email, PDO::PARAM_STR);
+        $stmt->bindParam(2, $nickname, PDO::PARAM_STR);
+        $stmt->bindParam(3, $passwordHash, PDO::PARAM_STR);
+        $stmt->bindParam(4, $luogoNascita, PDO::PARAM_STR);
+        $stmt->bindParam(5, $annoNascita, PDO::PARAM_STR);
+        $stmt->bindParam(6, $nome, PDO::PARAM_STR);
+        $stmt->bindParam(7, $cognome, PDO::PARAM_STR);
+        $stmt->execute();
 
         if ($isCreator) {
             $stmtCreator = $conn->prepare("INSERT INTO CREATORE (Email_Utente, Nr_progetti, Affidabilità) VALUES (:email, 0, 0.00)");
@@ -497,8 +496,8 @@ function rimuoviSkillUtente($email, $competenza) {
     try {
         $conn = getMySQLConnection();
         $stmt = $conn->prepare("CALL RimuoviSkillUtente(:email, :competenza)");
-        $stmt->bindParam(':email', $email, PDO::PARAM_STR);
-        $stmt->bindParam(':competenza', $competenza, PDO::PARAM_STR);
+        $stmt->bindParam(1, $email, PDO::PARAM_STR);
+        $stmt->bindParam(2, $competenza, PDO::PARAM_STR);
         $stmt->execute();
     } catch (Exception $e) {
         throw $e;
@@ -508,18 +507,12 @@ function rimuoviSkillUtente($email, $competenza) {
 function inserisciProfiloConCompetenze($nomeProfilo, $nomeProgetto, $skills, $levels) {
     try {
         $conn = getMySQLConnection();
-        $stmtProfilo = $conn->prepare("INSERT INTO PROFILO (Nome, Nome_ProgettoSoftware) VALUES (?, ?)");
-        $stmtProfilo->execute([$nomeProfilo, $nomeProgetto]);
-        $profiloId = $conn->lastInsertId();
-
-        $stmtSkill = $conn->prepare("INSERT INTO RICHIEDE (Livello, Id_Profilo, Competenza_Skill) VALUES (?, ?, ?)");
-        foreach ($skills as $index => $competenza) {
-            if (!isset($levels[$index]) || !is_numeric($levels[$index]) || (int)$levels[$index] < 1 || (int)$levels[$index] > 5) {
-                continue;
-            }
-            $stmtSkill->execute([(int)$levels[$index], $profiloId, $competenza]);
-        }
-        return true;
+        $stmt = $conn->prepare("CALL InserisciProfiloRichiede(?, ?, ?, ?)");
+        $stmt->execute(1, $nomeProfilo, PDO::PARAM_STR);
+        $stmt->execute(2, $nomeProgetto, PDO::PARAM_STR);
+        $stmt->execute(3, $skills, PDO::PARAM_STR);
+        $stmt->execute(4, $levels, PDO::PARAM_STR);
+        $stmtSkill->execute();
     } catch (Exception $e) {
         return false;
     }
