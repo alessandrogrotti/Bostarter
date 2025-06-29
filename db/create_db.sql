@@ -587,6 +587,38 @@ END
 $ DELIMITER;
 
 DELIMITER $
+CREATE PROCEDURE InserisciProfilo(
+    IN Nome VARCHAR(100),
+    IN Nome_ProgettoSoftware VARCHAR(100)
+)
+BEGIN
+    INSERT INTO PROFILO (Nome, Nome_ProgettoSoftware)
+    VALUES (Nome, Nome_ProgettoSoftware);
+END;
+$ DELIMITER;
+
+DELIMITER $
+CREATE PROCEDURE InserisciRichiede(
+    IN Livello INT,
+    IN Id_Profilo INT,
+    IN Competenza_Skill VARCHAR(100)
+)
+BEGIN
+    INSERT INTO RICHIEDE (Livello, Id_Profilo, Competenza_Skill)
+    VALUES (Livello, Id_Profilo, Competenza_Skill);
+END;
+$ DELIMITER;
+
+DELIMITER $
+CREATE PROCEDURE OttieniUltimoIdProfilo(
+    OUT UltimoId INT
+)
+BEGIN
+    SELECT LAST_INSERT_ID() INTO UltimoId;
+END;
+$ DELIMITER;
+
+DELIMITER $
 CREATE PROCEDURE InserisciProfiloRichiede(
     IN Nome VARCHAR(100), 
     IN Nome_ProgettoSoftware VARCHAR(100), 
@@ -594,15 +626,7 @@ CREATE PROCEDURE InserisciProfiloRichiede(
     IN Competenza_Skill VARCHAR(100)
 )
 BEGIN
-    /*DECLARE CreatorePresente INT DEFAULT 0;
-    DECLARE ProgettoPresente INT DEFAULT 0;
-    DECLARE TipoProgetto VARCHAR(20);
     DECLARE nuovoIdProfilo INT;
-
-    SET CreatorePresente = (SELECT COUNT(*) FROM CREATORE WHERE Email_Utente = Email_Creatore);
-    SET ProgettoPresente = (SELECT COUNT(*) FROM PROGETTO WHERE Nome = Nome_ProgettoSoftware);
-    SET TipoProgetto = (SELECT Tipo FROM PROGETTO WHERE Nome = Nome_ProgettoSoftware);*/
-	DECLARE nuovoIdProfilo INT;
 
 	INSERT INTO PROFILO (Nome, Nome_ProgettoSoftware)
 	VALUES (Nome, Nome_ProgettoSoftware);

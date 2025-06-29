@@ -506,12 +506,37 @@ function rimuoviSkillUtente($email, $competenza) {
 function inserisciProfiloConCompetenze($nomeProfilo, $nomeProgetto, $skills, $levels) {
     try {
         $conn = getMySQLConnection();
-        $stmt = $conn->prepare("CALL InserisciProfiloRichiede(?, ?, ?, ?)");
-        $stmt->execute(1, $nomeProfilo, PDO::PARAM_STR);
-        $stmt->execute(2, $nomeProgetto, PDO::PARAM_STR);
-        $stmt->execute(3, $skills, PDO::PARAM_STR);
-        $stmt->execute(4, $levels, PDO::PARAM_STR);
-        $stmtSkill->execute();
+
+        $stmtProfilo = $conn->prepare("CALL InserisciProfilo(?, ?)");
+        $stmtProfilo->bindParam(1, $nomeProfilo, PDO::PARAM_STR);
+        $stmtProfilo->bindParam(2, $nomeProgetto, PDO::PARAM_STR);
+        $stmtProfilo->execute();
+
+        $stmtId = $conn->prepare("CALL OttieniUltimoIdProfilo(@UltimoId)");
+        $stmtId->execute();
+        $stmtIdResult = $conn->query("SELECT @UltimoId AS Id");
+        $profiloId = $stmtIdResult->fetch(PDO::FETCH_ASSOC)['Id'];
+
+        $stmtSkill = $conn->prepare("CALL InserisciRichiede(?, ?, ?)");
+        foreach ($skills as $index => $competenza) {
+            if (
+                !isset($levels[$index]) ||
+                !is_numeric($levels[$index]) ||
+                (int)$levels[$index] < 1 ||
+                (int)$levels[$index] > 5
+            ) {
+                continue;
+            }
+
+            $livello = (int)$levels[$index];
+
+            $stmtSkill->bindParam(1, $livello, PDO::PARAM_INT);
+            $stmtSkill->bindParam(2, $profiloId, PDO::PARAM_INT);
+            $stmtSkill->bindParam(3, $competenza, PDO::PARAM_STR);
+            $stmtSkill->execute();
+        }
+
+        return true;
     } catch (Exception $e) {
         return false;
     }

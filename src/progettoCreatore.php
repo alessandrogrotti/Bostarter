@@ -214,7 +214,6 @@ include_once 'navbar.php';
           <h4>Profili richiesti:</h4>
           <?php if ($profili): ?>
             <?php
-            // Aggrega i profili, le competenze e le candidature
             $profiliAggregati = [];
             foreach ($profili as $row) {
                 $idProfilo = $row['Id'];
