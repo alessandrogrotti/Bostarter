@@ -4,12 +4,10 @@ include_once 'mongodb.php';
 include_once 'auth.php';
 include_once 'mysql.php';
 
-$conn = getMySQLConnection();
-$logCollection = getMongoDBConnection();
 
-$nomeProgetto = isset($_GET['nome']) ? trim($_GET['nome']) : '';
+$nomeProgetto = isset($_GET['nome']) ? urldecode(trim($_GET['nome'])) : '';
 if ($nomeProgetto === '') {
-    die("Nome progetto non specificato.");
+  die("Nome progetto non specificato.");
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['profilo'], $_POST['skill'], $_POST['level'])) {
@@ -140,6 +138,7 @@ include_once 'navbar.php';
       </section>
     </div>
 
+    
     <div id="finanziamento" class="mb-5">
       <?php if ($progetto['Stato'] === 'Aperto'): ?>
         <div class="alert alert-secondary mt-3">Il progetto è aperto per i finanziamenti.</div>  

@@ -1,17 +1,17 @@
 -- Utente
 INSERT INTO UTENTE (Email, Nickname, Password, Luogo, Anno, Nome, Cognome) VALUES
-('mario.rossi@example.com', 'mRossi', 'pass123', 'Milano', 1990, 'Mario', 'Rossi'),
-('luisa.bianchi@example.com', 'lBianchi', 'pass456', 'Roma', 1988, 'Luisa', 'Bianchi'),
-('giorgio.verdi@example.com', 'gVerdi', 'pass789', 'Napoli', 1992, 'Giorgio', 'Verdi'),
-('alessandrogrotti2003@gmail.com', 'alegrotti', '0cc175b9c0f1b6a831c399e269772661', 'Bologna', 2003, 'Alessandro', 'Grotti'),
-('gigi@gmail.com', 'a', '0cc175b9c0f1b6a831c399e269772661', 'Bologna', 2003, 'Alessandro', 'Grotti');
+('utente@gmail.com', 'utente', '0cc175b9c0f1b6a831c399e269772661', 'Bologna', 2000, 'Mario', 'Rossi'),
+('creatore@gmail.com', 'creatore', '0cc175b9c0f1b6a831c399e269772661', 'Milano', 1990, 'Lucia', 'Bianchi'),
+('admin@gmail.com', 'amministratore', '0cc175b9c0f1b6a831c399e269772661', 'Roma', 1985, 'Marco', 'Verdi');
 
 -- Creatore
 INSERT INTO CREATORE (Email_Utente, Nr_progetti, Affidabilità) VALUES
-('mario.rossi@example.com', 0, 0),
-('luisa.bianchi@example.com', 0, 0),
-('giorgio.verdi@example.com', 0, 0),
-('alessandrogrotti2003@gmail.com', 0, 0);
+('creatore@gmail.com', 0, 0);
+
+-- Amministratore
+INSERT INTO AMMINISTRATORE (Email_Utente, Codice_Sicurezza) VALUES
+('admin@gmail.com', 'admin12345');
+
 
 -- Progetti 
 INSERT INTO PROGETTO (
@@ -19,7 +19,7 @@ INSERT INTO PROGETTO (
 ) VALUES 
 (
     'Sistema Domotico Smart',
-    'mario.rossi@example.com',
+    'creatore@gmail.com',
     'Progetto per la creazione di un sistema domotico intelligente basato su sensori IoT.',
     '2025-04-10',
     '2025-07-01',
@@ -29,7 +29,7 @@ INSERT INTO PROGETTO (
 ),
 (
     'App Gestione Spese',
-    'luisa.bianchi@example.com',
+    'creatore@gmail.com',
     'Applicazione mobile per la gestione delle spese personali e report mensili.',
     '2025-03-20',
     '2025-06-15',
@@ -39,7 +39,7 @@ INSERT INTO PROGETTO (
 ),
 (
     'Piattaforma E-learning',
-    'giorgio.verdi@example.com',
+    'creatore@gmail.com',
     'Sviluppo di una piattaforma online per corsi e formazione a distanza.',
     '2025-02-28',
     '2025-05-12',
@@ -49,18 +49,8 @@ INSERT INTO PROGETTO (
 ),
 (
 	'GreenCity Tracker',
-    'giorgio.verdi@example.com',
+    'creatore@gmail.com',
     'Applicazione che monitora l’impatto ambientale in città, raccogliendo dati da fonti pubbliche e utenti per promuovere pratiche sostenibili.',
-    '2025-04-12',
-    '2025-07-30',
-    3000.00,
-    'Aperto',
-    'Software'
-),
-(
-	'Prova',
-    'alessandrogrotti2003@gmail.com',
-    'Prova progetto per candidature',
     '2025-04-12',
     '2025-07-30',
     3000.00,
@@ -115,8 +105,30 @@ CALL InserisciProfiloRichiede('Database Managment', 'Sistema Domotico Smart', 3,
 CALL InserisciProfiloRichiede('Collaborazione', 'App Gestione Spese', 2, 'Teamwork');
 CALL InserisciProfiloRichiede('Programmazione', 'GreenCity Tracker', 2, 'Java');
 CALL InserisciProfiloRichiede('Programmazione', 'Piattaforma E-learning', 2, 'Java');
-CALL InserisciProfiloRichiede('Programmazione', 'Prova', 2, 'Java');
-CALL AggiungiSkillUtente('gigi@gmail.com', 'Java', 4);
 
+-- Skill Utente
+CALL AggiungiSkillUtente('utente@gmail.com', 'Java', 4);
+CALL AggiungiSkillUtente('utente@gmail.com', 'Python', 3);
+CALL AggiungiSkillUtente('utente@gmail.com', 'HTML', 5);
+CALL AggiungiSkillUtente('utente@gmail.com', 'SQL', 4);
 
+-- Commenti
+CALL InserisciCommento('Progetto molto interessante, non vedo l’ora di provarlo!', 'utente@gmail.com', 'Sistema Domotico Smart');
+CALL InserisciCommento('Ottima idea, spero che venga realizzata presto.', 'utente@gmail.com', 'GreenCity Tracker');
+CALL InserisciCommento('Mi piace il concept, ma vorrei più dettagli sul funzionamento.', 'utente@gmail.com', 'App Gestione Spese');
 
+-- Risposte ai Commenti (fatte dal creatore)
+CALL RispostaCommento('Grazie per il supporto! Stiamo lavorando per migliorare il progetto.', 'creatore@gmail.com', 'Sistema Domotico Smart', 1);
+CALL RispostaCommento('Apprezziamo il tuo feedback, aggiungeremo più dettagli nella descrizione.', 'creatore@gmail.com', 'App Gestione Spese', 3);
+
+-- Candidature
+CALL InserisciCandidatura('utente@gmail.com', 1); -- Frontend Developer per Sistema Domotico Smart
+CALL InserisciCandidatura('utente@gmail.com', 2); -- Database Management per Sistema Domotico Smart
+CALL InserisciCandidatura('utente@gmail.com', 3); -- Collaborazione per App Gestione Spese
+
+SET SQL_SAFE_UPDATES = 0;
+
+-- Finanziamenti
+CALL FinanziaProgetto('utente@gmail.com', 150.00, 'Sistema Domotico Smart', 1); -- Dopo la data di creazione del progetto
+CALL FinanziaProgetto('utente@gmail.com', 50.00, 'GreenCity Tracker', 2); -- Dopo la data di creazione del progetto
+CALL FinanziaProgetto('utente@gmail.com', 100.00, 'App Gestione Spese', 3); -- Dopo la data di creazione del progetto
