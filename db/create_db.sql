@@ -236,7 +236,7 @@ BEGIN
         FROM SKILL
         WHERE Competenza = Competenza_Skill
     ) THEN
-        INSERT INTO POSSIEDE (Email_Utente, Competenza, Livello)
+        INSERT INTO POSSIEDE (Email_Utente, Competenza_Skill, Livello)
         VALUES (Email, Competenza_Skill, Livello_Skill)
         ON DUPLICATE KEY UPDATE Livello = Livello_Skill;
     ELSE
@@ -470,7 +470,7 @@ CREATE PROCEDURE OttieniCandidatureUtente(IN EmailUtente VARCHAR(100))
 BEGIN
     SELECT C.Id, Stato, Nome, Nome_ProgettoSoftware 
     FROM CANDIDATURA as C, PROFILO as P 
-    WHERE C.Id = P.Id AND Email_Utente = EmailUtente;
+    WHERE C.Id_Profilo = P.Id AND Email_Utente = EmailUtente;
 END;
 $ DELIMITER;
 
@@ -488,10 +488,15 @@ $ DELIMITER;
 DELIMITER $
 CREATE PROCEDURE OttieniCommentiProgetto(IN NomeProgetto VARCHAR(100))
 BEGIN
-    SELECT Id, Data, Testo, Email_Utente
-    FROM COMMENTO 
-    WHERE Nome_Progetto = NomeProgetto
-    ORDER BY Data DESC;
+    SELECT *
+     FROM COMMENTO c
+     WHERE Nome_Progetto = NomeProgetto
+      AND NOT EXISTS (
+         SELECT 1
+         FROM RISPOSTA
+         WHERE Id_Risposta = Id
+       )
+     ORDER BY Data DESC;
 END;
 $ DELIMITER;
 
@@ -569,7 +574,7 @@ BEGIN
     IF EXISTS (
         SELECT 1
         FROM RICHIEDE as r, POSSIEDE as p
-        WHERE r.Id_Profilo = p_Id_Profilo AND r.Competenza_Skill = p.Competenza_Skill AND p.Email_Utente = EmailUtente
+        WHERE r.Competenza_Skill = p.Competenza_Skill AND p.Email_Utente = EmailUtente
         AND (p.Livello < r.Livello)
     ) THEN
         SIGNAL SQLSTATE '45003'
@@ -721,48 +726,54 @@ END;
 $ DELIMITER;
 
 -- Viste
+DELIMITER $
 CREATE VIEW classifica_affidabilita_creatori AS
 SELECT Nickname, Affidabilità
 FROM CREATORE, UTENTE 
-WHERE Email_Utente = Email
-ORDER BY Affidabilità DESC LIMIT 3;
+WHERE Email_Utente = Email;
+$ DELIMITER;
 
 DELIMITER $
 CREATE PROCEDURE OttieniListaAffidabilità()
 BEGIN
     SELECT *
-    FROM classifica_affidabilita_creatori;
+    FROM classifica_affidabilita_creatori
+    ORDER BY Affidabilità DESC LIMIT 3;
 END;
 $ DELIMITER;
 
+DELIMITER $
 CREATE VIEW progetti_quasi_completi AS
-SELECT Nome, Budget - COALESCE(SUM(Importo), 0)) AS Differenza, Budget
+SELECT Nome, (Budget - COALESCE(SUM(Importo), 0)) AS Differenza, Budget
 FROM PROGETTO 
 LEFT JOIN FINANZIAMENTO ON Nome = Nome_Progetto
 WHERE Stato = 'Aperto'
-GROUP BY Nome, Budget
-ORDER BY Differenza ASC LIMIT 3;
+GROUP BY Nome, Budget;
+$ DELIMITER;
 
 DELIMITER $
 CREATE PROCEDURE OttieniListaProgetti()
 BEGIN
     SELECT *
-    FROM progetti_quasi_completi;
+    FROM progetti_quasi_completi
+    ORDER BY Differenza ASC LIMIT 3;
 END;
 $ DELIMITER;
 
+DELIMITER $
 CREATE VIEW classifica_finanziatori AS
 SELECT Nickname, SUM(Importo) AS Totale
 FROM FINANZIAMENTO, UTENTE 
 WHERE Email_Utente = Email
-GROUP BY Nickname
-ORDER BY Totale DESC LIMIT 3;
+GROUP BY Nickname;
+$ DELIMITER;
 
 DELIMITER $
 CREATE PROCEDURE OttieniListaFinanziatori()
 BEGIN
     SELECT *
-    FROM classifica_finanziatori;
+    FROM classifica_finanziatori
+	ORDER BY Totale DESC LIMIT 3;
 END;
 $ DELIMITER ;
 

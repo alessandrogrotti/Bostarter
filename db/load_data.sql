@@ -2,13 +2,16 @@
 INSERT INTO UTENTE (Email, Nickname, Password, Luogo, Anno, Nome, Cognome) VALUES
 ('mario.rossi@example.com', 'mRossi', 'pass123', 'Milano', 1990, 'Mario', 'Rossi'),
 ('luisa.bianchi@example.com', 'lBianchi', 'pass456', 'Roma', 1988, 'Luisa', 'Bianchi'),
-('giorgio.verdi@example.com', 'gVerdi', 'pass789', 'Napoli', 1992, 'Giorgio', 'Verdi');
+('giorgio.verdi@example.com', 'gVerdi', 'pass789', 'Napoli', 1992, 'Giorgio', 'Verdi'),
+('alessandrogrotti2003@gmail.com', 'alegrotti', '0cc175b9c0f1b6a831c399e269772661', 'Bologna', 2003, 'Alessandro', 'Grotti'),
+('gigi@gmail.com', 'a', '0cc175b9c0f1b6a831c399e269772661', 'Bologna', 2003, 'Alessandro', 'Grotti');
 
 -- Creatore
 INSERT INTO CREATORE (Email_Utente, Nr_progetti, Affidabilità) VALUES
 ('mario.rossi@example.com', 0, 0),
 ('luisa.bianchi@example.com', 0, 0),
-('giorgio.verdi@example.com', 0, 0);
+('giorgio.verdi@example.com', 0, 0),
+('alessandrogrotti2003@gmail.com', 0, 0);
 
 -- Progetti 
 INSERT INTO PROGETTO (
@@ -48,6 +51,16 @@ INSERT INTO PROGETTO (
 	'GreenCity Tracker',
     'giorgio.verdi@example.com',
     'Applicazione che monitora l’impatto ambientale in città, raccogliendo dati da fonti pubbliche e utenti per promuovere pratiche sostenibili.',
+    '2025-04-12',
+    '2025-07-30',
+    3000.00,
+    'Aperto',
+    'Software'
+),
+(
+	'Prova',
+    'alessandrogrotti2003@gmail.com',
+    'Prova progetto per candidature',
     '2025-04-12',
     '2025-07-30',
     3000.00,
@@ -102,6 +115,8 @@ CALL InserisciProfiloRichiede('Database Managment', 'Sistema Domotico Smart', 3,
 CALL InserisciProfiloRichiede('Collaborazione', 'App Gestione Spese', 2, 'Teamwork');
 CALL InserisciProfiloRichiede('Programmazione', 'GreenCity Tracker', 2, 'Java');
 CALL InserisciProfiloRichiede('Programmazione', 'Piattaforma E-learning', 2, 'Java');
+CALL InserisciProfiloRichiede('Programmazione', 'Prova', 2, 'Java');
+CALL AggiungiSkillUtente('gigi@gmail.com', 'Java', 4);
 
 
 

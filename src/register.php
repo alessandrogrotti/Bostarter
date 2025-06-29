@@ -6,26 +6,26 @@ $message = "";
 $codiceSicurezzaChiaro = "";
 
 if ($_SERVER["REQUEST_METHOD"] === "POST") {
-    $email = trim($_POST['email']);
-    $nickname = trim($_POST['nickname']);
-    $password = trim($_POST['password']);
-    $nome = trim($_POST['nome']);
-    $cognome = trim($_POST['cognome']);
-    $luogoNascita = trim($_POST['luogoNascita']);
-    $annoNascita = trim($_POST['annoNascita']);
-    $isCreator = isset($_POST['creator']) && $_POST['creator'] == 1;
-    $isAdministrator = isset($_POST['administrator']) && $_POST['administrator'] == 1;
+  $email = trim($_POST['email']);
+  $nickname = trim($_POST['nickname']);
+  $password = trim($_POST['password']);
+  $nome = trim($_POST['nome']);
+  $cognome = trim($_POST['cognome']);
+  $luogoNascita = trim($_POST['luogoNascita']);
+  $annoNascita = trim($_POST['annoNascita']);
+  $isCreator = isset($_POST['creator']) && $_POST['creator'] == 1;
+  $isAdministrator = isset($_POST['administrator']) && $_POST['administrator'] == 1;
 
-    try {
-        registraUtente($email, $nickname, $password, $nome, $cognome, $luogoNascita, $annoNascita, $isCreator, $isAdministrator, $codiceSicurezzaChiaro);
+  try {
+      $codiceSicurezzaChiaro = registraUtente($email, $nickname, $password, $nome, $cognome, $luogoNascita, $annoNascita, $isCreator, $isAdministrator);
 
-        if (!$isAdministrator) {
-            header("Location: login.php");
-            exit;
-        }
-    } catch (Exception $e) {
-        $message = "Errore nella registrazione: " . $e->getMessage();
-    }
+      if (!$isAdministrator) {
+          header("Location: login.php");
+          exit;
+      }
+  } catch (Exception $e) {
+      $message = "Errore nella registrazione: " . $e->getMessage();
+  }
 }
 
 include_once 'navbar.php';

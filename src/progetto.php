@@ -82,7 +82,7 @@ if (!$progetto) {
 $fotoProgetto = getFotoProgetto($nomeProgetto);
 $rewards = getRewardsProgetto($nomeProgetto);
 $comments = getCommentiProgetto($nomeProgetto);
-$profili = ottieniProfiliConCandidature($nomeProgetto);
+$profili = ottieniProfiliPerProgetto($nomeProgetto);
 $componenti = ottieniComponentiPerProgetto($nomeProgetto);
 
 include_once 'navbar.php';
@@ -222,8 +222,27 @@ include_once 'navbar.php';
       <section class="mb-5">
         <h4>Profili richiesti:</h4>
         <?php if ($profili): ?>
+            <?php
+              $profiliAggregati = [];
+              foreach ($profili as $row) {
+                  $idProfilo = $row['Id'];
+                  if (!isset($profiliAggregati[$idProfilo])) {
+                      $profiliAggregati[$idProfilo] = [
+                          'Id' => $idProfilo,
+                          'Nome' => $row['Nome'],
+                          'Skills' => []
+                      ];
+                  }
+                  if (!empty($row['Competenza_Skill'])) {
+                      $profiliAggregati[$idProfilo]['Skills'][] = [
+                          'Competenza_Skill' => $row['Competenza_Skill'],
+                          'Livello' => $row['Livello']
+                      ];
+                  }
+              }
+            ?>
             <ul class="list-group">
-                <?php foreach ($profili as $profilo): ?>
+                <?php foreach ($profiliAggregati as $profilo): ?>
                     <li class="list-group-item">
                         <div class="d-flex justify-content-between align-items-center">
                             <div>

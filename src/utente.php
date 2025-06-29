@@ -128,9 +128,9 @@ include_once 'navbar.php';
           <ul class="list-group">
         <?php foreach ($userSkills as $skill): ?>
               <li class="list-group-item d-flex justify-content-between align-items-center">
-                <?= htmlspecialchars($skill['Competenza']) ?> (Livello: <?= htmlspecialchars($skill['Livello']) ?>)
+                <?= htmlspecialchars($skill['Competenza_Skill']) ?> (Livello: <?= htmlspecialchars($skill['Livello']) ?>)
                 <form method="POST" style="display:inline;">
-                  <button type="submit" name="remove_skill" value="<?= htmlspecialchars($skill['Competenza']) ?>" class="btn btn-danger btn-sm">Rimuovi</button>
+                  <button type="submit" name="remove_skill" value="<?= htmlspecialchars($skill['Competenza_Skill']) ?>" class="btn btn-danger btn-sm">Rimuovi</button>
                 </form>
               </li>
         <?php endforeach; ?>
@@ -142,33 +142,33 @@ include_once 'navbar.php';
     </div>
 
     <div class="card shadow-sm rounded mb-4">
-    <div class="card-body">
-      <h4>Le tue candidature inviate</h4>
-      <?php if (count($userApplications) > 0): ?>
-        <ul class="list-group">
-          <?php foreach ($userApplications as $app): ?>
-            <li class="list-group-item d-flex justify-content-between align-items-center">
-              <div>
-                <strong><?= htmlspecialchars($app['Progetto']) ?></strong><br />
-                <small class="text-muted">Profilo: <?= htmlspecialchars($app['Profilo']) ?></small>
-              </div>
-              <span class="badge 
-                <?= match (strtolower($app['Stato'])) {
-                  'accettata' => 'bg-success',
-                  'rifiutata' => 'bg-danger',
-                  'in attesa', 'pendente' => 'bg-warning text-dark',
-                  default => 'bg-secondary'
-                } ?>">
-                <?= htmlspecialchars(ucfirst($app['Stato'])) ?>
-              </span>
-            </li>
-          <?php endforeach; ?>
-        </ul>
-      <?php else: ?>
-        <p class="text-muted">Non hai ancora inviato candidature.</p>
-      <?php endif; ?>
+      <div class="card-body">
+        <h4>Le tue candidature inviate</h4>
+        <?php if (count($userApplications) > 0): ?>
+          <ul class="list-group">
+            <?php foreach ($userApplications as $app): ?>
+              <li class="list-group-item d-flex justify-content-between align-items-center">
+                <div>
+                  <strong><?= htmlspecialchars($app['Nome_ProgettoSoftware']) ?></strong><br />
+                  <small class="text-muted">Profilo: <?= htmlspecialchars($app['Nome']) ?></small>
+                </div>
+                <span class="badge 
+                  <?= match (strtolower($app['Stato'])) {
+                    'accettata' => 'bg-success',
+                    'rifiutata' => 'bg-danger',
+                    'in attesa', 'pendente' => 'bg-warning text-dark',
+                    default => 'bg-secondary'
+                  } ?>">
+                  <?= htmlspecialchars(ucfirst($app['Stato'])) ?>
+                </span>
+              </li>
+            <?php endforeach; ?>
+          </ul>
+        <?php else: ?>
+          <p class="text-muted">Non hai ancora inviato candidature.</p>
+        <?php endif; ?>
+      </div>
     </div>
-  </div>
   </div>
 
   <?php include_once 'footer.php'; ?>

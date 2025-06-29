@@ -1,13 +1,10 @@
 <?php
 include_once 'auth.php';
-
-requireAdmin();
-?>
-
-<?php
 include_once 'navbar.php';
 include_once 'mongodb.php';
 include_once 'mysql.php';
+
+requireAdmin();
 
 writeLog('Visita pagina competenza', 'Accesso alla pagina per aggiunta competenza da parte dell’amministratore');
 

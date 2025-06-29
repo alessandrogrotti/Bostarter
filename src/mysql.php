@@ -424,7 +424,7 @@ function registraUtente($email, $nickname, $password, $nome, $cognome, $luogoNas
             ]);
         }
 
-        return true;
+        return $codiceSicurezzaChiaro; // Restituisci il codice di sicurezza (null se non è admin)
     } catch (Exception $e) {
         throw $e;
     }
@@ -514,35 +514,6 @@ function inserisciProfiloConCompetenze($nomeProfilo, $nomeProgetto, $skills, $le
         $stmtSkill->execute();
     } catch (Exception $e) {
         return false;
-    }
-}
-
-function ottieniProfiliConCandidature($nomeProgetto) {
-    try {
-        $profiliRaw = OttieniCandidaturePerProfilo($nomeProgetto);
-        $profili = [];
-        foreach ($profiliRaw as $row) {
-            $idProfilo = $row['Id'];
-            if (!isset($profili[$idProfilo])) {
-                $profili[$idProfilo] = [
-                    'Nome' => $row['Nome'],
-                    'Skills' => [],
-                    'Id' => $idProfilo
-                ];
-            }
-            if (!empty($row['Competenza_Skill'])) {
-                $profili[$idProfilo]['Skills'][] = [
-                    'Competenza_Skill' => $row['Competenza_Skill'],
-                    'Livello' => $row['Livello']
-                ];
-            }
-        }
-        foreach ($profili as $idProfilo => $profilo) {
-            $profili[$idProfilo]['Candidature'] = OttieniCandidaturePerProfilo($idProfilo);
-        }
-        return $profili;
-    } catch (Exception $e) {
-        return [];
     }
 }
 

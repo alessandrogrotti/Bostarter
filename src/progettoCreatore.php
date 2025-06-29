@@ -104,7 +104,10 @@ if (!$progetto) {
 $fotoProgetto = ottieniFotoProgetto($nomeProgetto);
 $rewards = ottieniRewardPerProgetto($nomeProgetto);
 $availableSkills = ottieniCompetenze();
-$profili = ottieniProfiliConCandidature($nomeProgetto);
+$profili = ottieniProfiliPerProgetto($nomeProgetto);
+foreach ($profili as $idProfilo => $profilo) {
+  $profili[$idProfilo]['Candidature'] = ottieniCandidaturePerProfilo($idProfilo);
+}
 $componenti = ottieniComponentiPerProgetto($nomeProgetto);
 
 include_once 'navbar.php';
@@ -210,80 +213,87 @@ include_once 'navbar.php';
         <section class="mb-5">
           <h4>Profili richiesti:</h4>
           <?php if ($profili): ?>
-              <div class="card">
-                  <div class="card-body">
-                      <h5 class="card-title">Lista dei profili</h5>
-                      <div class="row">
-                          <?php foreach ($profili as $profilo): ?>
-                              <div class="col-md-6 mb-4">
-                                  <div class="card profile-card">
-                                      <div class="card-body">
-                                          <div class="d-flex justify-content-between align-items-center">
-                                              <div>
-                                                  <h5 class="card-title"><?= htmlspecialchars($profilo['Nome']) ?></h5>
-                                                  <ul class="list-unstyled mb-0">
-                                                      <?php foreach ($profilo['Skills'] as $skill): ?>
-                                                          <li><?= htmlspecialchars($skill['Competenza_Skill']) ?> - Livello: <?= (int)$skill['Livello'] ?></li>
-                                                      <?php endforeach; ?>
-                                                  </ul>
-                                              </div>
-                                              <form method="POST" class="ms-3">
-                                                  <input type="hidden" name="eliminaProfilo" value="<?= htmlspecialchars($profilo['Id']) ?>">
-                                                  <button type="submit" class="btn btn-danger btn-sm">Rimuovi</button>
-                                              </form>
-                                          </div>
-                                          <!-- Sezione candidature -->
-                                          <?php if (!empty($profilo['Candidature'])): ?>
-                                              <?php 
-                                                  $candidaturaAccettata = false;
-                                                  foreach ($profilo['Candidature'] as $candidatura) {
-                                                      if ($candidatura['Stato'] === 'Accettata') {
-                                                          $candidaturaAccettata = true;
-                                                          break;
-                                                      }
-                                                  }
-                                              ?>
-                                              <?php if ($candidaturaAccettata): ?>
-                                                  <p class="text-success">Una candidatura è già stata accettata per questo profilo. Non è possibile accettare altre candidature.</p>
-                                              <?php else: ?>
-                                                  <table class="table mt-3">
-                                                      <thead>
-                                                          <tr>
-                                                              <th>Utente</th>
-                                                              <th>Stato</th>
-                                                              <th>Azioni</th>
-                                                          </tr>
-                                                      </thead>
-                                                      <tbody>
-                                                          <?php foreach ($profilo['Candidature'] as $candidatura): ?>
-                                                              <tr>
-                                                                  <td><?= htmlspecialchars($candidatura['Nickname']) ?></td>
-                                                                  <td><?= htmlspecialchars($candidatura['Stato']) ?></td>
-                                                                  <td>
-                                                                      <?php if ($candidatura['Stato'] === 'In attesa'): ?>
-                                                                          <form method="POST" class="d-inline">
-                                                                              <input type="hidden" name="gestisciCandidatura" value="1">
-                                                                              <input type="hidden" name="idCandidatura" value="<?= htmlspecialchars($candidatura['Id']) ?>">
-                                                                              <button type="submit" name="stato" value="Accettata" class="btn btn-success btn-sm">Accetta</button>
-                                                                              <button type="submit" name="stato" value="Rifiutata" class="btn btn-danger btn-sm">Rifiuta</button>
-                                                                          </form>
-                                                                      <?php endif; ?>
-                                                                  </td>
-                                                              </tr>
-                                                          <?php endforeach; ?>
-                                                      </tbody>
-                                                  </table>
-                                              <?php endif; ?>
-                                          <?php else: ?>
-                                              <p class="mt-3">Nessuna candidatura per questo profilo.</p>
-                                          <?php endif; ?>
-                                      </div>
-                                  </div>
-                              </div>
-                          <?php endforeach; ?>
-                      </div>
-                  </div>
-              </div>
+            <?php
+            // Aggrega i profili, le competenze e le candidature
+            $profiliAggregati = [];
+            foreach ($profili as $row) {
+                $idProfilo = $row['Id'];
+                if (!isset($profiliAggregati[$idProfilo])) {
+                    $profiliAggregati[$idProfilo] = [
+                        'Id' => $idProfilo,
+                        'Nome' => $row['Nome'],
+                        'Skills' => [],
+                        'Candidature' => ottieniCandidaturePerProfilo($idProfilo) // Ottieni candidature per il profilo
+                    ];
+                }
+                if (!empty($row['Competenza_Skill'])) {
+                    $profiliAggregati[$idProfilo]['Skills'][] = [
+                        'Competenza_Skill' => $row['Competenza_Skill'],
+                        'Livello' => $row['Livello']
+                    ];
+                }
+            }
+            ?>
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Lista dei profili</h5>
+                    <div class="row">
+                        <?php foreach ($profiliAggregati as $profilo): ?>
+                            <div class="col-md-6 mb-4">
+                                <div class="card profile-card">
+                                    <div class="card-body">
+                                        <div class="d-flex justify-content-between align-items-center">
+                                            <div>
+                                                <h5 class="card-title"><?= htmlspecialchars($profilo['Nome']) ?></h5>
+                                                <ul class="list-unstyled mb-0">
+                                                    <?php foreach ($profilo['Skills'] as $skill): ?>
+                                                        <li><?= htmlspecialchars($skill['Competenza_Skill']) ?> - Livello: <?= (int)$skill['Livello'] ?></li>
+                                                    <?php endforeach; ?>
+                                                </ul>
+                                            </div>
+                                            <form method="POST" class="ms-3">
+                                                <input type="hidden" name="eliminaProfilo" value="<?= htmlspecialchars($profilo['Id']) ?>">
+                                                <button type="submit" class="btn btn-danger btn-sm">Rimuovi</button>
+                                            </form>
+                                        </div>
+                                        <?php if (!empty($profilo['Candidature'])): ?>
+                                            <table class="table mt-3">
+                                                <thead>
+                                                    <tr>
+                                                        <th>Utente</th>
+                                                        <th>Stato</th>
+                                                        <th>Azioni</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    <?php foreach ($profilo['Candidature'] as $candidatura): ?>
+                                                        <tr>
+                                                            <td><?= htmlspecialchars($candidatura['Nickname']) ?></td>
+                                                            <td><?= htmlspecialchars($candidatura['Stato']) ?></td>
+                                                            <td>
+                                                                <?php if ($candidatura['Stato'] === 'In attesa'): ?>
+                                                                    <form method="POST" class="d-inline">
+                                                                        <input type="hidden" name="gestisciCandidatura" value="1">
+                                                                        <input type="hidden" name="idCandidatura" value="<?= htmlspecialchars($candidatura['Id']) ?>">
+                                                                        <button type="submit" name="stato" value="Accettata" class="btn btn-success btn-sm">Accetta</button>
+                                                                        <button type="submit" name="stato" value="Rifiutata" class="btn btn-danger btn-sm">Rifiuta</button>
+                                                                    </form>
+                                                                <?php endif; ?>
+                                                            </td>
+                                                        </tr>
+                                                    <?php endforeach; ?>
+                                                </tbody>
+                                            </table>
+                                        <?php else: ?>
+                                            <p class="mt-3">Nessuna candidatura per questo profilo.</p>
+                                        <?php endif; ?>
+                                    </div>
+                                </div>
+                            </div>
+                        <?php endforeach; ?>
+                    </div>
+                </div>
+            </div>
           <?php else: ?>
               <p>Nessun profilo disponibile per questo progetto.</p>
           <?php endif; ?>
