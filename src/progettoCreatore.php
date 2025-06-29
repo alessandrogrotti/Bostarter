@@ -147,7 +147,7 @@ include_once 'navbar.php';
         <div class="alert alert-secondary mt-3">Il progetto è chiuso per i finanziamenti.</div>
       <?php endif; ?>
     </div>
-
+    
     <div id="Reward" class="mb-5">
       <div id="inserimentoReward">
         <?php if (isLoggedIn() && $_SESSION['id'] === $progetto['Email_Creatore']): ?>

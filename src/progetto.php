@@ -1,11 +1,7 @@
 <?php
-include_once 'connection.php';
 include_once 'mongodb.php';
 include_once 'auth.php';
 include_once 'mysql.php';
-
-$conn = getMySQLConnection();
-$logCollection = getMongoDBConnection();
 
 $nomeProgetto = isset($_GET['nome']) ? urldecode(trim($_GET['nome'])) : '';
 if ($nomeProgetto === '') {
