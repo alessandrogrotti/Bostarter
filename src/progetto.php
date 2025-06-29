@@ -75,7 +75,7 @@ if (!$progetto) {
     die("Progetto non trovato o non più aperto.");
 }
 
-$fotoProgetto = getFotoProgetto($nomeProgetto);
+$fotoProgetto = ottieniFotoProgetto($nomeProgetto);
 $rewards = getRewardsProgetto($nomeProgetto);
 $comments = getCommentiProgetto($nomeProgetto);
 $profili = ottieniProfiliPerProgetto($nomeProgetto);
@@ -114,9 +114,9 @@ include_once 'navbar.php';
         <p><?= htmlspecialchars($progetto["Descrizione"]) ?></p>
         <?php if (!empty($fotoProgetto)): ?>
         <div class="row mt-4">
-          <?php foreach ($fotoProgetto as $foto): ?>
+          <?php foreach ($fotoProgetto as $foto => $fotoUrl): ?>
             <div class="col-md-4 mb-3">
-              <img src="<?= htmlspecialchars($foto['Valore']) ?>" alt="Foto progetto" class="img-fluid rounded shadow" style="width: 100%; max-width: 500px; height: auto;">
+              <img src="<?= htmlspecialchars($fotoUrl) ?>" alt="Foto progetto" class="img-fluid rounded shadow" style="width: 100%; max-width: 500px; height: auto;">
             </div>
           <?php endforeach; ?>
         </div>

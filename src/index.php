@@ -81,7 +81,7 @@ $vistaFinanziatori = OttieniListaFinanziatori();
                   <?php endif; ?>
                 </div>
               <?php else: ?>
-                <img src="placeholder.jpg" class="card-img-top" alt="Nessuna immagine" style="object-fit: cover; height: 200px;">
+                <img class="card-img-top" style="object-fit: cover; height: 200px;">
               <?php endif; ?>
 
               <div class="card-body">
