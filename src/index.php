@@ -3,11 +3,9 @@ include_once 'auth.php';
 include_once 'connection.php';
 include_once 'mongodb.php';
 include_once 'mysql.php';
-
 include_once 'navbar.php';
 
-$mysqlConn = getMySQLConnection();
-$logCollection = getMongoDBConnection();
+$errorMessage = '';
 
 writeLog('Visita homepage', 'Accesso alla homepage da parte di un utente');
 
@@ -15,17 +13,39 @@ try {
     $progetti = ottieniProgettiDisponibili();
 
     foreach ($progetti as &$progetto) {
-        $progetto['Foto'] = ottieniFotoProgetto($progetto['Nome']);
+        try {
+            $progetto['Foto'] = ottieniFotoProgetto($progetto['Nome']);
+        } catch (Exception $e) {
+            writeLog('Errore caricamento foto progetto', ['errore' => $e->getMessage()]);
+            $errorMessage = $e->getMessage();
+        }
     }
     unset($progetto);
-} catch (PDOException $e) {
+} catch (Exception $e) {
     writeLog('Errore caricamento homepage', ['errore' => $e->getMessage()]);
-    die("Errore durante il caricamento dei dati: " . $e->getMessage());
+    $errorMessage = $e->getMessage();
 }
 
-$vistaAffidabilità = OttieniListaAffidabilità();
-$vistaProgetti = OttieniListaProgetti();
-$vistaFinanziatori = OttieniListaFinanziatori();
+try {
+    $vistaAffidabilità = OttieniListaAffidabilità();
+} catch (Exception $e) {
+    writeLog('Errore caricamento classifica affidabilità', ['errore' => $e->getMessage()]);
+    $errorMessage = $e->getMessage();
+}
+
+try {
+    $vistaProgetti = OttieniListaProgetti();
+} catch (Exception $e) {
+    writeLog('Errore caricamento classifica progetti', ['errore' => $e->getMessage()]);
+    $errorMessage = $e->getMessage();
+}
+
+try {
+    $vistaFinanziatori = OttieniListaFinanziatori();
+} catch (Exception $e) {
+    writeLog('Errore caricamento classifica finanziatori', ['errore' => $e->getMessage()]);
+    $errorMessage = $e->getMessage();
+}
 
 ?>
 <!DOCTYPE html>
@@ -45,6 +65,12 @@ $vistaFinanziatori = OttieniListaFinanziatori();
     <p class="lead text-white-50 animate-fadein" style="animation-delay: 0.2s">Scopri i progetti più innovativi e sostieni le idee che ti appassionano</p>
   </div>
 </header>
+
+<?php if ($errorMessage): ?>
+  <div class="alert alert-danger m-4 ">
+    <?= htmlspecialchars($errorMessage) ?>
+  </div>      
+<?php endif; ?>
 
 <main class="container my-5">
   <section class="mb-5 animate-fadein" style="animation-delay: 0.4s">

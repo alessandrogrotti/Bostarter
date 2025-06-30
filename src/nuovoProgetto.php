@@ -25,41 +25,43 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $tipo = isset($_POST['tipo']) ? $_POST['tipo'] : null;
 
     if (!$tipo) {
-        die('Errore: scegli una tipologia (Software o Hardware).');
-    }
+        $message = 'Errore: scegli una tipologia (Software o Hardware).';
+    } else {
+        try {
+            inserisciProgetto($nome, $_SESSION['id'], $descrizione, $dataLimite, $budget, $tipo);
 
-    try {
-        inserisciProgetto($nome, $_SESSION['id'], $descrizione, $dataLimite, $budget, $tipo);
+            if (isset($_FILES['foto']) && count($_FILES['foto']['name']) > 0) {
+                foreach ($_FILES['foto']['tmp_name'] as $index => $tmpName) {
+                    if ($_FILES['foto']['error'][$index] === UPLOAD_ERR_OK) {
+                        $originalName = basename($_FILES['foto']['name'][$index]);
+                        $extension = strtolower(pathinfo($originalName, PATHINFO_EXTENSION));
 
-        if (isset($_FILES['foto']) && count($_FILES['foto']['name']) > 0) {
-            foreach ($_FILES['foto']['tmp_name'] as $index => $tmpName) {
-                if ($_FILES['foto']['error'][$index] === UPLOAD_ERR_OK) {
-                    $originalName = basename($_FILES['foto']['name'][$index]);
-                    $extension = strtolower(pathinfo($originalName, PATHINFO_EXTENSION));
+                        if (in_array($extension, ['jpg', 'jpeg', 'png', 'gif'])) {
+                            $newFileName = uniqid('img_', true) . '.' . $extension;
+                            $destinationPath = $uploadDir . $newFileName;
 
-                    if (in_array($extension, ['jpg', 'jpeg', 'png', 'gif'])) {
-                        $newFileName = uniqid('img_', true) . '.' . $extension;
-                        $destinationPath = $uploadDir . $newFileName;
-
-                        if (move_uploaded_file($tmpName, $destinationPath)) {
-                            inserisciFotoProgetto($destinationPath, $nome);
+                            if (move_uploaded_file($tmpName, $destinationPath)) {
+                                inserisciFotoProgetto($destinationPath, $nome);
+                            }
                         }
                     }
                 }
             }
-        }
 
-        writeLog('Inserimento progetto', "Progetto \"$nome\" inserito con successo");
-        $message = 'Progetto inserito con successo!';
-    } catch (Exception $e) {
-        $message = "Errore durante l'inserimento" ;
-    } catch (PDOException $e) {
-      if (isset($e->errorInfo[1]) && $e->errorInfo[1] == 1644) {
-          $message = "Errore durante l'inserimento: Dati non validi: controlla Email_Creatore, Tipo o Budget > 0";
-      } else {
-          $message = "Errore!";
-      }
-  }
+            writeLog('Inserimento progetto', "Progetto \"$nome\" inserito con successo");
+            $message = 'Progetto inserito con successo!';
+        } catch (PDOException $e) {
+            if (isset($e->errorInfo[1]) && $e->errorInfo[1] == 1644) {
+                $message = "Errore durante l'inserimento: Dati non validi: controlla Email_Creatore, Tipo o Budget > 0";
+            } else {
+                writeLog('Errore PDO', ['errore' => $e->getMessage()]);
+                $message = "Errore durante l'inserimento.";
+            }
+        } catch (Exception $e) {
+            writeLog('Errore generico', ['errore' => $e->getMessage()]);
+            $message = "Errore durante l'inserimento: " . $e->getMessage();
+        }
+    }
 }
 ?>
 <!DOCTYPE html>
@@ -77,7 +79,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <h2 class="mb-4">Nuovo Progetto</h2>
 
     <?php if ($message): ?>
-      <div class="alert alert-success" role="alert">
+      <div class="alert alert-danger" role="alert">
         <?= htmlspecialchars($message) ?>
       </div>
     <?php endif; ?>

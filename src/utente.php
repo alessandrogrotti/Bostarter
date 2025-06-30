@@ -9,45 +9,46 @@ requireLogin();
 $email = $_SESSION['id'];
 $message = "";
 
-$userData = ottieniDatiUtente($email);
-$userSkills = ottieniSkillUtente($email);
-$availableSkills = ottieniCompetenzeDisponibili($email);
-$userApplications = ottieniCandidatureUtente($email);
+try {
+    $userData = ottieniDatiUtente($email);
+    $userSkills = ottieniSkillUtente($email);
+    $availableSkills = ottieniCompetenzeDisponibili($email);
+    $userApplications = ottieniCandidatureUtente($email);
+} catch (Exception $e) {
+    writeLog('Errore caricamento dati utente', ['errore' => $e->getMessage()]);
+    $message = "Errore durante il caricamento dei dati: " . htmlspecialchars($e->getMessage());
+}
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-  if (isset($_POST['skill'], $_POST['level'])) {
-      $selectedSkill = $_POST['skill'];
-      $selectedLevel = $_POST['level'];
+    try {
+        if (isset($_POST['skill'], $_POST['level'])) {
+            $selectedSkill = $_POST['skill'];
+            $selectedLevel = $_POST['level'];
 
-      if (!empty($selectedSkill) && !empty($selectedLevel)) {
-          try {
-              aggiungiSkillUtente($email, $selectedSkill, $selectedLevel);
-              $message = "Skill aggiunta con successo!";
-              writeLog("Skill aggiunta", ["email" => $email, "skill" => $selectedSkill]);
-          } catch (Exception $e) {
-              $message = "Errore nell'aggiunta della skill: " . $e->getMessage();
-          }
-      } else {
-          $message = "Seleziona una skill e un livello.";
-      }
-  }
+            if (!empty($selectedSkill) && !empty($selectedLevel)) {
+                aggiungiSkillUtente($email, $selectedSkill, $selectedLevel);
+                $message = "Skill aggiunta con successo!";
+                writeLog("Skill aggiunta", ["email" => $email, "skill" => $selectedSkill]);
+            } else {
+                throw new Exception("Seleziona una skill e un livello.");
+            }
+        }
 
-  if (isset($_POST['remove_skill'])) {
-      $skillToRemove = $_POST['remove_skill'];
+        if (isset($_POST['remove_skill'])) {
+            $skillToRemove = $_POST['remove_skill'];
+            rimuoviSkillUtente($email, $skillToRemove);
+            $message = "Skill rimossa con successo!";
+            writeLog("Skill rimossa", ["email" => $email, "skill" => $skillToRemove]);
+        }
 
-      try {
-          rimuoviSkillUtente($email, $skillToRemove);
-          $message = "Skill rimossa con successo!";
-          writeLog("Skill rimossa", ["email" => $email, "skill" => $skillToRemove]);
-      } catch (Exception $e) {
-          $message = "Errore nella rimozione della skill: " . $e->getMessage();
-      }
-  }
-
-  if (!isset($_POST['logout'])) {
-    header("Location: utente.php");
-    exit;
-  }
+        if (!isset($_POST['logout'])) {
+            header("Location: utente.php");
+            exit;
+        }
+    } catch (Exception $e) {
+        writeLog('Errore gestione richiesta POST', ['errore' => $e->getMessage()]);
+        $message = "Errore: " . htmlspecialchars($e->getMessage());
+    }
 }
 
 include_once 'navbar.php';

@@ -3,6 +3,9 @@ DROP DATABASE IF EXISTS bostarter_db;
 CREATE DATABASE IF NOT EXISTS bostarter_db;
 USE bostarter_db;
 
+-- Attivazione eventi
+SET GLOBAL event_scheduler = ON;
+
 -- Creazione delle tabelle
 CREATE TABLE UTENTE (
     Email VARCHAR(255) PRIMARY KEY,
@@ -570,19 +573,30 @@ BEGIN
         SIGNAL SQLSTATE '45002'
         SET MESSAGE_TEXT = 'Hai già inviato una candidatura per questo profilo';
     END IF;
+    
+    IF EXISTS (
+		SELECT 1
+        FROM PROFILO as p, PROGETTO as pr
+        WHERE p.Nome_ProgettoSoftware = pr.Nome AND pr.Stato = 'Chiuso' AND p.Id = IdProfilo
+    )THEN
+        SIGNAL SQLSTATE '45004'
+        SET MESSAGE_TEXT = 'Il progetto è chiuso.';
+    END IF;
 
     IF EXISTS (
         SELECT 1
         FROM RICHIEDE as r, POSSIEDE as p
         WHERE r.Competenza_Skill = p.Competenza_Skill AND p.Email_Utente = EmailUtente
-        AND (p.Livello < r.Livello)
+        AND (p.Livello >= r.Livello) AND IdProfilo = r.Id_Profilo
     ) THEN
+		INSERT INTO CANDIDATURA (Stato, Email_Utente, Id_Profilo)
+		VALUES ("In attesa", EmailUtente, IdProfilo);
+	ELSE
         SIGNAL SQLSTATE '45003'
         SET MESSAGE_TEXT = 'Non possiedi le competenze richieste o il livello minimo per candidarti a questo profilo';
     END IF;
 
-    INSERT INTO CANDIDATURA (Stato, Email_Utente, Id_Profilo)
-    VALUES ("In attesa", EmailUtente, IdProfilo);
+    
 END
 $ DELIMITER;
 
@@ -725,8 +739,6 @@ END;
 $ DELIMITER;
 
 -- Evento
-SET GLOBAL event_scheduler = ON;
-
 DELIMITER $
 CREATE EVENT chiusura_progetti_scaduti
 ON SCHEDULE EVERY 1 DAY

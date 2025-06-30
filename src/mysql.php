@@ -8,7 +8,7 @@ function inserisciCompetenza($nomeCompetenza) {
         $stmt->bindParam(1, $nomeCompetenza, PDO::PARAM_STR);
         return $stmt->execute();
     } catch (Exception $e) {
-        return false;
+        throw new Exception("Errore durante l'inserimento della competenza.");
     }
 }
 
@@ -19,7 +19,7 @@ function eliminaCompetenza($competenza) {
         $stmt->bindParam(1, $competenza, PDO::PARAM_STR);
         return $stmt->execute();
     } catch (Exception $e) {
-        return false;
+        throw new Exception("Errore durante l'eliminazione della competenza.");
     }
 }
 
@@ -30,7 +30,7 @@ function ottieniCompetenze() {
         $stmt->execute();
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     } catch (Exception $e) {
-        return [];
+        throw new Exception("Errore durante l'ottenimento delle competenze.");
     }
 }
 
@@ -45,7 +45,7 @@ function inserisciComponente($nome, $nomeProgettoHardware, $descrizione, $prezzo
         $stmt->bindParam(5, $quantita, PDO::PARAM_INT);
         return $stmt->execute();
     } catch (Exception $e) {
-        return false;
+        throw new Exception("Errore durante l'inserimento del componente.");
     }
 }
 
@@ -57,7 +57,7 @@ function ottieniComponentiPerProgetto($nomeProgettoHardware) {
         $stmt->execute();
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     } catch (Exception $e) {
-        return [];
+        throw new Exception("Errore durante l'ottenimento dei componenti per il progetto.");
     }
 }
 
@@ -69,7 +69,7 @@ function eliminaComponente($nome, $nomeProgettoHardware) {
         $stmt->bindParam(2, $nomeProgettoHardware, PDO::PARAM_STR);
         return $stmt->execute();
     } catch (Exception $e) {
-        return false;
+        throw new Exception("Errore durante l'eliminazione del componente.");
     }
 }
 
@@ -80,7 +80,7 @@ function eliminaProfilo($id) {
         $stmt->bindParam(1, $id, PDO::PARAM_INT);
         return $stmt->execute();
     } catch (Exception $e) {
-        return false;
+        throw new Exception("Errore durante l'eliminazione del profilo.");
     }
 }
 
@@ -92,7 +92,7 @@ function ottieniProfiliPerProgetto($nomeProgettoSoftware) {
         $stmt->execute();
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     } catch (Exception $e) {
-        return [];
+        throw new Exception("Errore durante l'ottenimento dei profili per il progetto.");
     }
 }
 
@@ -104,7 +104,7 @@ function OttieniListaAffidabilità() {
         $stmt->execute();
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     } catch (Exception $e) {
-        return [];
+        throw new Exception("Errore durante l'ottenimento della classifica affidabilità.");
     }
 }
 
@@ -116,7 +116,7 @@ function OttieniListaProgetti() {
         $stmt->execute();
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     } catch (Exception $e) {
-        return [];
+        throw new Exception("Errore durante l'ottenimento della classifica progetti.");
     }
 }
 
@@ -127,7 +127,7 @@ function OttieniListaFinanziatori() {
         $stmt->execute();
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     } catch (Exception $e) {
-        return [];
+        throw new Exception("Errore durante l'ottenimento della lista finanziatori.");
     }
 }
 
@@ -139,7 +139,7 @@ function ottieniCandidaturePerProfilo($idProfilo) {
         $stmt->execute();
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     } catch (Exception $e) {
-        return [];
+        throw new Exception("Errore durante l'ottenimento delle candidature per il profilo.");
     }
 }
 
@@ -151,7 +151,7 @@ function gestisciCandidatura($idCandidatura, $stato) {
         $stmt->bindParam(2, $stato, PDO::PARAM_STR); 
         return $stmt->execute();
     } catch (Exception $e) {
-        return false;
+        throw new Exception("Errore durante la gestione della candidatura.");
     }
 }
 
@@ -163,7 +163,7 @@ function ottieniRewardPerProgetto($nomeProgetto) {
         $stmt->execute();
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     } catch (Exception $e) {
-        throw $e;
+        throw new Exception("Errore durante l'ottenimento dei reward per il progetto.");
     }
 }
 
@@ -177,7 +177,7 @@ function eseguiFinanziamento($emailUtente, $importo, $nomeProgetto, $codiceRewar
         $stmt->bindParam(4, $codiceReward, PDO::PARAM_STR);
         $stmt->execute();
     } catch (Exception $e) {
-        throw $e;
+        throw new Exception("Errore durante l'esecuzione del finanziamento.");
     }
 }
 
@@ -187,7 +187,7 @@ function ottieniProgettiDisponibili() {
         $stmt = $conn->query("CALL OttieniProgettiDisponibili()");
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     } catch (Exception $e) {
-        throw $e;
+        throw new Exception("Errore durante l'ottenimento dei progetti disponibili.");
     }
 }
 
@@ -199,7 +199,7 @@ function ottieniFotoProgetto($nomeProgetto) {
         $stmt->execute();
         return $stmt->fetchAll(PDO::FETCH_COLUMN);
     } catch (Exception $e) {
-        return [];
+        throw new Exception("Errore durante l'ottenimento delle foto del progetto.");
     }
 }
 
@@ -211,7 +211,7 @@ function ottieniProgettiCreatore($emailCreatore) {
         $stmt->execute();
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     } catch (Exception $e) {
-        throw $e;
+        throw new Exception("Errore durante l'ottenimento dei progetti del creatore.");
     }
 }
 
@@ -224,7 +224,7 @@ function verificaProgettoCreatore($nomeProgetto, $emailCreatore) {
         $stmt->execute();
         return $stmt->fetchColumn() > 0;
     } catch (Exception $e) {
-        return false;
+        throw new Exception("Errore durante la verifica del progetto del creatore.");
     }
 }
 
@@ -238,7 +238,7 @@ function inserisciReward($descrizione, $foto, $nomeProgetto, $emailCreatore) {
         $stmt->bindParam(4, $emailCreatore, PDO::PARAM_STR);
         $stmt->execute();
     } catch (Exception $e) {
-        throw $e;
+        throw new Exception("Errore durante l'inserimento del reward.");
     }
 }
 
@@ -253,8 +253,8 @@ function inserisciProgetto($nome, $emailCreatore, $descrizione, $dataLimite, $bu
         $stmt->bindParam(5, $budget, PDO::PARAM_STR);
         $stmt->bindParam(6, $tipo, PDO::PARAM_STR);
         $stmt->execute();
-    } catch (PDOException $e) {
-        throw $e;
+    } catch (Exception $e) {
+        throw new Exception("Errore durante l'inserimento del progetto.");
     }
 }
 
@@ -266,7 +266,7 @@ function inserisciFotoProgetto($fotoPath, $nomeProgetto) {
         $stmt->bindParam(2, $nomeProgetto, PDO::PARAM_STR);
         $stmt->execute();
     } catch (Exception $e) {
-        throw $e;
+        throw new Exception("Errore durante l'inserimento della foto del progetto.");
     }
 }
 
@@ -278,7 +278,7 @@ function ottieniDettagliProgetto($nomeProgetto) {
         $stmt->execute();
         return $stmt->fetch(PDO::FETCH_ASSOC);
     } catch (Exception $e) {
-        return null;
+        throw new Exception("Errore durante l'ottenimento dei dettagli del progetto.");
     }
 }
 
@@ -292,7 +292,7 @@ function rispondiACommento($testo, $email, $nomeProgetto, $idCommento) {
         $stmt->bindParam(4, $idCommento, PDO::PARAM_INT);
         $stmt->execute();
     } catch (Exception $e) {
-        throw $e;
+        throw new Exception("Errore durante l'invio della risposta al commento.");
     }
 }
 
@@ -305,7 +305,7 @@ function inserisciCommento($testo, $email, $nomeProgetto) {
         $stmt->bindParam(3, $nomeProgetto, PDO::PARAM_STR);
         $stmt->execute();
     } catch (Exception $e) {
-        throw $e;
+        throw new Exception("Errore durante l'inserimento del commento.");
     }
 }
 
@@ -316,7 +316,7 @@ function inviaCandidatura($emailUtente, $idProfilo) {
         $stmt->bindParam(1, $emailUtente, PDO::PARAM_STR);
         $stmt->bindParam(2, $idProfilo, PDO::PARAM_INT);
         $stmt->execute();
-    } catch (PDOException $e) {
+    } catch (Exception $e) {
         if ($e->getCode() === '45001') {
             throw new Exception("Un'altra candidatura è già stata accettata per questo profilo.");
         } elseif ($e->getCode() === '45002') {
@@ -324,9 +324,9 @@ function inviaCandidatura($emailUtente, $idProfilo) {
         } elseif ($e->getCode() === '45003') {
             throw new Exception("Non possiedi le competenze richieste o il livello minimo per candidarti a questo profilo.");
         } elseif ($e->getCode() === '45004') {
-            throw new Exception("Non puoi candidarti a un profilo che richiede competenze che non possiedi.");
+            throw new Exception("Il progetto è chiuso.");
         } else {
-            throw $e;
+            throw new Exception("Errore durante l'invio della candidatura.");
         }
     }
 }
@@ -339,7 +339,7 @@ function ottieniCommentiProgetto($nomeProgetto) {
         $stmt->execute();
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     } catch (Exception $e) {
-        return [];
+        throw new Exception("Errore durante l'ottenimento dei commenti del progetto.");
     }
 }
 
@@ -351,7 +351,7 @@ function ottieniUtente($email) {
         $stmt->execute();
         return $stmt->fetch(PDO::FETCH_ASSOC);
     } catch (Exception $e) {
-        throw $e;
+        throw new Exception("Errore durante l'ottenimento dei dati dell'utente.");
     }
 }
 
@@ -363,7 +363,7 @@ function verificaCreatore($email) {
         $stmt->execute();
         return (bool)$stmt->fetch();
     } catch (Exception $e) {
-        throw $e;
+        throw new Exception("Errore durante la verifica del creatore.");
     }
 }
 
@@ -375,7 +375,7 @@ function verificaAdmin($email) {
         $stmt->execute();
         return (bool)$stmt->fetch();
     } catch (Exception $e) {
-        throw $e;
+        throw new Exception("Errore durante la verifica dell'admin.");
     }
 }
 
@@ -388,7 +388,7 @@ function ottieniCodiceAdmin($email) {
         $result = $stmt->fetch(PDO::FETCH_ASSOC);
         return $result['Codice_Sicurezza'] ?? null;
     } catch (Exception $e) {
-        throw $e;
+        throw new Exception("Errore durante l'ottenimento del codice admin.");
     }
 }
 
@@ -424,9 +424,9 @@ function registraUtente($email, $nickname, $password, $nome, $cognome, $luogoNas
             ]);
         }
 
-        return $codiceSicurezzaChiaro; // Restituisci il codice di sicurezza (null se non è admin)
+        return $codiceSicurezzaChiaro;
     } catch (Exception $e) {
-        throw $e;
+        throw new Exception("Errore durante la registrazione dell'utente.");
     }
 }
 
@@ -438,7 +438,7 @@ function ottieniDatiUtente($email) {
         $stmt->execute();
         return $stmt->fetch(PDO::FETCH_ASSOC);
     } catch (Exception $e) {
-        throw $e;
+        throw new Exception("Errore durante l'ottenimento dei dati dell'utente.");
     }
 }
 
@@ -450,7 +450,7 @@ function ottieniSkillUtente($email) {
         $stmt->execute();
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     } catch (Exception $e) {
-        throw $e;
+        throw new Exception("Errore durante l'ottenimento delle skill dell'utente.");
     }
 }
 
@@ -462,7 +462,7 @@ function ottieniCompetenzeDisponibili($email) {
         $stmt->execute();
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     } catch (Exception $e) {
-        throw $e;
+        throw new Exception("Errore durante l'ottenimento delle competenze disponibili.");
     }
 }
 
@@ -474,7 +474,7 @@ function ottieniCandidatureUtente($email) {
         $stmt->execute();
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     } catch (Exception $e) {
-        throw $e;
+        throw new Exception("Errore durante l'ottenimento delle candidature dell'utente.");
     }
 }
 
@@ -487,7 +487,7 @@ function aggiungiSkillUtente($email, $competenza, $livello) {
         $stmt->bindParam(3, $livello, PDO::PARAM_INT);
         $stmt->execute();
     } catch (Exception $e) {
-        throw $e;
+        throw new Exception("Errore durante l'aggiunta della skill all'utente.");
     }
 }
 
@@ -499,7 +499,7 @@ function rimuoviSkillUtente($email, $competenza) {
         $stmt->bindParam(2, $competenza, PDO::PARAM_STR);
         $stmt->execute();
     } catch (Exception $e) {
-        throw $e;
+        throw new Exception("Errore durante la rimozione della skill dall'utente.");
     }
 }
 
@@ -538,7 +538,7 @@ function inserisciProfiloConCompetenze($nomeProfilo, $nomeProgetto, $skills, $le
 
         return true;
     } catch (Exception $e) {
-        return false;
+        throw new Exception("Errore durante l'inserimento del profilo con competenze.");
     }
 }
 
@@ -559,7 +559,7 @@ function ottieniProgettiConFoto() {
         }
         return $progetti;
     } catch (Exception $e) {
-        throw $e;
+        throw new Exception("Errore durante l'ottenimento dei progetti con foto.");
     }
 }
 
@@ -571,7 +571,7 @@ function getDettagliProgetto($nomeProgetto) {
         $stmt->execute();
         return $stmt->fetch(PDO::FETCH_ASSOC);
     } catch (Exception $e) {
-        throw $e;
+        throw new Exception("Errore durante l'ottenimento dei dettagli del progetto.");
     }
 }
 
@@ -583,7 +583,7 @@ function getCommentiProgetto($nomeProgetto) {
         $stmt->execute();
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     } catch (Exception $e) {
-        throw $e;
+        throw new Exception("Errore durante l'ottenimento dei commenti del progetto.");
     }
 }
 
@@ -595,7 +595,7 @@ function getRispostaCommento($idCommento) {
         $stmt->execute();
         return $stmt->fetch(PDO::FETCH_ASSOC);
     } catch (Exception $e) {
-        throw $e;
+        throw new Exception("Errore durante l'ottenimento della risposta al commento.");
     }
 }
 
@@ -607,7 +607,7 @@ function getFotoProgetto($nomeProgetto) {
         $stmt->execute();
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     } catch (Exception $e) {
-        throw $e;
+        throw new Exception("Errore durante l'ottenimento delle foto del progetto.");
     }
 }
 
@@ -619,7 +619,7 @@ function getRewardsProgetto($nomeProgetto) {
         $stmt->execute();
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     } catch (Exception $e) {
-        throw $e;
+        throw new Exception("Errore durante l'ottenimento dei reward del progetto.");
     }
 }
 
@@ -633,7 +633,7 @@ function inviaRispostaCommento($testo, $email, $nomeProgetto, $idCommento) {
         $stmt->bindParam(4, $idCommento, PDO::PARAM_INT);
         $stmt->execute();
     } catch (Exception $e) {
-        throw $e;
+        throw new Exception("Errore durante l'invio della risposta al commento.");
     }
 }
 
@@ -643,9 +643,9 @@ function getEmailCreatoreProgetto($nomeProgetto) {
         $stmt = $conn->prepare("CALL OttieniEmailCreatoreProgetto(?)");
         $stmt->bindParam(1, $nomeProgetto, PDO::PARAM_STR);
         $stmt->execute();
-        return $stmt->fetchColumn(); 
+        return $stmt->fetchColumn();
     } catch (Exception $e) {
-        throw $e;
+        throw new Exception("Errore durante l'ottenimento dell'email del creatore del progetto.");
     }
 }
 
@@ -658,7 +658,7 @@ function inviaCommento($testo, $email, $nomeProgetto) {
         $stmt->bindParam(3, $nomeProgetto, PDO::PARAM_STR);
         $stmt->execute();
     } catch (Exception $e) {
-        throw $e;
+        throw new Exception("Errore durante l'inserimento del commento.");
     }
 }
 
@@ -671,7 +671,7 @@ function verificaFinanziamentoOggi($emailUtente, $nomeProgetto) {
         $stmt->execute();
         return $stmt->fetchColumn() > 0;
     } catch (Exception $e) {
-        throw $e;
+        throw new Exception("Errore durante la verifica del finanziamento odierno.");
     }
 }
 

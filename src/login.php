@@ -3,6 +3,7 @@ include_once 'auth.php';
 include_once 'mongodb.php';
 
 $message = "";
+$errorMessage = '';
 
 if ($_SERVER["REQUEST_METHOD"] === "POST") {
     $email = trim($_POST['email']);
@@ -10,13 +11,17 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 
     writeLog('Tentativo di login', ['email' => $email]);
 
-    if (login($email, $password)) {
-        writeLog('Login riuscito', ['email' => $email]);
-        header("Location: utente.php");
-        exit();
-    } else {
-        writeLog('Login fallito', ['email' => $email]);
-        $message = "Credenziali non valide";
+    try {
+        if (login($email, $password)) {
+            writeLog('Login riuscito', ['email' => $email]);
+            header("Location: utente.php");
+            exit();
+        } else {
+            throw new Exception("Credenziali non valide");
+        }
+    } catch (Exception $e) {
+        writeLog('Errore login', ['email' => $email, 'errore' => $e->getMessage()]);
+        $errorMessage = $e->getMessage();
     }
 }
 ?>
@@ -45,9 +50,9 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
   <div class="row justify-content-center">
     <div class="col-lg-6">
 
-      <?php if (!empty($message)): ?>
+      <?php if (!empty($errorMessage)): ?>
         <div class="alert alert-danger animate-fadein" role="alert" style="animation-delay: 0.4s;">
-          <?= htmlspecialchars($message); ?>
+          <?= htmlspecialchars($errorMessage); ?>
         </div>
       <?php endif; ?>
 

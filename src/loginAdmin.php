@@ -2,21 +2,25 @@
 include_once 'auth.php';
 include_once 'mongodb.php';
 
-$message = "";
+$errorMessage = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $code = trim($_POST['password']);
 
     writeLog('Tentativo di accesso amministratore', ['codice' => $code]);
 
-    if (verifyAdminCode($code)) {
-        writeLog('Accesso amministratore riuscito', ['codice' => $code]);
-        $_SESSION['is_admin_verified'] = true;
-        header("Location: amministratore.php");
-        exit();
-    } else {
-        writeLog('Accesso amministratore fallito', ['codice' => $code]);
-        $message = "Codice di sicurezza errato.";
+    try {
+        if (verifyAdminCode($code)) {
+            writeLog('Accesso amministratore riuscito', ['codice' => $code]);
+            $_SESSION['is_admin_verified'] = true;
+            header("Location: amministratore.php");
+            exit();
+        } else {
+            throw new Exception("Codice di sicurezza errato.");
+        }
+    } catch (Exception $e) {
+        writeLog('Errore accesso amministratore', ['codice' => $code, 'errore' => $e->getMessage()]);
+        $errorMessage = $e->getMessage();
     }
 }
 ?>
@@ -45,9 +49,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   <div class="row justify-content-center">
     <div class="col-lg-6">
 
-      <?php if (!empty($message)): ?>
+      <?php if (!empty($errorMessage)): ?>
         <div class="alert alert-danger animate-fadein" role="alert" style="animation-delay: 0.4s;">
-          <?= htmlspecialchars($message); ?>
+          <?= htmlspecialchars($errorMessage); ?>
         </div>
       <?php endif; ?>
 

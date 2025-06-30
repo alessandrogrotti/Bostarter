@@ -12,7 +12,8 @@ $nome_progetto = isset($_GET['nome'])
 
 $rewards = [];
 $finanziamentoEffettuato = false;
-$message = "";
+$errorMessage = ""; 
+$errorMessage = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     try {
@@ -22,13 +23,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         $finanziamentoEffettuato = verificaFinanziamentoOggi($email_utente, $nome_progetto);
 
         if (empty($rewards)) {
-            $message = "Questo progetto non ha reward disponibili. Non è possibile effettuare finanziamenti.";
+            $errorMessage = "Questo progetto non ha reward disponibili. Non è possibile effettuare finanziamenti.";
         } elseif ($finanziamentoEffettuato) {
-            $message = "Hai già registrato un finanziamento per “{$nome_progetto}” oggi. Torna domani!";
+            $errorMessage = "Hai già registrato un finanziamento per “{$nome_progetto}” oggi. Torna domani!";
         }
-    } catch (PDOException $e) {
+    } catch (Exception $e) {
         writeLog('Errore query reward', ['progetto' => $nome_progetto, 'errore' => $e->getMessage()]);
-        die("Errore query reward: " . $e->getMessage());
+        $errorMessage = $e->getMessage();
     }
 }
 
@@ -42,7 +43,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $email_utente = $_SESSION['id'];
 
     if ($importo <= 0 || !$nome_progetto || !$codice_reward) {
-        $message = "Dati mancanti o non validi.";
+        $errorMessage = "Dati mancanti o non validi.";
         header("Location: finanziamento.php?nome=" . urlencode($nome_progetto));
         exit;
     }
@@ -56,13 +57,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     try {
         eseguiFinanziamento($email_utente, $importo, $nome_progetto, $codice_reward);
-        $message = "Finanziamento di €" . number_format($importo, 2) . " per “{$nome_progetto}” con reward “{$codice_reward}” registrato con successo.";
-    } catch (PDOException $e) {
-        if ($e->errorInfo[1] === 1062) {
-            $message = "Hai già registrato un finanziamento per “{$nome_progetto}” oggi. Torna domani!";
-        } else {
-            $message = "Errore durante il finanziamento";
-        }
+        $errorMessage = "Finanziamento di €" . number_format($importo, 2) . " per “{$nome_progetto}” con reward “{$codice_reward}” registrato con successo.";
+    } catch (Exception $e) {
         writeLog('Errore finanziamento', [
             'utente' => $email_utente,
             'progetto' => $nome_progetto,
@@ -70,15 +66,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             'importo' => $importo,
             'errore' => $e->getMessage()
         ]);
+        $errorMessage = $e->getMessage();
     }
 
     header("Location: progetto.php?nome=" . urlencode($nome_progetto));
     exit;
 }
 
-$progetto = getDettagliProgetto($nome_progetto);
-if (!$progetto) {
-    die("Progetto non trovato o non più aperto.");
+try {
+    $progetto = getDettagliProgetto($nome_progetto);
+    if (!$progetto) {
+        throw new Exception("Progetto non trovato o non più aperto.");
+    }
+} catch (Exception $e) {
+    writeLog('Errore caricamento progetto', ['progetto' => $nome_progetto, 'errore' => $e->getMessage()]);
+    $errorMessage = $e->getMessage();
 }
 ?>
 <?php
@@ -96,9 +98,9 @@ include 'navbar.php';
 </head>
 <body>
   <main class="container mt-5">
-    <?php if ($finanziamentoEffettuato): ?>
-      <div class="alert alert-success mb-4">
-        <?= $message ?>
+    <?php if ($errorMessage): ?>
+      <div class="alert alert-danger mb-4">
+        <?= htmlspecialchars($errorMessage) ?>
       </div>      
     <?php endif; ?>
 

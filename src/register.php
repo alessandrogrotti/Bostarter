@@ -6,26 +6,27 @@ $message = "";
 $codiceSicurezzaChiaro = "";
 
 if ($_SERVER["REQUEST_METHOD"] === "POST") {
-  $email = trim($_POST['email']);
-  $nickname = trim($_POST['nickname']);
-  $password = trim($_POST['password']);
-  $nome = trim($_POST['nome']);
-  $cognome = trim($_POST['cognome']);
-  $luogoNascita = trim($_POST['luogoNascita']);
-  $annoNascita = trim($_POST['annoNascita']);
-  $isCreator = isset($_POST['creator']) && $_POST['creator'] == 1;
-  $isAdministrator = isset($_POST['administrator']) && $_POST['administrator'] == 1;
+    $email = trim($_POST['email']);
+    $nickname = trim($_POST['nickname']);
+    $password = trim($_POST['password']);
+    $nome = trim($_POST['nome']);
+    $cognome = trim($_POST['cognome']);
+    $luogoNascita = trim($_POST['luogoNascita']);
+    $annoNascita = trim($_POST['annoNascita']);
+    $isCreator = isset($_POST['creator']) && $_POST['creator'] == 1;
+    $isAdministrator = isset($_POST['administrator']) && $_POST['administrator'] == 1;
 
-  try {
-      $codiceSicurezzaChiaro = registraUtente($email, $nickname, $password, $nome, $cognome, $luogoNascita, $annoNascita, $isCreator, $isAdministrator);
+    try {
+        $codiceSicurezzaChiaro = registraUtente($email, $nickname, $password, $nome, $cognome, $luogoNascita, $annoNascita, $isCreator, $isAdministrator);
 
-      if (!$isAdministrator) {
-          header("Location: login.php");
-          exit;
-      }
-  } catch (Exception $e) {
-      $message = "Errore nella registrazione: " . $e->getMessage();
-  }
+        if (!$isAdministrator) {
+            header("Location: login.php");
+            exit;
+        }
+    } catch (Exception $e) {
+        writeLog('Errore registrazione utente', ['errore' => $e->getMessage()]);
+        $message = "Errore nella registrazione: " . $e->getMessage();
+    }
 }
 
 include_once 'navbar.php';
@@ -56,14 +57,14 @@ include_once 'navbar.php';
 
       <?php if (!empty($message)): ?>
         <div class="alert alert-danger animate-fadein" role="alert" style="animation-delay: 0.4s;">
-          <?php echo htmlspecialchars($message); ?>
+          <?= $message; ?>
         </div>
       <?php endif; ?>
 
       <?php if (!empty($codiceSicurezzaChiaro)): ?>
         <div class="alert alert-success animate-fadein" role="alert" style="animation-delay: 0.4s;">
           Registrazione completata! Il tuo <strong>codice di sicurezza</strong> come Amministratore è:<br>
-          <code><?php echo $codiceSicurezzaChiaro; ?></code><br>
+          <code><?= htmlspecialchars($codiceSicurezzaChiaro); ?></code><br>
           <em>Conservalo con attenzione, non potrai più recuperarlo.</em>
         </div>
         <a href="login.php" class="btn btn-primary w-100">Vai al login</a>

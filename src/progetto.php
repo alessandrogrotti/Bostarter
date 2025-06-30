@@ -8,9 +8,14 @@ if ($nomeProgetto === '') {
     die("Nome progetto non specificato.");
 }
 
-$dettagliProgetto = getDettagliProgetto($nomeProgetto);
-if (!$dettagliProgetto) {
-    die("Progetto non trovato.");
+try {
+    $dettagliProgetto = getDettagliProgetto($nomeProgetto);
+    if (!$dettagliProgetto) {
+        throw new Exception("Progetto non trovato.");
+    }
+} catch (Exception $e) {
+    writeLog('Errore caricamento dettagli progetto', ['progetto' => $nomeProgetto, 'errore' => $e->getMessage()]);
+    die("Errore: " . $e->getMessage());
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['risposta']) && isset($_POST['id_commento'])) {
@@ -20,39 +25,41 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['risposta']) && isset(
     $emailUtente = $_SESSION['id'];
     $idCommento = intval($_POST['id_commento']);
 
-    $emailCreatore = getEmailCreatoreProgetto($nomeProgetto);
-    if ($emailCreatore !== $emailUtente) {
-        $_SESSION['error'] = "Solo il creatore del progetto può rispondere ai commenti.";
-        header("Location: progetto.php?nome=" . urlencode($nomeProgetto));
-        exit;
-    }
-
     try {
+        $emailCreatore = getEmailCreatoreProgetto($nomeProgetto);
+        if ($emailCreatore !== $emailUtente) {
+            throw new Exception("Solo il creatore del progetto può rispondere ai commenti.");
+        }
+
         inviaRispostaCommento($testoRisposta, $emailUtente, $nomeProgetto, $idCommento);
         writeLog('Risposta commento', "Utente $emailUtente ha risposto al commento $idCommento nel progetto $nomeProgetto");
         header("Location: progetto.php?nome=" . urlencode($nomeProgetto));
         exit;
     } catch (Exception $e) {
-        die("Errore nell'inserimento della risposta: " . $e->getMessage());
+        writeLog('Errore risposta commento', ['errore' => $e->getMessage()]);
+        $_SESSION['error'] = $e->getMessage();
+        header("Location: progetto.php?nome=" . urlencode($nomeProgetto));
+        exit;
     }
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['inviaCandidatura'])) {
-  requireLogin();
+    requireLogin();
 
-  $emailUtente = $_SESSION['id'];
-  $idProfilo = trim($_POST['inviaCandidatura']);
+    $emailUtente = $_SESSION['id'];
+    $idProfilo = trim($_POST['inviaCandidatura']);
 
-  try {
-      inviaCandidatura($emailUtente, $idProfilo);
-      $_SESSION['success'] = "Candidatura inviata con successo.";
-      header("Location: progetto.php?nome=" . urlencode($nomeProgetto));
-      exit;
-  } catch (Exception $e) {
-      $_SESSION['error'] = $e->getMessage();
-      header("Location: progetto.php?nome=" . urlencode($nomeProgetto));
-      exit;
-  }
+    try {
+        inviaCandidatura($emailUtente, $idProfilo);
+        $_SESSION['success'] = "Candidatura inviata con successo.";
+        header("Location: progetto.php?nome=" . urlencode($nomeProgetto));
+        exit;
+    } catch (Exception $e) {
+        writeLog('Errore invio candidatura', ['errore' => $e->getMessage()]);
+        $_SESSION['error'] = $e->getMessage();
+        header("Location: progetto.php?nome=" . urlencode($nomeProgetto));
+        exit;
+    }
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['commento'])) {
@@ -66,24 +73,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['commento'])) {
         header("Location: progetto.php?nome=" . urlencode($nomeProgetto));
         exit;
     } catch (Exception $e) {
-        die("Errore nell'inserimento del commento: " . $e->getMessage());
+        writeLog('Errore inserimento commento', ['errore' => $e->getMessage()]);
+        $_SESSION['error'] = $e->getMessage();
+        header("Location: progetto.php?nome=" . urlencode($nomeProgetto));
+        exit;
     }
 }
 
-$progetto = getDettagliProgetto($nomeProgetto);
-if (!$progetto) {
-    die("Progetto non trovato o non più aperto.");
+try {
+    $fotoProgetto = ottieniFotoProgetto($nomeProgetto);
+    $rewards = getRewardsProgetto($nomeProgetto);
+    $comments = getCommentiProgetto($nomeProgetto);
+    $profili = ottieniProfiliPerProgetto($nomeProgetto);
+    $componenti = ottieniComponentiPerProgetto($nomeProgetto);
+} catch (Exception $e) {
+    writeLog('Errore caricamento dati progetto', ['progetto' => $nomeProgetto, 'errore' => $e->getMessage()]);
+    die("Errore: " . $e->getMessage());
 }
-
-$fotoProgetto = ottieniFotoProgetto($nomeProgetto);
-$rewards = getRewardsProgetto($nomeProgetto);
-$comments = getCommentiProgetto($nomeProgetto);
-$profili = ottieniProfiliPerProgetto($nomeProgetto);
-$componenti = ottieniComponentiPerProgetto($nomeProgetto);
 
 include_once 'navbar.php';
 ?>
-
 <!DOCTYPE html>
 <html lang="it">
 <head>

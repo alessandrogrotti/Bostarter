@@ -10,7 +10,7 @@ INSERT INTO CREATORE (Email_Utente, Nr_progetti, Affidabilità) VALUES
 
 -- Amministratore
 INSERT INTO AMMINISTRATORE (Email_Utente, Codice_Sicurezza) VALUES
-('admin@gmail.com', 'admin12345');
+('admin@gmail.com', '5c5b93bd05da99760c1f742cbe2d1a2b'); -- Codice : SEC8037
 
 
 -- Progetti 
@@ -102,9 +102,8 @@ INSERT INTO COMPONENTE (Nome, Nome_ProgettoHardware, Descrizione, Prezzo, Quanti
 -- Profili
 CALL InserisciProfiloRichiede('Frontend Developer', 'Sistema Domotico Smart', 3,'HTML');
 CALL InserisciProfiloRichiede('Database Managment', 'Sistema Domotico Smart', 3,'SQL');
-CALL InserisciProfiloRichiede('Collaborazione', 'App Gestione Spese', 2, 'Teamwork');
+CALL InserisciProfiloRichiede('Collaborazione', 'Piattaforma E-learning', 2, 'Teamwork');
 CALL InserisciProfiloRichiede('Programmazione', 'GreenCity Tracker', 2, 'Java');
-CALL InserisciProfiloRichiede('Programmazione', 'Piattaforma E-learning', 2, 'Java');
 
 -- Skill Utente
 CALL AggiungiSkillUtente('utente@gmail.com', 'Java', 4);
@@ -122,9 +121,7 @@ CALL RispostaCommento('Grazie per il supporto! Stiamo lavorando per migliorare i
 CALL RispostaCommento('Apprezziamo il tuo feedback, aggiungeremo più dettagli nella descrizione.', 'creatore@gmail.com', 'App Gestione Spese', 3);
 
 -- Candidature
-CALL InserisciCandidatura('utente@gmail.com', 1); -- Frontend Developer per Sistema Domotico Smart
-CALL InserisciCandidatura('utente@gmail.com', 2); -- Database Management per Sistema Domotico Smart
-CALL InserisciCandidatura('utente@gmail.com', 3); -- Collaborazione per App Gestione Spese
+CALL InserisciCandidatura('utente@gmail.com', 4); -- Programmazione per GreenCity Tracker
 
 SET SQL_SAFE_UPDATES = 0;
 

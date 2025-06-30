@@ -12,6 +12,8 @@ $emailCreatore = $_SESSION['id'];
 
 writeLog('Visita area creatore', ['email' => $emailCreatore]);
 
+$errorMessage = '';
+
 try {
     $progetti = ottieniProgettiCreatore($emailCreatore);
 
@@ -19,9 +21,9 @@ try {
         $progetto['Foto'] = ottieniFotoProgetto($progetto['Nome']);
     }
     unset($progetto);
-} catch (PDOException $e) {
+} catch (Exception $e) {
     writeLog('Errore caricamento progetti creatore', ['email' => $emailCreatore, 'errore' => $e->getMessage()]);
-    die("Errore durante il caricamento dei progetti: " . $e->getMessage());
+    $errorMessage = $e->getMessage();
 }
 ?>
 

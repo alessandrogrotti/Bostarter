@@ -15,6 +15,8 @@ if (!verificaProgettoCreatore($nomeProgetto, $_SESSION['id'])) {
     die("Progetto non trovato o non autorizzato.");
 }
 
+$errorMessage = '';
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['descrizione'])) {
     $descrizione = trim($_POST['descrizione']);
     $fotoPath = '';
@@ -32,10 +34,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['descrizione'])) {
             $newFileName = uniqid('reward_', true) . '.' . $extension;
             $destinationPath = $uploadDir . $newFileName;
 
-            if (move_uploaded_file($_FILES['foto']['tmp_name'], $destinationPath)) {
-                $fotoPath = $destinationPath;
-            } else {
+            if (!move_uploaded_file($_FILES['foto']['tmp_name'], $destinationPath)) {
                 $errorMessage = "Errore durante il salvataggio dell'immagine.";
+            } else {
+                $fotoPath = $destinationPath;
             }
         } else {
             $errorMessage = "Formato immagine non valido.";
@@ -54,6 +56,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['descrizione'])) {
             header("Location: progettoCreatore.php?nome=" . urlencode($nomeProgetto));
             exit;
         } catch (Exception $e) {
+            writeLog('Errore inserimento reward', ['errore' => $e->getMessage()]);
             $errorMessage = "Errore inserimento reward: " . $e->getMessage();
         }
     }

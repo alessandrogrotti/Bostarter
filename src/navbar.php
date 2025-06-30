@@ -1,16 +1,21 @@
 <?php
 require_once 'auth.php';
 
+$errorMessage = '';
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['logout'])) {
-    logout();
-    header("Location: index.php");
-    exit();
+    try {
+        logout();
+        header("Location: index.php");
+        exit();
+    } catch (Exception $e) {
+        $errorMessage = $e->getMessage();
+    }
 }
 
 $isLoggedIn = isLoggedIn();
 $isAdmin = isAdmin();
 $isCreator = isCreator();
-$errorMessage = null;
 ?>
 
 <nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm">
@@ -38,7 +43,7 @@ $errorMessage = null;
             Registrati
           </a>
         <?php else: ?>
-          <?php if ($errorMessage): ?>
+          <?php if (!empty($errorMessage)): ?>
             <div class="alert alert-danger mt-3" role="alert">
               <?= htmlspecialchars($errorMessage) ?>
             </div>

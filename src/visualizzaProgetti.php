@@ -7,10 +7,13 @@ include_once 'mysql.php';
 $logCollection = getMongoDBConnection();
 writeLog('Visita pagina progetti', 'Accesso alla pagina dei progetti da parte di un utente');
 
+$errorMessage = '';
+
 try {
     $progetti = ottieniProgettiConFoto();
-} catch (PDOException $e) {
-    die("Errore durante l'esecuzione della query: " . $e->getMessage());
+} catch (Exception $e) {
+    writeLog('Errore caricamento progetti', ['errore' => $e->getMessage()]);
+    $errorMessage = "Errore durante il caricamento dei progetti: " . htmlspecialchars($e->getMessage());
 }
 ?>
 <!DOCTYPE html>
@@ -33,10 +36,16 @@ try {
 </header>
 
 <main class="container my-5">
+  <?php if ($errorMessage): ?>
+    <div class="alert alert-danger mb-4">
+      <?= $errorMessage ?>
+    </div>
+  <?php endif; ?>
+
   <section class="mb-5">
     <h2 class="section-title">Tutti i progetti disponibili</h2>
 
-    <?php if (count($progetti) > 0): ?>
+    <?php if (!empty($progetti) && count($progetti) > 0): ?>
       <div class="row g-4">
         <?php foreach ($progetti as $index => $row): ?>
           <?php $nomeProgettoUrl = urlencode($row["Nome"]); ?>

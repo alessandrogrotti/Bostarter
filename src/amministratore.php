@@ -8,25 +8,40 @@ requireAdmin();
 
 writeLog('Visita pagina competenza', 'Accesso alla pagina per aggiunta competenza da parte dell’amministratore');
 
+$errorMessage = '';
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['competenza'])) {
     $nomeCompetenza = $_POST['competenza'];
-    if (inserisciCompetenza($nomeCompetenza)) {
-        writeLog('Inserimento competenza', "Competenza '$nomeCompetenza' aggiunta al database.");
-    } else {
-        writeLog('Errore inserimento competenza', "Errore nell'inserimento della competenza '$nomeCompetenza'.");
+    try {
+        if (inserisciCompetenza($nomeCompetenza)) {
+            writeLog('Inserimento competenza', "Competenza '$nomeCompetenza' aggiunta al database.");
+            $errorMessage = "Competenza '$nomeCompetenza' aggiunta con successo.";
+        }
+    } catch (Exception $e) {
+        writeLog('Errore inserimento competenza', ['errore' => $e->getMessage()]);
+        $errorMessage = $e->getMessage();
     }
 }
 
 if (isset($_GET['removeCompetenza'])) {
     $competenzaToRemove = $_GET['removeCompetenza'];
-    if (eliminaCompetenza($competenzaToRemove)) {
-        writeLog('Eliminazione competenza', "Competenza '$competenzaToRemove' eliminata dal database.");
-    } else {
-        writeLog('Errore eliminazione competenza', "Errore nell'eliminazione della competenza '$competenzaToRemove'.");
+    try {
+        if (eliminaCompetenza($competenzaToRemove)) {
+            writeLog('Eliminazione competenza', "Competenza '$competenzaToRemove' eliminata dal database.");
+            $errorMessage = "Competenza '$competenzaToRemove' eliminata con successo.";
+        }
+    } catch (Exception $e) {
+        writeLog('Errore eliminazione competenza', ['errore' => $e->getMessage()]);
+        $errorMessage = $e->getMessage();
     }
 }
 
-$competenze = ottieniCompetenze();
+try {
+    $competenze = ottieniCompetenze();
+} catch (Exception $e) {
+    writeLog('Errore caricamento competenze', ['errore' => $e->getMessage()]);
+    $errorMessage = $e->getMessage();
+}
 ?>
 
 <!DOCTYPE html>
@@ -48,6 +63,11 @@ $competenze = ottieniCompetenze();
   </div>
 </header>
 
+<?php if ($errorMessage): ?>
+  <div class="alert alert-danger mb-4">
+    <?= htmlspecialchars($errorMessage) ?>
+  </div>      
+<?php endif; ?>
 
 <main class="container">
 

@@ -10,103 +10,117 @@ if ($nomeProgetto === '') {
   die("Nome progetto non specificato.");
 }
 
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['profilo'], $_POST['skill'], $_POST['level'])) {
-    requireLogin();
-    if (!isCreator()) {
-        die("Solo il creatore del progetto può aggiungere profili.");
+$errorMessage = '';
+
+try {
+    $progetto = ottieniDettagliProgetto($nomeProgetto);
+    if (!$progetto) {
+        throw new Exception("Progetto non trovato o non più aperto.");
     }
 
-    $nomeProfilo = trim($_POST['profilo']);
-    $skills = $_POST['skill'];
-    $levels = $_POST['level'];
-
-    if (!inserisciProfiloConCompetenze($nomeProfilo, $nomeProgetto, $skills, $levels)) {
-        die("Errore nell'inserimento del profilo.");
+    $fotoProgetto = ottieniFotoProgetto($nomeProgetto);
+    $rewards = ottieniRewardPerProgetto($nomeProgetto);
+    $availableSkills = ottieniCompetenze();
+    $profili = ottieniProfiliPerProgetto($nomeProgetto);
+    foreach ($profili as $idProfilo => $profilo) {
+        $profili[$idProfilo]['Candidature'] = ottieniCandidaturePerProfilo($idProfilo);
     }
-
-    writeLog('Inserimento profilo', "Creatore {$_SESSION['id']} ha aggiunto profilo '$nomeProfilo' al progetto '$nomeProgetto'");
-    header("Location: progettoCreatore.php?nome=" . urlencode($nomeProgetto));
-    exit;
+    $componenti = ottieniComponentiPerProgetto($nomeProgetto);
+} catch (Exception $e) {
+    writeLog('Errore caricamento dati progetto', ['errore' => $e->getMessage()]);
+    $errorMessage = $e->getMessage();
 }
 
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['nomeComponente'])) {
-    requireLogin();
-    if (!isCreator()) {
-        die("Non sei autorizzato a inserire componenti in questo progetto.");
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    try {
+        if (isset($_POST['profilo'], $_POST['skill'], $_POST['level'])) {
+            requireLogin();
+            if (!isCreator()) {
+                throw new Exception("Solo il creatore del progetto può aggiungere profili.");
+            }
+
+            $nomeProfilo = trim($_POST['profilo']);
+            $skills = $_POST['skill'];
+            $levels = $_POST['level'];
+
+            if (!inserisciProfiloConCompetenze($nomeProfilo, $nomeProgetto, $skills, $levels)) {
+                throw new Exception("Errore nell'inserimento del profilo.");
+            }
+
+            writeLog('Inserimento profilo', "Creatore {$_SESSION['id']} ha aggiunto profilo '$nomeProfilo' al progetto '$nomeProgetto'");
+            header("Location: progettoCreatore.php?nome=" . urlencode($nomeProgetto));
+            exit;
+        }
+
+        if (isset($_POST['nomeComponente'])) {
+            requireLogin();
+            if (!isCreator()) {
+                throw new Exception("Non sei autorizzato a inserire componenti in questo progetto.");
+            }
+
+            $nomeComponente = trim($_POST['nomeComponente']);
+            $descrizioneComponente = trim($_POST['descrizioneComponente']);
+            $prezzoComponente = floatval($_POST['prezzoComponente']);
+            $quantitaComponente = intval($_POST['quantitaComponente']);
+
+            if (!inserisciComponente($nomeComponente, $nomeProgetto, $descrizioneComponente, $prezzoComponente, $quantitaComponente)) {
+                throw new Exception("Errore nell'inserimento del componente.");
+            }
+
+            writeLog('Aggiunta componente', "Creatore ha aggiunto il componente '$nomeComponente' al progetto $nomeProgetto");
+            header("Location: progettoCreatore.php?nome=" . urlencode($nomeProgetto));
+            exit;
+        }
+
+        if (isset($_POST['eliminaComponente'])) {
+            requireLogin();
+            if (!isCreator()) {
+                throw new Exception("Non sei autorizzato a eliminare componenti in questo progetto.");
+            }
+
+            $nomeComponenteDaEliminare = trim($_POST['eliminaComponente']);
+            if (!eliminaComponente($nomeComponenteDaEliminare, $nomeProgetto)) {
+                throw new Exception("Errore nell'eliminazione del componente.");
+            }
+
+            writeLog('Eliminazione componente', "Creatore ha eliminato il componente '$nomeComponenteDaEliminare' dal progetto $nomeProgetto");
+            header("Location: progettoCreatore.php?nome=" . urlencode($nomeProgetto));
+            exit;
+        }
+
+        if (isset($_POST['eliminaProfilo'])) {
+            requireLogin();
+            if (!isCreator()) {
+                throw new Exception("Non sei autorizzato a eliminare profilo in questo progetto.");
+            }
+
+            $IdProfiloDaEliminare = trim($_POST['eliminaProfilo']);
+            if (!eliminaProfilo($IdProfiloDaEliminare)) {
+                throw new Exception("Errore nell'eliminazione del profilo.");
+            }
+
+            writeLog('Eliminazione profilo', "Creatore ha eliminato il profilo con id '$IdProfiloDaEliminare'");
+            header("Location: progettoCreatore.php?nome=" . urlencode($nomeProgetto));
+            exit;
+        }
+
+        if (isset($_POST['gestisciCandidatura'])) {
+            $idCandidatura = intval($_POST['idCandidatura']);
+            $stato = $_POST['stato'];
+
+            if (!gestisciCandidatura($idCandidatura, $stato)) {
+                throw new Exception("Errore nella gestione della candidatura.");
+            }
+
+            writeLog('Gestione candidatura', "Creatore ha aggiornato la candidatura con ID '$idCandidatura' a '$stato'");
+            header("Location: progettoCreatore.php?nome=" . urlencode($nomeProgetto));
+            exit;
+        }
+    } catch (Exception $e) {
+        writeLog('Errore gestione richiesta POST', ['errore' => $e->getMessage()]);
+        $errorMessage = $e->getMessage();
     }
-
-    $nomeComponente = trim($_POST['nomeComponente']);
-    $descrizioneComponente = trim($_POST['descrizioneComponente']);
-    $prezzoComponente = floatval($_POST['prezzoComponente']);
-    $quantitaComponente = intval($_POST['quantitaComponente']);
-
-    if (!inserisciComponente($nomeComponente, $nomeProgetto, $descrizioneComponente, $prezzoComponente, $quantitaComponente)) {
-        die("Errore nell'inserimento del componente.");
-    }
-
-    writeLog('Aggiunta componente', "Creatore ha aggiunto il componente '$nomeComponente' al progetto $nomeProgetto");
-    header("Location: progettoCreatore.php?nome=" . urlencode($nomeProgetto));
-    exit;
 }
-
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['eliminaComponente'])) {
-    requireLogin();
-    if (!isCreator()) {
-        die("Non sei autorizzato a eliminare componenti in questo progetto.");
-    }
-
-    $nomeComponenteDaEliminare = trim($_POST['eliminaComponente']);
-    if (!eliminaComponente($nomeComponenteDaEliminare, $nomeProgetto)) {
-        die("Errore nell'eliminazione del componente.");
-    }
-
-    writeLog('Eliminazione componente', "Creatore ha eliminato il componente '$nomeComponenteDaEliminare' dal progetto $nomeProgetto");
-    header("Location: progettoCreatore.php?nome=" . urlencode($nomeProgetto));
-    exit;
-}
-
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['eliminaProfilo'])) {
-    requireLogin();
-    if (!isCreator()) {
-        die("Non sei autorizzato a eliminare profilo in questo progetto.");
-    }
-
-    $IdProfiloDaEliminare = trim($_POST['eliminaProfilo']);
-    if (!eliminaProfilo($IdProfiloDaEliminare)) {
-        die("Errore nell'eliminazione del profilo.");
-    }
-
-    writeLog('Eliminazione profilo', "Creatore ha eliminato il profilo con id '$IdProfiloDaEliminare'");
-    header("Location: progettoCreatore.php?nome=" . urlencode($nomeProgetto));
-    exit;
-}
-
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['gestisciCandidatura'])) {
-    $idCandidatura = intval($_POST['idCandidatura']);
-    $stato = $_POST['stato'];
-
-    if (!gestisciCandidatura($idCandidatura, $stato)) {
-        die("Errore nella gestione della candidatura.");
-    }
-
-    writeLog('Gestione candidatura', "Creatore ha aggiornato la candidatura con ID '$idCandidatura' a '$stato'");
-    header("Location: progettoCreatore.php?nome=" . urlencode($nomeProgetto));
-    exit;
-}
-
-$progetto = ottieniDettagliProgetto($nomeProgetto);
-if (!$progetto) {
-    die("Progetto non trovato o non più aperto.");
-}
-
-$fotoProgetto = ottieniFotoProgetto($nomeProgetto);
-$rewards = ottieniRewardPerProgetto($nomeProgetto);
-$availableSkills = ottieniCompetenze();
-$profili = ottieniProfiliPerProgetto($nomeProgetto);
-foreach ($profili as $idProfilo => $profilo) {
-  $profili[$idProfilo]['Candidature'] = ottieniCandidaturePerProfilo($idProfilo);
-}
-$componenti = ottieniComponentiPerProgetto($nomeProgetto);
 
 include_once 'navbar.php';
 ?>
@@ -371,6 +385,11 @@ include_once 'navbar.php';
     <?php endif; ?>
   <?php endif; ?>
 
+  <?php if ($errorMessage): ?>
+    <div class="alert alert-danger mb-4">
+      <?= htmlspecialchars($errorMessage) ?>
+    </div>
+  <?php endif; ?>
 </main>
 <?php require_once 'footer.php'?>
 </body>
