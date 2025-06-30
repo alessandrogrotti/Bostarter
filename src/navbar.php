@@ -18,7 +18,7 @@ $isAdmin = isAdmin();
 $isCreator = isCreator();
 ?>
 
-<nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm">
+<nav class="navbar navbar-expand-lg navbar-light bg-white">
   <div class="container">
     <a class="navbar-brand fw-bold text-primary" href="index.php" style="font-family: 'Libre Baskerville', serif;">
       Bostarter

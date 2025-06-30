@@ -70,7 +70,7 @@ include_once 'navbar.php';
         <a href="login.php" class="btn btn-primary w-100">Vai al login</a>
       <?php else: ?>
 
-      <div class="card shadow-sm animate-fadein" style="animation-delay: 0.4s;">
+      <div class="card animate-fadein" style="animation-delay: 0.4s;">
         <div class="card-body p-5">
           <h2 class="mb-4 text-center">Registrati</h2>
           <form method="POST" action="">

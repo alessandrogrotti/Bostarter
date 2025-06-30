@@ -101,9 +101,9 @@ INSERT INTO COMPONENTE (Nome, Nome_ProgettoHardware, Descrizione, Prezzo, Quanti
 
 -- Profili
 CALL InserisciProfiloRichiede('Frontend Developer', 'Sistema Domotico Smart', 3,'HTML');
-CALL InserisciProfiloRichiede('Database Managment', 'Sistema Domotico Smart', 3,'SQL');
-CALL InserisciProfiloRichiede('Collaborazione', 'Piattaforma E-learning', 2, 'Teamwork');
-CALL InserisciProfiloRichiede('Programmazione', 'GreenCity Tracker', 2, 'Java');
+CALL InserisciProfiloRichiede('Database Manager', 'Sistema Domotico Smart', 3,'SQL');
+CALL InserisciProfiloRichiede('Collaboratore', 'Piattaforma E-learning', 2, 'Teamwork');
+CALL InserisciProfiloRichiede('Programmatore', 'GreenCity Tracker', 2, 'Java');
 
 -- Skill Utente
 CALL AggiungiSkillUtente('utente@gmail.com', 'Java', 4);
@@ -128,4 +128,3 @@ SET SQL_SAFE_UPDATES = 0;
 -- Finanziamenti
 CALL FinanziaProgetto('utente@gmail.com', 150.00, 'Sistema Domotico Smart', 1); -- Dopo la data di creazione del progetto
 CALL FinanziaProgetto('utente@gmail.com', 50.00, 'GreenCity Tracker', 2); -- Dopo la data di creazione del progetto
-CALL FinanziaProgetto('utente@gmail.com', 100.00, 'App Gestione Spese', 3); -- Dopo la data di creazione del progetto
