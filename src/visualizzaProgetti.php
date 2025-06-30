@@ -41,7 +41,7 @@ try {
         <?php foreach ($progetti as $index => $row): ?>
           <?php $nomeProgettoUrl = urlencode($row["Nome"]); ?>
           <div class="col-lg-4 col-md-6">
-            <div class="card shadow-hover h-100">
+            <div class="card h-100">
 
               <?php if (!empty($row['Foto'])): ?>
                 <div id="carousel-<?= $index ?>" class="carousel slide" data-bs-ride="carousel">

@@ -51,7 +51,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
         </div>
       <?php endif; ?>
 
-      <div class="card shadow-sm animate-fadein" style="animation-delay: 0.4s;">
+      <div class="card animate-fadein" style="animation-delay: 0.4s;">
         <div class="card-body p-5">
           <h2 class="mb-4 text-center">Login</h2>
           <form method="POST" action="">

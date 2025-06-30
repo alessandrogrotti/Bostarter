@@ -70,7 +70,7 @@ include_once 'navbar.php';
   </header>
 
   <div class="container mt-5">
-    <div class="card shadow-sm rounded mb-4">
+    <div class="card rounded mb-4">
       <div class="card-body">
         <h3 class="card-title text-center">Dati Utente</h3>
         <?php if ($message): ?>
@@ -92,7 +92,7 @@ include_once 'navbar.php';
       </div>
     </div>
 
-    <div class="card shadow-sm rounded mb-4">
+    <div class="card rounded mb-4">
       <div class="card-body">
         <h4>Aggiungi una nuova skill</h4>
         <form method="POST">
@@ -121,9 +121,9 @@ include_once 'navbar.php';
       </div>
     </div>
 
-    <div class="card shadow-sm rounded mb-4">
+    <div class="card rounded mb-4">
       <div class="card-body">
-        <h4>Le tue skill selezionate</h4>
+        <h4>Skill selezionate</h4>
         <?php if (count($userSkills) > 0): ?>
           <ul class="list-group">
         <?php foreach ($userSkills as $skill): ?>
@@ -141,9 +141,9 @@ include_once 'navbar.php';
       </div>
     </div>
 
-    <div class="card shadow-sm rounded mb-4">
+    <div class="card rounded mb-4">
       <div class="card-body">
-        <h4>Le tue candidature inviate</h4>
+        <h4>Candidature inviate</h4>
         <?php if (count($userApplications) > 0): ?>
           <ul class="list-group">
             <?php foreach ($userApplications as $app): ?>
