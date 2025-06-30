@@ -324,7 +324,7 @@ function inviaCandidatura($emailUtente, $idProfilo) {
         } elseif ($e->getCode() === '45003') {
             throw new Exception("Non possiedi le competenze richieste o il livello minimo per candidarti a questo profilo.");
         } elseif ($e->getCode() === '45004') {
-            throw new Exception("Non puoi candidarti a un profilo che richiede competenze che non possiedi.");
+            throw new Exception("Il progetto è chiuso.");
         } else {
             throw $e;
         }
