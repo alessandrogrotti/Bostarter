@@ -5,7 +5,9 @@ include_once 'mysql.php';
 
 $nomeProgetto = isset($_GET['nome']) ? urldecode(trim($_GET['nome'])) : '';
 if ($nomeProgetto === '') {
-    die("Nome progetto non specificato.");
+    $_SESSION['error'] = "Nome progetto non specificato. - progetto.php";
+    header("Location: index.php");
+    exit;
 }
 
 try {
@@ -15,7 +17,7 @@ try {
     }
 } catch (Exception $e) {
     writeLog('Errore caricamento dettagli progetto', ['progetto' => $nomeProgetto, 'errore' => $e->getMessage()]);
-    die("Errore: " . $e->getMessage());
+    $_SESSION['error'] = "Errore: " . $e->getMessage();
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['risposta']) && isset($_POST['id_commento'])) {
@@ -33,6 +35,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['risposta']) && isset(
 
         inviaRispostaCommento($testoRisposta, $emailUtente, $nomeProgetto, $idCommento);
         writeLog('Risposta commento', "Utente $emailUtente ha risposto al commento $idCommento nel progetto $nomeProgetto");
+        $_SESSION['success'] = "Risposta inviata con successo.";
         header("Location: progetto.php?nome=" . urlencode($nomeProgetto));
         exit;
     } catch (Exception $e) {
@@ -70,6 +73,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['commento'])) {
     try {
         inviaCommento($testoCommento, $emailUtente, $nomeProgetto);
         writeLog('Inserimento commento', "Utente $emailUtente ha commentato progetto $nomeProgetto");
+        $_SESSION['success'] = "Commento inviato con successo.";
         header("Location: progetto.php?nome=" . urlencode($nomeProgetto));
         exit;
     } catch (Exception $e) {
@@ -88,7 +92,7 @@ try {
     $componenti = ottieniComponentiPerProgetto($nomeProgetto);
 } catch (Exception $e) {
     writeLog('Errore caricamento dati progetto', ['progetto' => $nomeProgetto, 'errore' => $e->getMessage()]);
-    die("Errore: " . $e->getMessage());
+    $_SESSION['error'] = "Errore: " . $e->getMessage();
 }
 
 include_once 'navbar.php';
@@ -104,193 +108,199 @@ include_once 'navbar.php';
 </head>
 <body>
   <main class="container mt-5">
-    <?php if (!empty($_SESSION['error'])): ?>
+    <?php if ($_SESSION['error']): ?>
       <div class="alert alert-danger mt-4">
         <?= htmlspecialchars($_SESSION['error']) ?>
       </div>
-      <?php unset($_SESSION['error']); ?>
+      <?php $_SESSION['error'] = ''; ?>
     <?php endif; ?>
     <?php if (!empty($_SESSION['success'])): ?>
       <div class="alert alert-success mt-4">
         <?= htmlspecialchars($_SESSION['success']) ?>
       </div>
-      <?php unset($_SESSION['success']); ?>
+      <?php $_SESSION['success'] = ''; ?>
     <?php endif; ?>
 
-    <div id="infoProgetto">
-      <section class="mb-5">
-        <h1><?= htmlspecialchars($progetto["Nome"]) ?></h1>
-        <p><?= htmlspecialchars($progetto["Descrizione"]) ?></p>
-        <?php if (!empty($fotoProgetto)): ?>
-        <div class="row mt-4">
-          <?php foreach ($fotoProgetto as $foto => $fotoUrl): ?>
-            <div class="col-md-4 mb-3">
-              <img src="<?= htmlspecialchars($fotoUrl) ?>" alt="Foto progetto" class="img-fluid rounded" style="width: 100%; max-width: 500px; height: auto;">
-            </div>
-          <?php endforeach; ?>
-        </div>
-        <?php endif; ?>
-        <ul class="list-group mt-5 pt-2">
-          <li class="list-group-item"><strong>Budget:</strong> <?= htmlspecialchars($progetto['Budget']) ?> €</li>
-          <li class="list-group-item"><strong>Data di chiusura:</strong> <?= htmlspecialchars($progetto['Data_Limite']) ?></li>
-          <li class="list-group-item"><strong>Stato:</strong> <?= htmlspecialchars($progetto['Stato']) ?></li>
-        </ul>
-      </section>
-    </div>
-
-    <div id="finanziamento" class="mb-5">
-      <?php if ($progetto['Stato'] === 'Aperto'): ?>
-        <button onclick="window.location.href='finanziamento.php?nome=<?= urlencode($progetto['Nome']) ?>';" class="btn btn-success my-4">Finanzia questo progetto!</button>
-      <?php else: ?>
-        <div class="alert alert-secondary mt-3">Il progetto è chiuso per i finanziamenti.</div>
-      <?php endif; ?>
-    </div>
-
-    <section id="commento" class="mb-5">
-      <?php if (isLoggedIn()): ?>
-        <h4>Aggiungi un commento:</h4>
-        <form method="POST" action="" class="mb-4">
-          <div class="mb-3">
-            <label for="commento" class="form-label">Il tuo commento:</label>
-            <textarea
-              id="commento"
-              name="commento"
-              class="form-control"
-              required
-              maxlength="1000"
-              rows="3"
-            ></textarea>
+    <?php if (!$nomeProgetto || !$progetto): ?>
+      <div class="alert alert-danger mt-4">
+        Progetto non trovato.
+      </div>
+    <?php else : ?>
+      <div id="infoProgetto">
+        <section class="mb-5">
+          <h1><?= htmlspecialchars($progetto["Nome"]) ?></h1>
+          <p><?= htmlspecialchars($progetto["Descrizione"]) ?></p>
+          <?php if (!empty($fotoProgetto)): ?>
+          <div class="row mt-4">
+            <?php foreach ($fotoProgetto as $foto => $fotoUrl): ?>
+              <div class="col-md-4 mb-3">
+                <img src="<?= htmlspecialchars($fotoUrl) ?>" alt="Foto progetto" class="img-fluid rounded" style="width: 100%; max-width: 500px; height: auto;">
+              </div>
+            <?php endforeach; ?>
           </div>
-          <button type="submit" class="btn btn-primary">
-            Invia commento
-          </button>
-        </form>
-      <?php else: ?>
-        <p>
-          <a href="login.php">Accedi</a> per lasciare un commento.
-        </p>
-      <?php endif; ?>
-    </section>
+          <?php endif; ?>
+          <ul class="list-group mt-5 pt-2">
+            <li class="list-group-item"><strong>Budget:</strong> <?= htmlspecialchars($progetto['Budget']) ?> €</li>
+            <li class="list-group-item"><strong>Data di chiusura:</strong> <?= htmlspecialchars($progetto['Data_Limite']) ?></li>
+            <li class="list-group-item"><strong>Stato:</strong> <?= htmlspecialchars($progetto['Stato']) ?></li>
+          </ul>
+        </section>
+      </div>
 
-    <section class="mb-5">
-      <h4>Commenti:</h4>
-      <?php if ($comments): ?>
-        <ul class="list-group">
-          <?php foreach ($comments as $c): ?>
-            <li class="list-group-item">
-                <small class="text-muted">
-                    <?= htmlspecialchars($c['Data']) ?> da <?= htmlspecialchars($c['Email_Utente']) ?>
-                </small>
-                <p class="mb-1 fw-bold">Commento:</p>
-                <p class="mb-0"><?= nl2br(htmlspecialchars($c['Testo'])) ?></p>
-
-                <?php $response = getRispostaCommento($c['Id']); ?>
-
-                <?php if ($response): ?>
-                    <div class="mt-3">
-                        <small class="text-muted"><?= htmlspecialchars($response['Data']) ?> da <?= htmlspecialchars($response['Email_Utente']) ?></small>
-                        <p class="mb-1 fw-bold">Risposta:</p>
-                        <p class="mb-0"><?= nl2br(htmlspecialchars($response['Testo'])) ?></p>
-                    </div>
-                <?php else: ?>
-                    <?php if (isLoggedIn()): ?>
-                        <form method="POST" action="" class="mt-3">
-                            <div class="mb-3">
-                                <label for="risposta_<?= $c['Id'] ?>" class="form-label">Rispondi a questo commento:</label>
-                                <textarea
-                                    id="risposta_<?= $c['Id'] ?>"
-                                    name="risposta"
-                                    class="form-control"
-                                    required
-                                    maxlength="1000"
-                                    rows="3"
-                                ></textarea>
-                            </div>
-                            <input type="hidden" name="id_commento" value="<?= $c['Id'] ?>">
-                            <button type="submit" class="btn btn-primary">Rispondi</button>
-                        </form>
-                    <?php else: ?>
-                        <p>
-                            <a href="login.php">Accedi</a> per rispondere a questo commento.
-                        </p>
-                    <?php endif; ?>
-                <?php endif; ?>
-            </li>
-          <?php endforeach; ?>
-        </ul>
-      <?php else: ?>
-        <p>Non ci sono commenti per questo progetto.</p>
-      <?php endif; ?>
-    </section>
-
-    <?php if (($progetto['Tipo']) === 'Software'):?>
-      <section class="mb-5">
-        <h4>Profili richiesti:</h4>
-        <?php if ($profili): ?>
-            <?php
-              $profiliAggregati = [];
-              foreach ($profili as $row) {
-                  $idProfilo = $row['Id'];
-                  if (!isset($profiliAggregati[$idProfilo])) {
-                      $profiliAggregati[$idProfilo] = [
-                          'Id' => $idProfilo,
-                          'Nome' => $row['Nome'],
-                          'Skills' => []
-                      ];
-                  }
-                  if (!empty($row['Competenza_Skill'])) {
-                      $profiliAggregati[$idProfilo]['Skills'][] = [
-                          'Competenza_Skill' => $row['Competenza_Skill'],
-                          'Livello' => $row['Livello']
-                      ];
-                  }
-              }
-            ?>
-            <ul class="list-group">
-                <?php foreach ($profiliAggregati as $profilo): ?>
-                    <li class="list-group-item">
-                        <div class="d-flex justify-content-between align-items-center">
-                            <div>
-                                <strong><?= htmlspecialchars($profilo['Nome']) ?></strong>
-                                <ul class="mb-0">
-                                    <?php foreach ($profilo['Skills'] as $skill): ?>
-                                        <li><?= htmlspecialchars($skill['Competenza_Skill']) ?> - Livello: <?= (int)$skill['Livello'] ?></li>
-                                    <?php endforeach; ?>
-                                </ul>
-                            </div>
-                            <form method="POST" class="ms-3">
-                                <input type="hidden" name="inviaCandidatura" value="<?= htmlspecialchars($profilo['Id']) ?>">
-                                <button type="submit" class="btn btn-primary btn-sm">
-                                    Invia candidatura
-                                </button>
-                            </form>
-                        </div>
-                    </li>
-                <?php endforeach; ?>
-            </ul>
+      <div id="finanziamento" class="mb-5">
+        <?php if ($progetto['Stato'] === 'Aperto'): ?>
+            <a href="finanziamento.php?nome=<?= urlencode($progetto['Nome']) ?>" class="btn btn-success my-4">Finanzia questo progetto!</a>
         <?php else: ?>
-            <p>Nessun profilo disponibile per questo progetto.</p>
+            <div class="alert alert-secondary mt-3">Il progetto è chiuso per i finanziamenti.</div>
+        <?php endif; ?>
+      </div>
+
+      <section id="commento" class="mb-5">
+        <?php if (isLoggedIn()): ?>
+          <h4>Aggiungi un commento:</h4>
+          <form method="POST" action="" class="mb-4">
+            <div class="mb-3">
+              <label for="commento" class="form-label">Il tuo commento:</label>
+              <textarea
+                id="commento"
+                name="commento"
+                class="form-control"
+                required
+                maxlength="1000"
+                rows="3"
+              ></textarea>
+            </div>
+            <button type="submit" class="btn btn-primary">
+              Invia commento
+            </button>
+          </form>
+        <?php else: ?>
+          <p>
+            <a href="login.php">Accedi</a> per lasciare un commento.
+          </p>
         <?php endif; ?>
       </section>
-    <?php else: ?>
+
       <section class="mb-5">
-        <h4>Componenti del progetto:</h4>
-        <?php if ($componenti): ?>
+        <h4>Commenti:</h4>
+        <?php if ($comments): ?>
           <ul class="list-group">
-            <?php foreach ($componenti as $componente): ?>
-              <li class="list-group-item d-flex justify-content-between align-items-center">
-                <div>
-                  <strong><?= htmlspecialchars($componente['Nome']) ?></strong>
-                  <p><?= htmlspecialchars($componente['Descrizione']) ?></p>
-                  <p>Prezzo: €<?= number_format($componente['Prezzo'], 2) ?> - Quantità: <?= number_format($componente['Quantità']) ?></p>
-                </div>
+            <?php foreach ($comments as $c): ?>
+              <li class="list-group-item">
+                  <small class="text-muted">
+                      <?= htmlspecialchars($c['Data']) ?> da <?= htmlspecialchars($c['Email_Utente']) ?>
+                  </small>
+                  <p class="mb-1 fw-bold">Commento:</p>
+                  <p class="mb-0"><?= nl2br(htmlspecialchars($c['Testo'])) ?></p>
+
+                  <?php $response = getRispostaCommento($c['Id']); ?>
+
+                  <?php if ($response): ?>
+                      <div class="mt-3">
+                          <small class="text-muted"><?= htmlspecialchars($response['Data']) ?> da <?= htmlspecialchars($response['Email_Creatore']) ?></small>
+                          <p class="mb-1 fw-bold">Risposta:</p>
+                          <p class="mb-0"><?= nl2br(htmlspecialchars($response['Testo'])) ?></p>
+                      </div>
+                  <?php else: ?>
+                      <?php if (isLoggedIn()): ?>
+                          <form method="POST" action="" class="mt-3">
+                              <div class="mb-3">
+                                  <label for="risposta_<?= $c['Id'] ?>" class="form-label">Rispondi a questo commento:</label>
+                                  <textarea
+                                      id="risposta_<?= $c['Id'] ?>"
+                                      name="risposta"
+                                      class="form-control"
+                                      required
+                                      maxlength="1000"
+                                      rows="3"
+                                  ></textarea>
+                              </div>
+                              <input type="hidden" name="id_commento" value="<?= $c['Id'] ?>">
+                              <button type="submit" class="btn btn-primary">Rispondi</button>
+                          </form>
+                      <?php else: ?>
+                          <p>
+                              <a href="login.php">Accedi</a> per rispondere a questo commento.
+                          </p>
+                      <?php endif; ?>
+                  <?php endif; ?>
               </li>
             <?php endforeach; ?>
           </ul>
         <?php else: ?>
-          <p>Nessun componente disponibile per questo progetto.</p>
+          <p>Non ci sono commenti per questo progetto.</p>
         <?php endif; ?>
       </section>
+
+      <?php if (($progetto['Tipo']) === 'Software'):?>
+        <section class="mb-5">
+          <h4>Profili richiesti:</h4>
+          <?php if ($profili): ?>
+              <?php
+                $profiliAggregati = [];
+                foreach ($profili as $row) {
+                    $idProfilo = $row['Id'];
+                    if (!isset($profiliAggregati[$idProfilo])) {
+                        $profiliAggregati[$idProfilo] = [
+                            'Id' => $idProfilo,
+                            'Nome' => $row['Nome'],
+                            'Skills' => []
+                        ];
+                    }
+                    if (!empty($row['Competenza_Skill'])) {
+                        $profiliAggregati[$idProfilo]['Skills'][] = [
+                            'Competenza_Skill' => $row['Competenza_Skill'],
+                            'Livello' => $row['Livello']
+                        ];
+                    }
+                }
+              ?>
+              <ul class="list-group">
+                  <?php foreach ($profiliAggregati as $profilo): ?>
+                      <li class="list-group-item">
+                          <div class="d-flex justify-content-between align-items-center">
+                              <div>
+                                  <strong><?= htmlspecialchars($profilo['Nome']) ?></strong>
+                                  <ul class="mb-0">
+                                      <?php foreach ($profilo['Skills'] as $skill): ?>
+                                          <li><?= htmlspecialchars($skill['Competenza_Skill']) ?> - Livello: <?= (int)$skill['Livello'] ?></li>
+                                      <?php endforeach; ?>
+                                  </ul>
+                              </div>
+                              <form method="POST" class="ms-3">
+                                  <input type="hidden" name="inviaCandidatura" value="<?= htmlspecialchars($profilo['Id']) ?>">
+                                  <button type="submit" class="btn btn-primary btn-sm">
+                                      Invia candidatura
+                                  </button>
+                              </form>
+                          </div>
+                      </li>
+                  <?php endforeach; ?>
+              </ul>
+          <?php else: ?>
+              <p>Nessun profilo disponibile per questo progetto.</p>
+          <?php endif; ?>
+        </section>
+      <?php else: ?>
+        <section class="mb-5">
+          <h4>Componenti del progetto:</h4>
+          <?php if ($componenti): ?>
+            <ul class="list-group">
+              <?php foreach ($componenti as $componente): ?>
+                <li class="list-group-item d-flex justify-content-between align-items-center">
+                  <div>
+                    <strong><?= htmlspecialchars($componente['Nome']) ?></strong>
+                    <p><?= htmlspecialchars($componente['Descrizione']) ?></p>
+                    <p>Prezzo: €<?= number_format($componente['Prezzo'], 2) ?> - Quantità: <?= number_format($componente['Quantità']) ?></p>
+                  </div>
+                </li>
+              <?php endforeach; ?>
+            </ul>
+          <?php else: ?>
+            <p>Nessun componente disponibile per questo progetto.</p>
+          <?php endif; ?>
+        </section>
+    <?php endif; ?>
   <?php endif; ?>
 </main>
 <?php require_once 'footer.php'?>

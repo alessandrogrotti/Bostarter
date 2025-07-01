@@ -4,16 +4,13 @@ include_once 'navbar.php';
 include_once 'mongodb.php';
 include_once 'mysql.php';
 
-$logCollection = getMongoDBConnection();
 writeLog('Visita pagina progetti', 'Accesso alla pagina dei progetti da parte di un utente');
-
-$errorMessage = '';
 
 try {
     $progetti = ottieniProgettiConFoto();
 } catch (Exception $e) {
     writeLog('Errore caricamento progetti', ['errore' => $e->getMessage()]);
-    $errorMessage = "Errore durante il caricamento dei progetti: " . htmlspecialchars($e->getMessage());
+    $_SESSION['error'] = "Errore durante il caricamento dei progetti: " . htmlspecialchars($e->getMessage());
 }
 ?>
 <!DOCTYPE html>
@@ -36,11 +33,18 @@ try {
 </header>
 
 <main class="container my-5">
-  <?php if ($errorMessage): ?>
-    <div class="alert alert-danger mb-4">
-      <?= $errorMessage ?>
-    </div>
-  <?php endif; ?>
+<?php if ($_SESSION['error']): ?>
+  <div class="alert alert-danger mt-4">
+    <?= htmlspecialchars($_SESSION['error']) ?>
+  </div>
+  <?php $_SESSION['error'] = ''; ?>
+<?php endif; ?>
+<?php if (!empty($_SESSION['success'])): ?>
+  <div class="alert alert-success mt-4">
+    <?= htmlspecialchars($_SESSION['success']) ?>
+  </div>
+  <?php $_SESSION['success'] = ''; ?>
+<?php endif; ?>
 
   <section class="mb-5">
     <h2 class="section-title">Tutti i progetti disponibili</h2>

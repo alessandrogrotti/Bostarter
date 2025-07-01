@@ -7,7 +7,6 @@ include_once 'mysql.php';
 requireLogin();
 
 $email = $_SESSION['id'];
-$message = "";
 
 try {
     $userData = ottieniDatiUtente($email);
@@ -16,7 +15,7 @@ try {
     $userApplications = ottieniCandidatureUtente($email);
 } catch (Exception $e) {
     writeLog('Errore caricamento dati utente', ['errore' => $e->getMessage()]);
-    $message = "Errore durante il caricamento dei dati: " . htmlspecialchars($e->getMessage());
+    $_SESSION['error'] = "Errore durante il caricamento dei dati: " . htmlspecialchars($e->getMessage());
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -27,7 +26,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             if (!empty($selectedSkill) && !empty($selectedLevel)) {
                 aggiungiSkillUtente($email, $selectedSkill, $selectedLevel);
-                $message = "Skill aggiunta con successo!";
+                $_SESSION['success'] = "Skill aggiunta con successo!";
                 writeLog("Skill aggiunta", ["email" => $email, "skill" => $selectedSkill]);
             } else {
                 throw new Exception("Seleziona una skill e un livello.");
@@ -37,7 +36,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if (isset($_POST['remove_skill'])) {
             $skillToRemove = $_POST['remove_skill'];
             rimuoviSkillUtente($email, $skillToRemove);
-            $message = "Skill rimossa con successo!";
+            $_SESSION['success'] = "Skill rimossa con successo!";
             writeLog("Skill rimossa", ["email" => $email, "skill" => $skillToRemove]);
         }
 
@@ -47,7 +46,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     } catch (Exception $e) {
         writeLog('Errore gestione richiesta POST', ['errore' => $e->getMessage()]);
-        $message = "Errore: " . htmlspecialchars($e->getMessage());
+        $_SESSION['error'] = "Errore: " . htmlspecialchars($e->getMessage());
     }
 }
 
@@ -74,10 +73,17 @@ include_once 'navbar.php';
     <div class="card rounded mb-4">
       <div class="card-body">
         <h3 class="card-title text-center">Dati Utente</h3>
-        <?php if ($message): ?>
-          <div class="alert <?= strpos($message, 'successo') !== false ? 'alert-success' : 'alert-danger' ?>" role="alert">
-            <?= htmlspecialchars($message) ?>
+        <?php if ($_SESSION['error']): ?>
+          <div class="alert alert-danger mt-4">
+            <?= htmlspecialchars($_SESSION['error']) ?>
           </div>
+          <?php $_SESSION['error'] = ''; ?>
+        <?php endif; ?>
+        <?php if (!empty($_SESSION['success'])): ?>
+          <div class="alert alert-success mt-4">
+            <?= htmlspecialchars($_SESSION['success']) ?>
+          </div>
+          <?php $_SESSION['success'] = ''; ?>
         <?php endif; ?>
 
         <?php if ($userData): ?>

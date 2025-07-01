@@ -60,10 +60,13 @@ CREATE TABLE COMMENTO (
 ) ENGINE = "INNODB";
 
 CREATE TABLE RISPOSTA (
-    Id_Commento INT PRIMARY KEY,
-    Id_Risposta INT,
+	Id INT PRIMARY KEY AUTO_INCREMENT,
+    Id_Commento INT,
+    Data DATE,
+    Testo TEXT,
+    Email_Creatore VARCHAR(255),
     FOREIGN KEY (Id_Commento) REFERENCES COMMENTO(Id) ON DELETE CASCADE,
-    FOREIGN KEY (Id_Risposta) REFERENCES COMMENTO(Id) ON DELETE CASCADE
+	FOREIGN KEY (Email_Creatore) REFERENCES CREATORE(Email_Utente) ON DELETE CASCADE
 ) ENGINE = "INNODB";
 
 CREATE TABLE REWARD (
@@ -284,8 +287,17 @@ CREATE PROCEDURE FinanziaProgetto(
 	IN Codice_Reward VARCHAR(50)
 )
 BEGIN
-    INSERT INTO FINANZIAMENTO (Data, Importo, Email_Utente, Nome_Progetto, Codice_Reward)
-    VALUES (CURDATE(), Importo, Email_Utente, Nome_Progetto, Codice_Reward);
+	IF NOT EXISTS (
+        SELECT 1 
+        FROM PROGETTO
+        WHERE Email_Utente = Email_Creatore AND Nome_Progetto = Nome
+    ) THEN
+        INSERT INTO FINANZIAMENTO (Data, Importo, Email_Utente, Nome_Progetto, Codice_Reward)
+		VALUES (CURDATE(), Importo, Email_Utente, Nome_Progetto, Codice_Reward);
+    ELSE
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'Il creatore non può finanziare un suo progetto.';
+    END IF;
 END;
 $ DELIMITER;
 
@@ -351,12 +363,10 @@ BEGIN
 END;
 $ DELIMITER;
 
-
-
 DELIMITER $
 CREATE PROCEDURE RispostaCommento(
     IN Testo TEXT, 
-    IN Email_Utente VARCHAR(255), 
+    IN EmailCreatore VARCHAR(255), 
     IN NomeProgetto VARCHAR(100), 
     IN IdCommento INT
 )
@@ -378,13 +388,8 @@ BEGIN
         SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Questo commento ha già una risposta.';
     END IF;
 
-    INSERT INTO COMMENTO (Data, Testo, Email_Utente, Nome_Progetto)
-    VALUES (CURDATE(), Testo, Email_Utente, NomeProgetto);
-
-    SET nuovoId = LAST_INSERT_ID();
-
-    INSERT INTO RISPOSTA (Id_Commento, Id_Risposta)
-    VALUES (IdCommento, nuovoId);
+    INSERT INTO RISPOSTA (Id_Commento, Data, Testo, Email_Creatore)
+    VALUES (IdCommento, CURDATE(), Testo, EmailCreatore);
 END;
 $ DELIMITER;
 
@@ -495,11 +500,6 @@ BEGIN
     SELECT *
      FROM COMMENTO c
      WHERE Nome_Progetto = NomeProgetto
-      AND NOT EXISTS (
-         SELECT 1
-         FROM RISPOSTA
-         WHERE Id_Risposta = Id
-       )
      ORDER BY Data DESC;
 END;
 $ DELIMITER;
@@ -507,9 +507,9 @@ $ DELIMITER;
 DELIMITER $
 CREATE PROCEDURE OttieniRispostaCommento(IN IdCommento INT)
 BEGIN
-    SELECT Testo, Data, Email_Utente
-    FROM COMMENTO, RISPOSTA
-    WHERE Id_Commento = IdCommento AND Id = Id_Risposta;
+    SELECT *
+    FROM RISPOSTA
+    WHERE Id_Commento = IdCommento;
 END;
 $ DELIMITER;
 
@@ -584,19 +584,24 @@ BEGIN
         SET MESSAGE_TEXT = 'Il progetto è chiuso.';
     END IF;
 
-    IF EXISTS (
-        SELECT 1
-        FROM RICHIEDE as r, POSSIEDE as p
-        WHERE r.Competenza_Skill = p.Competenza_Skill AND p.Email_Utente = EmailUtente
-        AND (p.Livello >= r.Livello) AND IdProfilo = r.Id_Profilo
-    ) THEN
+    IF NOT EXISTS (
+		SELECT 1
+		FROM RICHIEDE r
+		WHERE r.Id_Profilo = IdProfilo
+		AND NOT EXISTS (
+			SELECT 1
+			FROM POSSIEDE p
+			WHERE p.Email_Utente = EmailUtente
+			AND p.Competenza_Skill = r.Competenza_Skill
+			AND p.Livello >= r.Livello
+		)
+	) THEN
 		INSERT INTO CANDIDATURA (Stato, Email_Utente, Id_Profilo)
 		VALUES ("In attesa", EmailUtente, IdProfilo);
 	ELSE
-        SIGNAL SQLSTATE '45003'
-        SET MESSAGE_TEXT = 'Non possiedi le competenze richieste o il livello minimo per candidarti a questo profilo';
-    END IF;
-
+		SIGNAL SQLSTATE '45003'
+		SET MESSAGE_TEXT = 'Non possiedi tutte le competenze richieste o al livello minimo per candidarti a questo profilo';
+	END IF;
     
 END
 $ DELIMITER;

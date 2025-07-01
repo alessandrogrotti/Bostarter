@@ -4,13 +4,12 @@ include_once 'mongodb.php';
 include_once 'auth.php';
 include_once 'mysql.php';
 
+requireCreatore();
 
 $nomeProgetto = isset($_GET['nome']) ? urldecode(trim($_GET['nome'])) : '';
 if ($nomeProgetto === '') {
-  die("Nome progetto non specificato.");
+    $_SESSION['error'] = "Nome progetto non specificato.";
 }
-
-$errorMessage = '';
 
 try {
     $progetto = ottieniDettagliProgetto($nomeProgetto);
@@ -28,7 +27,7 @@ try {
     $componenti = ottieniComponentiPerProgetto($nomeProgetto);
 } catch (Exception $e) {
     writeLog('Errore caricamento dati progetto', ['errore' => $e->getMessage()]);
-    $errorMessage = $e->getMessage();
+    $_SESSION['error'] = $e->getMessage();
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -48,6 +47,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
 
             writeLog('Inserimento profilo', "Creatore {$_SESSION['id']} ha aggiunto profilo '$nomeProfilo' al progetto '$nomeProgetto'");
+            $_SESSION['success'] = "Profilo aggiunto con successo.";
             header("Location: progettoCreatore.php?nome=" . urlencode($nomeProgetto));
             exit;
         }
@@ -68,6 +68,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
 
             writeLog('Aggiunta componente', "Creatore ha aggiunto il componente '$nomeComponente' al progetto $nomeProgetto");
+            $_SESSION['success'] = "Componente aggiunto con successo.";
             header("Location: progettoCreatore.php?nome=" . urlencode($nomeProgetto));
             exit;
         }
@@ -84,6 +85,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
 
             writeLog('Eliminazione componente', "Creatore ha eliminato il componente '$nomeComponenteDaEliminare' dal progetto $nomeProgetto");
+            $_SESSION['success'] = "Componente eliminato con successo.";
             header("Location: progettoCreatore.php?nome=" . urlencode($nomeProgetto));
             exit;
         }
@@ -100,6 +102,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
 
             writeLog('Eliminazione profilo', "Creatore ha eliminato il profilo con id '$IdProfiloDaEliminare'");
+            $_SESSION['success'] = "Profilo eliminato con successo.";
             header("Location: progettoCreatore.php?nome=" . urlencode($nomeProgetto));
             exit;
         }
@@ -113,12 +116,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
 
             writeLog('Gestione candidatura', "Creatore ha aggiornato la candidatura con ID '$idCandidatura' a '$stato'");
+            $_SESSION['success'] = "Candidatura gestita con successo.";
             header("Location: progettoCreatore.php?nome=" . urlencode($nomeProgetto));
             exit;
         }
     } catch (Exception $e) {
         writeLog('Errore gestione richiesta POST', ['errore' => $e->getMessage()]);
-        $errorMessage = $e->getMessage();
+        $_SESSION['error'] = $e->getMessage();
     }
 }
 
@@ -136,6 +140,25 @@ include_once 'navbar.php';
 </head>
 <body>
   <main class="container mt-5">
+  <?php if ($_SESSION['error']): ?>
+    <div class="alert alert-danger mt-4">
+      <?= htmlspecialchars($_SESSION['error']) ?>
+    </div>
+    <?php $_SESSION['error'] = ''; ?>
+  <?php endif; ?>
+  <?php if (!empty($_SESSION['success'])): ?>
+    <div class="alert alert-success mt-4">
+      <?= htmlspecialchars($_SESSION['success']) ?>
+    </div>
+    <?php $_SESSION['success'] = ''; ?>
+  <?php endif; ?>
+
+    <?php if ($_SESSION['error']): ?>
+    <div class="alert alert-danger mb-4">
+      <?= htmlspecialchars($_SESSION['error']) ?>
+    </div>
+    <?php else : ?>
+
     <div id="infoProgetto">
       <section class="mb-5">
         <h1><?= htmlspecialchars($progetto["Nome"]) ?></h1>
@@ -384,11 +407,6 @@ include_once 'navbar.php';
         </section>
     <?php endif; ?>
   <?php endif; ?>
-
-  <?php if ($errorMessage): ?>
-    <div class="alert alert-danger mb-4">
-      <?= htmlspecialchars($errorMessage) ?>
-    </div>
   <?php endif; ?>
 </main>
 <?php require_once 'footer.php'?>

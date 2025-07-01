@@ -8,7 +8,6 @@ requireAdmin();
 
 writeLog('Visita pagina competenza', 'Accesso alla pagina per aggiunta competenza da parte dell’amministratore');
 
-$errorMessage = '';
 $message = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['competenza'])) {
@@ -20,7 +19,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['competenza'])) {
         }
     } catch (Exception $e) {
         writeLog('Errore inserimento competenza', ['errore' => $e->getMessage()]);
-        $errorMessage = $e->getMessage();
+        $_SESSION['error'] = $e->getMessage();
     }
 }
 
@@ -33,7 +32,7 @@ if (isset($_GET['removeCompetenza'])) {
         }
     } catch (Exception $e) {
         writeLog('Errore eliminazione competenza', ['errore' => $e->getMessage()]);
-        $errorMessage = $e->getMessage();
+        $_SESSION['error'] = $e->getMessage();
     }
 }
 
@@ -41,7 +40,7 @@ try {
     $competenze = ottieniCompetenze();
 } catch (Exception $e) {
     writeLog('Errore caricamento competenze', ['errore' => $e->getMessage()]);
-    $errorMessage = $e->getMessage();
+    $_SESSION['error'] = $e->getMessage();
 }
 ?>
 
@@ -64,16 +63,17 @@ try {
   </div>
 </header>
 
-<?php if ($errorMessage): ?>
-  <div class="alert alert-danger mb-4">
-    <?= htmlspecialchars($errorMessage) ?>
-  </div>      
+<?php if ($_SESSION['error']): ?>
+  <div class="alert alert-danger mt-4">
+    <?= htmlspecialchars($_SESSION['error']) ?>
+  </div>
+  <?php $_SESSION['error'] = ''; ?>
 <?php endif; ?>
-
-<?php if ($message): ?>
-  <div class="alert alert-success mb-4">
-    <?= htmlspecialchars($message) ?>
-  </div>      
+<?php if (!empty($_SESSION['success'])): ?>
+  <div class="alert alert-success mt-4">
+    <?= htmlspecialchars($_SESSION['success']) ?>
+  </div>
+  <?php $_SESSION['success'] = ''; ?>
 <?php endif; ?>
 
 <main class="container">

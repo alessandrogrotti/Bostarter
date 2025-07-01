@@ -2,7 +2,8 @@
 include_once 'connection.php';
 include_once 'mysql.php';
 
-$message = "";
+$_SESSION['error'] = '';
+$_SESSION['success'] = '';
 $codiceSicurezzaChiaro = "";
 
 if ($_SERVER["REQUEST_METHOD"] === "POST") {
@@ -20,12 +21,13 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
         $codiceSicurezzaChiaro = registraUtente($email, $nickname, $password, $nome, $cognome, $luogoNascita, $annoNascita, $isCreator, $isAdministrator);
 
         if (!$isAdministrator) {
+            $_SESSION['success'] = "Registrazione completata con successo!";
             header("Location: login.php");
             exit;
         }
     } catch (Exception $e) {
         writeLog('Errore registrazione utente', ['errore' => $e->getMessage()]);
-        $message = "Errore nella registrazione: " . $e->getMessage();
+        $_SESSION['error'] = "Errore nella registrazione: " . $e->getMessage();
     }
 }
 
@@ -55,11 +57,18 @@ include_once 'navbar.php';
   <div class="row justify-content-center">
     <div class="col-lg-6">
 
-      <?php if (!empty($message)): ?>
-        <div class="alert alert-danger animate-fadein" role="alert" style="animation-delay: 0.4s;">
-          <?= $message; ?>
-        </div>
-      <?php endif; ?>
+    <?php if ($_SESSION['error']): ?>
+      <div class="alert alert-danger mt-4">
+        <?= htmlspecialchars($_SESSION['error']) ?>
+      </div>
+      <?php $_SESSION['error'] = ''; ?>
+    <?php endif; ?>
+    <?php if (!empty($_SESSION['success'])): ?>
+      <div class="alert alert-success mt-4">
+        <?= htmlspecialchars($_SESSION['success']) ?>
+      </div>
+      <?php $_SESSION['success'] = ''; ?>
+    <?php endif; ?>
 
       <?php if (!empty($codiceSicurezzaChiaro)): ?>
         <div class="alert alert-success animate-fadein" role="alert" style="animation-delay: 0.4s;">

@@ -8,14 +8,18 @@ requireLogin();
 
 $nomeProgetto = isset($_GET['nome']) ? trim($_GET['nome']) : '';
 if ($nomeProgetto === '') {
-    die("Nome progetto non specificato.");
+    $_SESSION['error'] = "Nome progetto non specificato.";
+    header("Location: indexCreatore.php");
+    exit;
 }
 
 if (!verificaProgettoCreatore($nomeProgetto, $_SESSION['id'])) {
-    die("Progetto non trovato o non autorizzato.");
+    $_SESSION['error'] = "Progetto non trovato o non autorizzato.";
+    header("Location: indexCreatore.php");
+    exit;
 }
 
-$errorMessage = '';
+$_SESSION['error'] = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['descrizione'])) {
     $descrizione = trim($_POST['descrizione']);
@@ -35,17 +39,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['descrizione'])) {
             $destinationPath = $uploadDir . $newFileName;
 
             if (!move_uploaded_file($_FILES['foto']['tmp_name'], $destinationPath)) {
-                $errorMessage = "Errore durante il salvataggio dell'immagine.";
+                $_SESSION['error'] = "Errore durante il salvataggio dell'immagine.";
             } else {
                 $fotoPath = $destinationPath;
             }
         } else {
-            $errorMessage = "Formato immagine non valido.";
+            $_SESSION['error'] = "Formato immagine non valido.";
         }
     }
 
     if ($descrizione === '') {
-        $errorMessage = "Compila tutti i campi obbligatori.";
+        $_SESSION['error'] = "Compila tutti i campi obbligatori.";
     } else {
         try {
             inserisciReward($descrizione, $fotoPath, $nomeProgetto, $_SESSION['id']);
@@ -57,9 +61,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['descrizione'])) {
             exit;
         } catch (Exception $e) {
             writeLog('Errore inserimento reward', ['errore' => $e->getMessage()]);
-            $errorMessage = "Errore inserimento reward: " . $e->getMessage();
+            $_SESSION['error'] = "Errore inserimento reward: " . $e->getMessage();
         }
     }
+}
+
+if (!empty($_SESSION['error'])) {
+    header("Location: indexCreatore.php");
+    exit;
 }
 
 include_once 'navbar.php';
@@ -77,8 +86,17 @@ include_once 'navbar.php';
   <main class="container mt-5">
     <h2 class="mb-4">Nuova reward per "<strong><?= htmlspecialchars($nomeProgetto) ?></strong>"</h2>
 
-    <?php if (!empty($errorMessage)): ?>
-      <div class="alert alert-danger"><?= htmlspecialchars($errorMessage) ?></div>
+    <?php if ($_SESSION['error']): ?>
+      <div class="alert alert-danger mt-4">
+        <?= htmlspecialchars($_SESSION['error']) ?>
+      </div>
+      <?php $_SESSION['error'] = ''; ?>
+    <?php endif; ?>
+    <?php if (!empty($_SESSION['success'])): ?>
+      <div class="alert alert-success mt-4">
+        <?= htmlspecialchars($_SESSION['success']) ?>
+      </div>
+      <?php $_SESSION['success'] = ''; ?>
     <?php endif; ?>
 
     <form method="POST" class="row g-3" enctype="multipart/form-data">

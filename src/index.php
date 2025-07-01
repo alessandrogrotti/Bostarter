@@ -5,8 +5,6 @@ include_once 'mongodb.php';
 include_once 'mysql.php';
 include_once 'navbar.php';
 
-$errorMessage = '';
-
 writeLog('Visita homepage', 'Accesso alla homepage da parte di un utente');
 
 try {
@@ -17,36 +15,35 @@ try {
             $progetto['Foto'] = ottieniFotoProgetto($progetto['Nome']);
         } catch (Exception $e) {
             writeLog('Errore caricamento foto progetto', ['errore' => $e->getMessage()]);
-            $errorMessage = $e->getMessage();
+            $_SESSION['error'] = $e->getMessage();
         }
     }
     unset($progetto);
 } catch (Exception $e) {
     writeLog('Errore caricamento homepage', ['errore' => $e->getMessage()]);
-    $errorMessage = $e->getMessage();
+    $_SESSION['error'] = $e->getMessage();
 }
 
 try {
     $vistaAffidabilità = OttieniListaAffidabilità();
 } catch (Exception $e) {
     writeLog('Errore caricamento classifica affidabilità', ['errore' => $e->getMessage()]);
-    $errorMessage = $e->getMessage();
+    $_SESSION['error'] = $e->getMessage();
 }
 
 try {
     $vistaProgetti = OttieniListaProgetti();
 } catch (Exception $e) {
     writeLog('Errore caricamento classifica progetti', ['errore' => $e->getMessage()]);
-    $errorMessage = $e->getMessage();
+    $_SESSION['error'] = $e->getMessage();
 }
 
 try {
     $vistaFinanziatori = OttieniListaFinanziatori();
 } catch (Exception $e) {
     writeLog('Errore caricamento classifica finanziatori', ['errore' => $e->getMessage()]);
-    $errorMessage = $e->getMessage();
+    $_SESSION['error'] = $e->getMessage();
 }
-
 ?>
 <!DOCTYPE html>
 <html lang="it">
@@ -66,10 +63,17 @@ try {
   </div>
 </header>
 
-<?php if ($errorMessage): ?>
-  <div class="alert alert-danger m-4 ">
-    <?= htmlspecialchars($errorMessage) ?>
-  </div>      
+<?php if ($_SESSION['error']): ?>
+  <div class="alert alert-danger mt-4">
+    <?= htmlspecialchars($_SESSION['error']) ?>
+  </div>
+  <?php $_SESSION['error'] = ''; ?>
+<?php endif; ?>
+<?php if (!empty($_SESSION['success'])): ?>
+  <div class="alert alert-success mt-4">
+    <?= htmlspecialchars($_SESSION['success']) ?>
+  </div>
+  <?php $_SESSION['success'] = ''; ?>
 <?php endif; ?>
 
 <main class="container my-5">
@@ -134,7 +138,7 @@ try {
               </div>
 
               <div class="card-footer bg-transparent border-0">
-                <a href="progetto.php?nome=<?= $nomeProgettoUrl ?>" class="btn btn-primary w-100">Partecipa al progetto</a>
+                <a href="progetto.php?nome=<?= urlencode($row["Nome"]) ?>" class="btn btn-primary w-100">Partecipa al progetto</a>
               </div>
             </div>
           </div>

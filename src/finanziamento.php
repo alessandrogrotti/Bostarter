@@ -6,13 +6,15 @@ include_once 'mysql.php';
 
 requireLogin();
 
-$nome_progetto = isset($_GET['nome']) 
-    ? htmlspecialchars(trim(urldecode($_GET['nome'])), ENT_QUOTES) 
-    : 'Progetto Sconosciuto';
+$nome_progetto = isset($_GET['nome']) ? urldecode(trim($_GET['nome'])) : '';
+if ($nome_progetto === '') {
+    $_SESSION['error'] = "Nome progetto non specificato. - progetto.php";
+    header("Location: index.php");
+    exit;
+}
 
 $rewards = [];
 $finanziamentoEffettuato = false;
-$errorMessage = ""; 
 
 if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     try {
@@ -22,30 +24,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         $finanziamentoEffettuato = verificaFinanziamentoOggi($email_utente, $nome_progetto);
 
         if (empty($rewards)) {
-            $errorMessage = "Questo progetto non ha reward disponibili. Non è possibile effettuare finanziamenti.";
+            $_SESSION['error'] = "Questo progetto non ha reward disponibili. Non è possibile effettuare finanziamenti.";
         } elseif ($finanziamentoEffettuato) {
-            $errorMessage = "Hai già registrato un finanziamento per “{$nome_progetto}” oggi. Torna domani!";
+            $_SESSION['error'] = "Hai già registrato un finanziamento per “{$nome_progetto}” oggi. Torna domani!";
         }
     } catch (Exception $e) {
         writeLog('Errore query reward', ['progetto' => $nome_progetto, 'errore' => $e->getMessage()]);
-        $errorMessage = $e->getMessage();
+        $_SESSION['error'] = $e->getMessage();
     }
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $nome_progetto = isset($_POST['nome_progetto']) 
-        ? htmlspecialchars(trim($_POST['nome_progetto']), ENT_QUOTES) 
-        : $nome_progetto; 
-
     $importo = isset($_POST['importo']) ? floatval($_POST['importo']) : 0;
     $codice_reward = isset($_POST['reward']) ? htmlspecialchars(trim($_POST['reward']), ENT_QUOTES) : null;
     $email_utente = $_SESSION['id'];
-
-    if ($importo <= 0 || !$nome_progetto || !$codice_reward) {
-        $errorMessage = "Dati mancanti o non validi.";
-        header("Location: finanziamento.php?nome=" . urlencode($nome_progetto));
-        exit;
-    }
 
     writeLog('Tentativo finanziamento', [
         'utente' => $email_utente,
@@ -56,7 +48,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     try {
         eseguiFinanziamento($email_utente, $importo, $nome_progetto, $codice_reward);
-        $errorMessage = "Finanziamento di €" . number_format($importo, 2) . " per “{$nome_progetto}” con reward “{$codice_reward}” registrato con successo.";
+        $_SESSION['success'] = "Finanziamento di €" . number_format($importo, 2) . " per “{$nome_progetto}” con reward “{$codice_reward}” registrato con successo.";
+        header("Location: progetto.php?nome=" . urlencode($nome_progetto));
+        exit;
     } catch (Exception $e) {
         writeLog('Errore finanziamento', [
             'utente' => $email_utente,
@@ -65,11 +59,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             'importo' => $importo,
             'errore' => $e->getMessage()
         ]);
-        $errorMessage = $e->getMessage();
+        $_SESSION['error'] = $e->getMessage();
+        header("Location: progetto.php?nome=" . urlencode($nome_progetto));
+        exit;
     }
-
-    header("Location: progetto.php?nome=" . urlencode($nome_progetto));
-    exit;
 }
 
 try {
@@ -79,7 +72,7 @@ try {
     }
 } catch (Exception $e) {
     writeLog('Errore caricamento progetto', ['progetto' => $nome_progetto, 'errore' => $e->getMessage()]);
-    $errorMessage = $e->getMessage();
+    $_SESSION['error'] = $e->getMessage();
 }
 ?>
 <?php
@@ -97,16 +90,23 @@ include 'navbar.php';
 </head>
 <body>
   <main class="container mt-5">
-    <?php if ($errorMessage): ?>
-      <div class="alert alert-danger mb-4">
-        <?= htmlspecialchars($errorMessage) ?>
-      </div>      
+  <?php if ($_SESSION['error']): ?>
+      <div class="alert alert-danger mt-4">
+        <?= htmlspecialchars($_SESSION['error']) ?>
+      </div>
+      <?php $_SESSION['error'] = ''; ?>
+    <?php else: ?>
+    <?php if (!empty($_SESSION['success'])): ?>
+      <div class="alert alert-success mt-4">
+        <?= htmlspecialchars($_SESSION['success']) ?>
+      </div>
+      <?php $_SESSION['success'] = ''; ?>
     <?php endif; ?>
 
     <h2 class="mb-4">Finanzia il progetto "<strong><?= htmlspecialchars($nome_progetto) ?></strong>"</h2>
 
     <?php if (!empty($rewards) && !$finanziamentoEffettuato): ?>
-      <form action="finanziamento.php" method="POST">
+      <form action="finanziamento.php?nome=<?= urlencode($nome_progetto) ?>" method="POST">
         <div class="mb-4">
           <label for="importo" class="form-label">Importo (€):</label>
           <input
@@ -144,15 +144,11 @@ include 'navbar.php';
             <?php endforeach; ?>
           </ul>
         </div>
-        <input
-          type="hidden"
-          name="nome_progetto"
-          value="<?= htmlspecialchars($nome_progetto, ENT_QUOTES) ?>"
-        >
         <button type="submit" class="btn btn-primary">Conferma finanziamento</button>
       </form>
     <?php else: ?>
       <p class="text-danger">Non è possibile finanziare questo progetto.</p>
+    <?php endif; ?>
     <?php endif; ?>
   </main>
   <footer class="text-center mt-5 py-3 bg-light">

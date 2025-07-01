@@ -5,14 +5,13 @@ include_once 'mongodb.php';
 include_once 'mysql.php';
 include_once 'navbar.php';
 
-$mysqlConn = getMySQLConnection();
-$logCollection = getMongoDBConnection();
+requireCreatore();
 
 $emailCreatore = $_SESSION['id'];
 
 writeLog('Visita area creatore', ['email' => $emailCreatore]);
 
-$errorMessage = '';
+$_SESSION['error'] = '';
 
 try {
     $progetti = ottieniProgettiCreatore($emailCreatore);
@@ -23,7 +22,7 @@ try {
     unset($progetto);
 } catch (Exception $e) {
     writeLog('Errore caricamento progetti creatore', ['email' => $emailCreatore, 'errore' => $e->getMessage()]);
-    $errorMessage = $e->getMessage();
+    $_SESSION['error'] = $e->getMessage();
 }
 ?>
 
@@ -47,11 +46,18 @@ try {
 
 <main>
   <div class="container">
-    <?php if (!empty($errorMessage)): ?>
-      <div class="alert alert-danger mt-3" role="alert">
-        <?= htmlspecialchars($errorMessage) ?>
-      </div>
-    <?php endif; ?>
+  <?php if ($_SESSION['error']): ?>
+    <div class="alert alert-danger mt-4">
+      <?= htmlspecialchars($_SESSION['error']) ?>
+    </div>
+    <?php $_SESSION['error'] = ''; ?>
+  <?php endif; ?>
+  <?php if (!empty($_SESSION['success'])): ?>
+    <div class="alert alert-success mt-4">
+      <?= htmlspecialchars($_SESSION['success']) ?>
+    </div>
+    <?php $_SESSION['success'] = ''; ?>
+  <?php endif; ?>
 
     <div class="text-center mb-5" style="margin-top: 50px;">
       <a href="nuovoProgetto.php" class="btn btn-primary">Crea Nuovo Progetto</a>
@@ -87,7 +93,7 @@ try {
                         <?php endif; ?>
                     </div>
                 <?php else: ?>
-                    <img src="uploads/placeholder.jpg" class="card-img-top" alt="Nessuna immagine" style="height: 200px; object-fit: cover">
+                    <img class="card-img-top" style="height: 200px; object-fit: cover">
                 <?php endif; ?>
   
                 <div class="card-body">

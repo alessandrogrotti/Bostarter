@@ -2,9 +2,6 @@
 include_once 'auth.php';
 include_once 'mongodb.php';
 
-$message = "";
-$errorMessage = '';
-
 if ($_SERVER["REQUEST_METHOD"] === "POST") {
     $email = trim($_POST['email']);
     $password = trim($_POST['password']);
@@ -21,7 +18,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
         }
     } catch (Exception $e) {
         writeLog('Errore login', ['email' => $email, 'errore' => $e->getMessage()]);
-        $errorMessage = $e->getMessage();
+        $_SESSION['error'] = $e->getMessage();
     }
 }
 ?>
@@ -50,11 +47,18 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
   <div class="row justify-content-center">
     <div class="col-lg-6">
 
-      <?php if (!empty($errorMessage)): ?>
-        <div class="alert alert-danger animate-fadein" role="alert" style="animation-delay: 0.4s;">
-          <?= htmlspecialchars($errorMessage); ?>
-        </div>
-      <?php endif; ?>
+    <?php if ($_SESSION['error']): ?>
+      <div class="alert alert-danger mt-4">
+        <?= htmlspecialchars($_SESSION['error']) ?>
+      </div>
+      <?php $_SESSION['error'] = ''; ?>
+    <?php endif; ?>
+    <?php if (!empty($_SESSION['success'])): ?>
+      <div class="alert alert-success mt-4">
+        <?= htmlspecialchars($_SESSION['success']) ?>
+      </div>
+      <?php $_SESSION['success'] = ''; ?>
+    <?php endif; ?>
 
       <div class="card animate-fadein" style="animation-delay: 0.4s;">
         <div class="card-body p-5">

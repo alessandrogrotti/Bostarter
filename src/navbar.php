@@ -1,15 +1,13 @@
 <?php
 require_once 'auth.php';
 
-$errorMessage = '';
-
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['logout'])) {
     try {
         logout();
         header("Location: index.php");
         exit();
     } catch (Exception $e) {
-        $errorMessage = $e->getMessage();
+        $_SESSION['error'] = $e->getMessage();
     }
 }
 
@@ -43,11 +41,6 @@ $isCreator = isCreator();
             Registrati
           </a>
         <?php else: ?>
-          <?php if (!empty($errorMessage)): ?>
-            <div class="alert alert-danger mt-3" role="alert">
-              <?= htmlspecialchars($errorMessage) ?>
-            </div>
-          <?php endif; ?>
 
           <div class="dropdown">
             <button class="btn btn-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">

@@ -10,7 +10,7 @@ include_once 'navbar.php';
 
 writeLog('Visita pagina inserimento progetto', 'Accesso alla pagina');
 
-$message = '';
+$_SESSION['error'] = '';
 $uploadDir = 'uploads/';
 
 if (!file_exists($uploadDir)) {
@@ -25,7 +25,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $tipo = isset($_POST['tipo']) ? $_POST['tipo'] : null;
 
     if (!$tipo) {
-        $message = 'Errore: scegli una tipologia (Software o Hardware).';
+        $_SESSION['error'] = 'Errore: scegli una tipologia (Software o Hardware).';
     } else {
         try {
             inserisciProgetto($nome, $_SESSION['id'], $descrizione, $dataLimite, $budget, $tipo);
@@ -49,17 +49,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
 
             writeLog('Inserimento progetto', "Progetto \"$nome\" inserito con successo");
-            $message = 'Progetto inserito con successo!';
+            $_SESSION['success'] = 'Progetto inserito con successo!';
         } catch (PDOException $e) {
             if (isset($e->errorInfo[1]) && $e->errorInfo[1] == 1644) {
-                $message = "Errore durante l'inserimento: Dati non validi: controlla Email_Creatore, Tipo o Budget > 0";
+                $_SESSION['error'] = "Errore durante l'inserimento: Dati non validi: controlla Email_Creatore, Tipo o Budget > 0";
             } else {
                 writeLog('Errore PDO', ['errore' => $e->getMessage()]);
-                $message = "Errore durante l'inserimento.";
+                $_SESSION['error'] = "Errore durante l'inserimento.";
             }
         } catch (Exception $e) {
             writeLog('Errore generico', ['errore' => $e->getMessage()]);
-            $message = "Errore durante l'inserimento: " . $e->getMessage();
+            $_SESSION['error'] = "Errore durante l'inserimento: " . $e->getMessage();
         }
     }
 }
@@ -78,10 +78,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   <main class="container py-5">
     <h2 class="mb-4">Nuovo Progetto</h2>
 
-    <?php if ($message): ?>
-      <div class="alert alert-danger" role="alert">
-        <?= htmlspecialchars($message) ?>
+    <?php if ($_SESSION['error']): ?>
+      <div class="alert alert-danger mt-4">
+        <?= htmlspecialchars($_SESSION['error']) ?>
       </div>
+      <?php $_SESSION['error'] = ''; ?>
+    <?php endif; ?>
+    <?php if (!empty($_SESSION['success'])): ?>
+      <div class="alert alert-success mt-4">
+        <?= htmlspecialchars($_SESSION['success']) ?>
+      </div>
+      <?php $_SESSION['success'] = ''; ?>
     <?php endif; ?>
 
     <form method="post" action="" class="row g-3" enctype="multipart/form-data">

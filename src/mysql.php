@@ -177,7 +177,11 @@ function eseguiFinanziamento($emailUtente, $importo, $nomeProgetto, $codiceRewar
         $stmt->bindParam(4, $codiceReward, PDO::PARAM_STR);
         $stmt->execute();
     } catch (Exception $e) {
-        throw new Exception("Errore durante l'esecuzione del finanziamento.");
+        if ($e->getCode() === '45000') {
+            throw new Exception("Il creatore non può finanziare un suo progetto.");
+        } else {
+            throw new Exception("Errore durante l'invio della candidatura.");
+        }
     }
 }
 
