@@ -13,7 +13,6 @@ $nome_progetto = isset($_GET['nome'])
 $rewards = [];
 $finanziamentoEffettuato = false;
 $errorMessage = ""; 
-$errorMessage = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     try {

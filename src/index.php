@@ -159,7 +159,7 @@ try {
             <li class="list-group-item d-flex justify-content-between align-items-start">
               <div class="ms-2 me-auto">
                 <div class="fw-bold"><?= htmlspecialchars($vistaAffidabilità[$i]['Nickname']) ?></div>
-                <span> Affidabilità: <?= htmlspecialchars($vistaAffidabilità[$i]['Affidabilità']) ?> </span>
+                <span> Affidabilità: <?= number_format($vistaAffidabilità[$i]['Affidabilità'] * 100, 0) ?>% </span>
               </div>
             </li>
           <?php endfor; ?>
@@ -175,7 +175,7 @@ try {
             <li class="list-group-item d-flex justify-content-between align-items-start">
               <div class="ms-2 me-auto">
                 <div class="fw-bold"><?= htmlspecialchars($vistaProgetti[$i]['Nome']) ?></div>
-                <span><?= htmlspecialchars($vistaProgetti[$i]['Differenza']) ?>€ al completamento</span>
+                <span><?= number_format($vistaProgetti[$i]['Differenza'], 0) ?>€ al completamento</span>
               </div>
             </li>
           <?php endfor; ?>
@@ -191,7 +191,7 @@ try {
             <li class="list-group-item d-flex justify-content-between align-items-start">
               <div class="ms-2 me-auto">
                 <div class="fw-bold"><?= htmlspecialchars($vistaFinanziatori[$i]['Nickname']) ?></div>
-                <span>Finanziati: <?= htmlspecialchars($vistaFinanziatori[$i]['Totale']) ?>€</span>
+                <span>Finanziati: <?= number_format($vistaFinanziatori[$i]['Totale'], 1) ?>€</span>
               </div>
             </li>
           <?php endfor; ?>

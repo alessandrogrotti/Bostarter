@@ -9,13 +9,14 @@ requireAdmin();
 writeLog('Visita pagina competenza', 'Accesso alla pagina per aggiunta competenza da parte dell’amministratore');
 
 $errorMessage = '';
+$message = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['competenza'])) {
     $nomeCompetenza = $_POST['competenza'];
     try {
         if (inserisciCompetenza($nomeCompetenza)) {
             writeLog('Inserimento competenza', "Competenza '$nomeCompetenza' aggiunta al database.");
-            $errorMessage = "Competenza '$nomeCompetenza' aggiunta con successo.";
+            $message = "Competenza '$nomeCompetenza' aggiunta con successo.";
         }
     } catch (Exception $e) {
         writeLog('Errore inserimento competenza', ['errore' => $e->getMessage()]);
@@ -28,7 +29,7 @@ if (isset($_GET['removeCompetenza'])) {
     try {
         if (eliminaCompetenza($competenzaToRemove)) {
             writeLog('Eliminazione competenza', "Competenza '$competenzaToRemove' eliminata dal database.");
-            $errorMessage = "Competenza '$competenzaToRemove' eliminata con successo.";
+            $message = "Competenza '$competenzaToRemove' eliminata con successo.";
         }
     } catch (Exception $e) {
         writeLog('Errore eliminazione competenza', ['errore' => $e->getMessage()]);
@@ -66,6 +67,12 @@ try {
 <?php if ($errorMessage): ?>
   <div class="alert alert-danger mb-4">
     <?= htmlspecialchars($errorMessage) ?>
+  </div>      
+<?php endif; ?>
+
+<?php if ($message): ?>
+  <div class="alert alert-success mb-4">
+    <?= htmlspecialchars($message) ?>
   </div>      
 <?php endif; ?>
 

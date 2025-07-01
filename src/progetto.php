@@ -9,8 +9,8 @@ if ($nomeProgetto === '') {
 }
 
 try {
-    $dettagliProgetto = getDettagliProgetto($nomeProgetto);
-    if (!$dettagliProgetto) {
+    $progetto = getDettagliProgetto($nomeProgetto);
+    if (!$progetto) {
         throw new Exception("Progetto non trovato.");
     }
 } catch (Exception $e) {
@@ -131,9 +131,9 @@ include_once 'navbar.php';
         </div>
         <?php endif; ?>
         <ul class="list-group mt-5 pt-2">
-          <li class="list-group-item"><strong>Budget:</strong> <?= htmlspecialchars($dettagliProgetto['Budget']) ?> €</li>
-          <li class="list-group-item"><strong>Data di chiusura:</strong> <?= htmlspecialchars($dettagliProgetto['Data_Limite']) ?></li>
-          <li class="list-group-item"><strong>Stato:</strong> <?= htmlspecialchars($dettagliProgetto['Stato']) ?></li>
+          <li class="list-group-item"><strong>Budget:</strong> <?= htmlspecialchars($progetto['Budget']) ?> €</li>
+          <li class="list-group-item"><strong>Data di chiusura:</strong> <?= htmlspecialchars($progetto['Data_Limite']) ?></li>
+          <li class="list-group-item"><strong>Stato:</strong> <?= htmlspecialchars($progetto['Stato']) ?></li>
         </ul>
       </section>
     </div>

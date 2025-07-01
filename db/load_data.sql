@@ -108,7 +108,6 @@ CALL InserisciProfiloRichiede('Programmatore', 'GreenCity Tracker', 2, 'Java');
 -- Skill Utente
 CALL AggiungiSkillUtente('utente@gmail.com', 'Java', 4);
 CALL AggiungiSkillUtente('utente@gmail.com', 'Python', 3);
-CALL AggiungiSkillUtente('utente@gmail.com', 'HTML', 5);
 CALL AggiungiSkillUtente('utente@gmail.com', 'SQL', 4);
 
 -- Commenti

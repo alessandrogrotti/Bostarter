@@ -21,7 +21,8 @@ function login($email, $password) {
                 'is_creator' => $is_creator,
                 'user_agent' => $_SERVER['HTTP_USER_AGENT'] ?? '',
                 'ip' => $_SERVER['REMOTE_ADDR'] ?? '',
-                'last_activity' => time()
+                'last_activity' => time(),
+                'errorMessage' => ''
             ];
 
             writeLog('Login', "Utente {$user['Nickname']} ($email) ha effettuato l'accesso");
