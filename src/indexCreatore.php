@@ -5,7 +5,7 @@ include_once 'mongodb.php';
 include_once 'mysql.php';
 include_once 'navbar.php';
 
-requireCreatore();
+requireCreator();
 
 $emailCreatore = $_SESSION['id'];
 

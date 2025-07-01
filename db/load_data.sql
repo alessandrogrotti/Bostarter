@@ -22,7 +22,7 @@ INSERT INTO PROGETTO (
     'creatore@gmail.com',
     'Progetto per la creazione di un sistema domotico intelligente basato su sensori IoT.',
     '2025-04-10',
-    '2025-07-01',
+    '2025-08-01',
     5000.00,
     'Aperto',
     'Software'
@@ -32,7 +32,7 @@ INSERT INTO PROGETTO (
     'creatore@gmail.com',
     'Applicazione mobile per la gestione delle spese personali e report mensili.',
     '2025-03-20',
-    '2025-06-15',
+    '2025-09-15',
     2000.00,
     'Aperto',
     'Hardware'
@@ -42,9 +42,9 @@ INSERT INTO PROGETTO (
     'creatore@gmail.com',
     'Sviluppo di una piattaforma online per corsi e formazione a distanza.',
     '2025-02-28',
-    '2025-05-12',
+    '2025-10-12',
     7500.00,
-    'Chiuso',
+    'Aperto',
     'Software'
 ),
 (

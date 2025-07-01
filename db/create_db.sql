@@ -691,15 +691,16 @@ BEGIN
     SET Nr_progetti = Nr_progetti + 1
     WHERE Email_Utente = NEW.Email_Creatore;
 
-    UPDATE CREATORE 
+    UPDATE CREATORE c
     SET Affidabilità = (
-        SELECT ROUND(COUNT(DISTINCT Nome) / Nr_progetti, 2)
-        FROM PROGETTO, FINANZIAMENTO 
-        WHERE Email_Creatore = Email_Utente AND Nome = Nome_Progetto
+        SELECT ROUND(COUNT(DISTINCT p.Nome) / c.Nr_progetti, 2)
+        FROM PROGETTO p
+        JOIN FINANZIAMENTO f ON p.Nome = f.Nome_Progetto
+        WHERE p.Email_Creatore = c.Email_Utente
     )
-    WHERE Email_Utente = NEW.Email_Creatore;
+    WHERE c.Email_Utente = NEW.Email_Creatore;
 END;
-$ DELIMITER;
+$ DELIMITER ;
 
 DELIMITER $
 CREATE TRIGGER aggiorna_affidabilita_finanziamento

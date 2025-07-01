@@ -1,6 +1,9 @@
 <?php
 session_start();
 
+$_SESSION['error'] = '';
+$_SESSION['success'] = '';
+
 include_once 'connection.php';
 include_once 'mongodb.php';
 include_once 'mysql.php';
