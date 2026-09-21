@@ -1,0 +1,129 @@
+-- Utente
+INSERT INTO UTENTE (Email, Nickname, Password, Luogo, Anno, Nome, Cognome) VALUES
+('utente@gmail.com', 'utente', '0cc175b9c0f1b6a831c399e269772661', 'Bologna', 2000, 'Mario', 'Rossi'),
+('creatore@gmail.com', 'creatore', '0cc175b9c0f1b6a831c399e269772661', 'Milano', 1990, 'Lucia', 'Bianchi'),
+('admin@gmail.com', 'amministratore', '0cc175b9c0f1b6a831c399e269772661', 'Roma', 1985, 'Marco', 'Verdi');
+
+-- Creatore
+INSERT INTO CREATORE (Email_Utente, Nr_progetti, Affidabilità) VALUES
+('creatore@gmail.com', 0, 0);
+
+-- Amministratore
+INSERT INTO AMMINISTRATORE (Email_Utente, Codice_Sicurezza) VALUES
+('admin@gmail.com', '5c5b93bd05da99760c1f742cbe2d1a2b'); -- Codice : SEC8037
+
+
+-- Progetti 
+INSERT INTO PROGETTO (
+    Nome, Email_Creatore, Descrizione, Data_Inserimento, Data_Limite, Budget, Stato, Tipo
+) VALUES 
+(
+    'Sistema Domotico Smart',
+    'creatore@gmail.com',
+    'Progetto per la creazione di un sistema domotico intelligente basato su sensori IoT.',
+    '2025-04-10',
+    '2025-08-01',
+    5000.00,
+    'Aperto',
+    'Software'
+),
+(
+    'App Gestione Spese',
+    'creatore@gmail.com',
+    'Applicazione mobile per la gestione delle spese personali e report mensili.',
+    '2025-03-20',
+    '2025-09-15',
+    2000.00,
+    'Aperto',
+    'Hardware'
+),
+(
+    'Piattaforma E-learning',
+    'creatore@gmail.com',
+    'Sviluppo di una piattaforma online per corsi e formazione a distanza.',
+    '2025-02-28',
+    '2025-10-12',
+    7500.00,
+    'Aperto',
+    'Software'
+),
+(
+	'GreenCity Tracker',
+    'creatore@gmail.com',
+    'Applicazione che monitora l’impatto ambientale in città, raccogliendo dati da fonti pubbliche e utenti per promuovere pratiche sostenibili.',
+    '2025-04-12',
+    '2025-07-30',
+    3000.00,
+    'Aperto',
+    'Software'
+);
+
+-- Foto Progetti
+INSERT INTO FOTO (Valore, Nome_Progetto) VALUES 
+('uploads/Sistema_Domotico_Smart.jpg','Sistema Domotico Smart'),
+('uploads/Sistema_Domotico_Smart_2.png','Sistema Domotico Smart'),
+('uploads/app_gestione_spese.jpg','App Gestione Spese'),
+('uploads/Piattaforma_EL.jpg','Piattaforma E-learning'),
+('uploads/GreenCity_tracker.jpg','GreenCity Tracker');
+
+
+-- Reward
+INSERT INTO REWARD (Descrizione, Foto, Nome_Progetto) VALUES
+-- Sistema Domotico Smart
+('Ringraziamento speciale sul sito web e menzione tra i supporter', 'uploads/reward.png', 'Sistema Domotico Smart'),
+('Accesso anticipato alla versione beta e demo esclusiva', 'uploads/reward.png', 'Sistema Domotico Smart'),
+('Installazione gratuita del sistema per i primi 50 finanziatori', 'uploads/reward.png', 'Sistema Domotico Smart'),
+
+-- App Gestione Spese
+('Accesso alla versione premium per 6 mesi senza costi', 'uploads/reward.png', 'App Gestione Spese'),
+('Report finanziario personalizzato con analisi avanzata', 'uploads/reward.png', 'App Gestione Spese'),
+('Ringraziamento con nome nella sezione supporter dell’app', 'uploads/reward.png', 'App Gestione Spese'),
+
+-- Piattaforma E-learning
+('Accesso gratuito a un corso premium a scelta', 'uploads/reward.png', 'Piattaforma E-learning'),
+('Certificato digitale di sostenitore ufficiale del progetto', 'uploads/reward.png', 'Piattaforma E-learning'),
+('Webinar esclusivo con i docenti e sviluppatori', 'uploads/reward.png', 'Piattaforma E-learning'),
+
+-- GreenCity Tracker
+('Badge esclusivo “Green Supporter” visibile nel profilo', 'uploads/reward.png', 'GreenCity Tracker'),
+('T-shirt in cotone organico con logo del progetto', 'uploads/reward.png', 'GreenCity Tracker'),
+('Possibilità di testare nuove funzionalità in anteprima', 'uploads/reward.png', 'GreenCity Tracker');
+
+
+-- Competenza
+INSERT INTO SKILL (Competenza) VALUES ('Java'), ('SQL'), ('Teamwork'), ('Python'), ('HTML');
+
+-- Componenti
+INSERT INTO COMPONENTE (Nome, Nome_ProgettoHardware, Descrizione, Prezzo, Quantità) VALUES
+('Lettore NFC', 'App Gestione Spese', 'Dispositivo per la lettura di tag NFC per autenticazione', 35.00, 20),
+('Modulo Bluetooth 5.0', 'App Gestione Spese', 'Permette la comunicazione tra app e dispositivi mobili', 12.50, 30),
+('Display OLED 0.96"', 'App Gestione Spese', 'Schermo per la visualizzazione di notifiche o spese', 7.80, 15);
+
+-- Profili
+CALL InserisciProfiloRichiede('Frontend Developer', 'Sistema Domotico Smart', 3,'HTML');
+CALL InserisciProfiloRichiede('Database Manager', 'Sistema Domotico Smart', 3,'SQL');
+CALL InserisciProfiloRichiede('Collaboratore', 'Piattaforma E-learning', 2, 'Teamwork');
+CALL InserisciProfiloRichiede('Programmatore', 'GreenCity Tracker', 2, 'Java');
+
+-- Skill Utente
+CALL AggiungiSkillUtente('utente@gmail.com', 'Java', 4);
+CALL AggiungiSkillUtente('utente@gmail.com', 'Python', 3);
+CALL AggiungiSkillUtente('utente@gmail.com', 'SQL', 4);
+
+-- Commenti
+CALL InserisciCommento('Progetto molto interessante, non vedo l’ora di provarlo!', 'utente@gmail.com', 'Sistema Domotico Smart');
+CALL InserisciCommento('Ottima idea, spero che venga realizzata presto.', 'utente@gmail.com', 'GreenCity Tracker');
+CALL InserisciCommento('Mi piace il concept, ma vorrei più dettagli sul funzionamento.', 'utente@gmail.com', 'App Gestione Spese');
+
+-- Risposte ai Commenti (fatte dal creatore)
+CALL RispostaCommento('Grazie per il supporto! Stiamo lavorando per migliorare il progetto.', 'creatore@gmail.com', 'Sistema Domotico Smart', 1);
+CALL RispostaCommento('Apprezziamo il tuo feedback, aggiungeremo più dettagli nella descrizione.', 'creatore@gmail.com', 'App Gestione Spese', 3);
+
+-- Candidature
+CALL InserisciCandidatura('utente@gmail.com', 4); -- Programmazione per GreenCity Tracker
+
+SET SQL_SAFE_UPDATES = 0;
+
+-- Finanziamenti
+CALL FinanziaProgetto('utente@gmail.com', 150.00, 'Sistema Domotico Smart', 1); -- Dopo la data di creazione del progetto
+CALL FinanziaProgetto('utente@gmail.com', 50.00, 'GreenCity Tracker', 2); -- Dopo la data di creazione del progetto
